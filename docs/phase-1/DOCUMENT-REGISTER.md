@@ -3,7 +3,7 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 2.3  
+**Register version:** 2.4  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
@@ -31,8 +31,8 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 active; CI/security gates documented | `908e685d42cbe8f237e58ecd2239533597094239` | 6442 |
-| `README.md` | Project overview, Phase 5 active status and Phase 4 mockups/prototype | `5c7bf598a9d5bdba876f0d347897c3868d4fcfbb` | 6383 |
+| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 active; CI/security gates documented | `b9704df24b7cf68f11ffbefd26847bb0aa959316` | 6509 |
+| `README.md` | Project overview, Phase 5 active status and Phase 4 mockups/prototype | `7c1547544a49d72786ecdcbe168ff69918d1c5b6` | 6383 |
 
 ## Phase 1 documents
 
@@ -71,7 +71,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/29-commercial-scope-amendment.md` | CR-001 | `c1830fd68a7ce55aa41807fc0ea7a6ba4c85fcb8` | 8404 |
 | `docs/phase-1/30-self-hosted-deployment-decision.md` | D-025 locked deployment | `126e4eef541677056909be4ad92d62735287d8f2` | 8485 |
 | `docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md` | Final closeout, D-026/D-027 and Phase 2 handoff | `38dfc598c0a5eb02c551dccfbb70d864e15f888c` | 4632 |
-| `docs/phase-1/README.md` | Phase 1 index and Phase 2–5 handoff links | `c32b3318a01978c87227e2227561a3904bcf1989` | 10232 |
+| `docs/phase-1/README.md` | Phase 1 index and Phase 2–5 handoff links | `826a199e260e25ae0eabffffb254aec3a9522c12` | 10422 |
 | `docs/phase-1/SOURCES.md` | Official source register | `95dd96929939ff766225fa0cf5eabefb82d842ca` | 9465 |
 
 ## Roadmap companion documents
@@ -99,7 +99,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-2/README.md` | Phase 2 complete; Phase 4 design handoff closed; Phase 5 active | `55be57e1b220775f9f1219d5806d94845b3e31cf` | 4243 |
+| `docs/phase-2/README.md` | Phase 2 complete; Phase 4 handoff locked; Phase 5 active | `74f6864a4a3c9d571b9af706a1e2dfccd4682c52` | 4337 |
 | `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements and system boundaries | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
 | `docs/phase-2/02-quantitative-policy-and-evaluation-contract.md` | PnL, safety, evaluation and threshold register | `7984c4672717df664a2b48453b4fd560918fe905` | 5784 |
 | `docs/phase-2/03-customer-portal-and-runtime-requirements.md` | Portal/runtime split and payment constraints | `2e8fbdee6916347fef06aea1f4bfc2b373ebc851` | 4098 |
@@ -115,7 +115,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-3/README.md` | Phase 3 closed for design handoff; residual gates retained | `cc9171410f7a0aea58ee917468de051cee2b1784` | 4580 |
+| `docs/phase-3/README.md` | Phase 3 closed for documentation/design handoff; Phase 4 closed; Phase 5 active | `526926f917b713528e6ccdae66830f7306070695` | 4682 |
 | `docs/phase-3/01-threat-model-and-trust-boundaries.md` | Assets, adversaries, trust boundaries and threat register | `f56f73ea94ca7464fc7b9fa176d161b41c0587e6` | 11689 |
 | `docs/phase-3/02-custody-and-transaction-signing-architecture.md` | Customer custody, signer policy and transaction validation design | `2f0c128293d932d96f1070dfb919d6268641671f` | 7917 |
 | `docs/phase-3/03-license-portal-admin-and-release-security.md` | Portal identity, license entitlement and release integrity | `3a8023ceba2f4c9bf5b3f946403db4fa7d77db5b` | 7016 |
@@ -129,15 +129,15 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-4/README.md` | Phase 4 design handoff closed; concept SVGs and clickable prototype | `71d04ca9801b313bfaceaddb099ea359f3ff1b06` | 4321 |
+| `docs/phase-4/README.md` | Phase 4 closed for handoff; includes responsive prototype and Phase 5 links | `71d04ca9801b313bfaceaddb099ea359f3ff1b06` | 4321 |
 | `docs/phase-4/01-design-system-and-theme-tokens.md` | Proposed light/dark design tokens and component patterns | `7548476708b19bc01a9eecd541a2b89c587800c9` | 6993 |
 | `docs/phase-4/02-information-architecture-and-navigation.md` | Public site, portal and runtime navigation separation | `962e2a91d92dc264303266a4b906e2c279112e4e` | 5557 |
 | `docs/phase-4/03-core-screen-specifications.md` | Core cockpit, market, decision, position, risk and portal screens | `15a6cde615d3429753facb2bfad2880e326ed6e1` | 7683 |
 | `docs/phase-4/04-responsive-accessibility-and-motion.md` | Responsive, accessibility, state and reduced-motion rules | `7719122caf42640f94e08dcfdff9fd0c148e42ab` | 4919 |
 | `docs/phase-4/05-3d-visual-placement-and-asset-map.md` | Selective 3D visual placement and brand asset rules | `d0fa7176b8e60b7b449f2f8a787799ecddd1c1cd` | 4073 |
-| `docs/phase-4/06-design-acceptance-and-handoff.md` | Locked design acceptance baseline; validation to follow during implementation | `48c873a7629d483f9c5319596facad8e97f00c47` | 4882 |
+| `docs/phase-4/06-design-acceptance-and-handoff.md` | Locked design acceptance baseline; browser and accessibility validation remains future work | `48c873a7629d483f9c5319596facad8e97f00c47` | 4882 |
 | `docs/phase-4/07-design-decisions-and-open-questions.md` | Design decision register | `182b57ef18f889ec085706692c179b8a9793b87c` | 2627 |
-| `docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md` | Owner-directed Phase 4 closeout and Phase 5 handoff | `178d904690e40336300c023bd9890e1b2f5e1dcf` | 3189 |
+| `docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md` | Owner-directed Phase 4 closeout; Phase 5 handoff | `178d904690e40336300c023bd9890e1b2f5e1dcf` | 3189 |
 | `docs/phase-4/design-previews/dashboard-dark-concept.svg` | Static dark dashboard concept; values are illustrative | `03a8c5e6381a4c8baef7e7719de0ac10e0b9879e` | 21508 |
 | `docs/phase-4/design-previews/dashboard-light-concept.svg` | Static light dashboard concept; values are illustrative | `5b62fca87c62fe8bca0ab30cca61b607c386a7ba` | 21510 |
 | `docs/phase-4/design-previews/dashboard-prototype.html` | Clickable local responsive prototype; no backend/data/order endpoints | `bb61bf30e2293ad58c3f4bce6ea8fcdeafe3dc70` | 17896 |
@@ -147,12 +147,12 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-5/README.md` | Active repository, environments, CI/CD and engineering foundation | `1a99d71c5a131434fc8b02aef695973b5adbf5aa` | 3484 |
+| `docs/phase-5/README.md` | Active engineering foundation; initial main push CI pass; PR and GitHub settings pending | `8eb913a9ef1fb3a1b3e232784413f32d0df8a7ee` | 3663 |
 | `docs/phase-5/01-repository-structure-and-conventions.md` | Monorepo structure, workspace boundaries and conventions | `5668e0b8b3bcc3e1524aedf639630401f3b71e1c` | 3521 |
 | `docs/phase-5/02-environments-and-configuration.md` | Environment isolation and safe configuration policy | `883a4c9137504975a0fa2a0b217673c22f1da473` | 3496 |
 | `docs/phase-5/03-ci-cd-and-security-checks.md` | CI, npm audit, Gitleaks and dependency-graph gate | `e2628ec0d80d956037ab6db073c9f0d73a06fdad` | 2893 |
 | `docs/phase-5/04-development-release-and-rollback-runbook.md` | Developer, dependency update, recovery and rollback runbook | `7a616ee2fe36be77cc066e54aecb7598449c1ae2` | 2886 |
-| `docs/phase-5/05-phase-5-acceptance-and-open-decisions.md` | Phase 5 acceptance gates and unresolved owner-side settings | `2a3472ac009e9749e6781917dff693e93a52bf13` | 3057 |
+| `docs/phase-5/05-phase-5-acceptance-and-open-decisions.md` | Partial acceptance verified by main push CI; PR-specific checks and owner-side settings remain open | `c75cc80d6c27301549027a96d7be6479755033dc` | 3458 |
 
 ## Phase 5 foundation files
 
