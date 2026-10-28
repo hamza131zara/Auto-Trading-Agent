@@ -166,3 +166,13 @@ D-031 does not waive the open decision register or the planned security verifica
 | D-032 | Lock the Phase 4 design baseline for handoff, including the responsive light/dark design system, portal/runtime IA, screen specifications, D-030 selective 3D rules, static concepts and clickable local HTML prototype. Advance to canonical Phase 5 repository/environment/CI foundation. Production UI and automated accessibility/browser validation remain later work. | **OWNER-LOCKED HANDOFF STATUS; not production UI approval** |
 
 D-032 does not change the frozen roadmap and does not waive security or numeric-risk blockers. Phase 5 must not add production trading, wallet signing, real payment collection or provider-connected data flows.
+
+
+## Phase 5 engineering baseline — 28 October 2026
+
+| ID | Decision | Status |
+|---|---|---|
+| D-033 | Establish the initial repo/CI foundation using npm workspaces, Node 24, an exact TypeScript compiler version with a single lockfile, typed contracts/config packages, repeatable checks, a built-in Node test suite, npm audit and Gitleaks. This is an engineering starter, not a final dashboard/framework/database/provider decision. | **INITIAL PHASE 5 BASELINE; validate through CI** |
+| D-034 | Base configuration must reject LIVE_TRADING_ENABLED=true until a later approved phase replaces the foundation guard with an owner-approved, tested multi-factor release gate. | **LOCKED safety guard for foundation** |
+
+D-033 requires successful clean-install/typecheck/build/test/security runs on the supported Node 24 environment. D-034 does not implement live trading; the current repository contains no trading, wallet, provider or order-execution path.
