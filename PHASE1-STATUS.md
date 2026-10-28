@@ -1,11 +1,13 @@
-# Project Phase Status — Phase 1–4 Handoff
+# Project Phase Status — Phase 1–5 Handoff
 
 **Repository:** hamza131zara/Auto-Trading-Agent  
 **Phase 1:** CLOSED for design handoff  
 **Phase 2:** CLOSED for requirements handoff
 **Phase 3:** CLOSED for documentation/design handoff by owner direction
-**Active phase:** Phase 4 — UX and Visual Design  
+**Phase 4:** CLOSED for owner-approved design handoff
+**Active phase:** Phase 5 — Repository, Environments, CI/CD and Engineering Foundation  
 **Phase 3 status:** Security design package handed off; unresolved signing, key, license and numeric-risk decisions remain implementation/release blockers.
+**Phase 4 status:** Design system/specifications, dark/light concepts and clickable local prototype are locked for handoff; production UI is not implemented.
 **Core documentation:** Owner-approved in conversation.  
 **Roadmap comparison/source verification:** Completed and committed.  
 **Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
@@ -47,7 +49,7 @@
 - No profitability/win-rate guarantee is made.
 
 ## Current phase
-**Phase 1 and Phase 2 are closed for handoff. Phase 3 is closed for documentation/design handoff; Phase 4 UX and visual design is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work included requirements for license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback. These remain security-design/implementation gates as listed in Phase 3 decisions.
+**Phases 1–4 are closed for their owner-approved handoffs; Phase 5 repository/environment/CI work is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work included requirements for license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback. These remain security-design/implementation gates as listed in Phase 3 decisions.
 
 ## Canonical source references
 - [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
@@ -55,6 +57,8 @@
 - [Phase 2 completion and Phase 3 handoff](docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md)
 - [Phase 3 security architecture closeout](docs/phase-3/08-phase-3-closeout-and-phase-4-handoff.md)
 - [Phase 3 security architecture package](docs/phase-3/README.md)
+- [Active Phase 5 repository and CI foundation](docs/phase-5/README.md)
+- [Phase 4 closeout and Phase 5 handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
 - [Active Phase 4 UX and visual design](docs/phase-4/README.md)
 - [Phase 1 document index](docs/phase-1/README.md)
 - [D-025 self-hosted deployment decision](docs/phase-1/30-self-hosted-deployment-decision.md)
