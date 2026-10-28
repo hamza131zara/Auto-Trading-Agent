@@ -1,0 +1,33 @@
+# Canonical Dashboard Page Crosswalk
+
+The source Roadmap v1.0 specifies seventeen dashboard pages. The repository's existing dashboard specification groups some features differently. This crosswalk preserves the approved source-roadmap inventory while allowing related views to share components or routes during UX design; all page functions and controls must remain accessible and permissioned.
+
+| # | Canonical source page | Existing repository mapping | Required information and primary actions |
+|---:|---|---|---|
+| 1 | Sign-in & Security | Security/privacy doc; add as explicit UX route | Identity, session status, MFA enrollment, active sessions and last login. Sign in/out, enroll/verify MFA, revoke sessions and recover access. Sensitive actions require re-authentication. |
+| 2 | Overview | Overview | Equity, realized/unrealized PnL, open position, daily drawdown, goal progress, mode and provider health. Start Paper, Pause, Resume, Stop New Entries, confirmed Kill Switch and export summary. |
+| 3 | Live Scanner | Candidate Discovery | Candidate feed, token age, price change, volume, liquidity, buys/sells, security state, expected net edge and exitability. Filters: min/max liquidity, pool age, volume ratio, holder concentration, program/extensions, regime, profile and freshness. Refresh, Watchlist, Inspect, Reject. |
+| 4 | Token / Pool Detail | Candidate Detail and Security Center | Charts, reserves/liquidity history, holders/top-1/3/10, creator/deployer and cluster evidence, authorities/extensions, buy/sell quotes. Timeframe/pair selectors, quote size, snapshot replay, provider comparison, risk reason and watchlist. |
+| 5 | Decision Center | Strategy Lab / Decision Trace | Choice result, separate scores, precise yes/no risk propositions, estimated outcomes, uncertainty, rejected hard gates and source timestamps. Show evidence, replay, compare profiles, request more data, mark review outcome. Never provide a hard-security override. |
+| 6 | Current Position | Active Position | Entry/exit quotes, unrealized PnL, net break-even, holding time, trailing state, remaining allocation and sell-route health. Policy-mediated close, quote refresh, transaction inspection, safe emergency-exit attempt and Trade Passport export. |
+| 7 | Trade History / Passport | Trade History and Ledger | Entry/exit signatures, fills, amounts, fees, impact, strategy version, predictions, outcomes and reason codes. Filter by date/token/strategy/result; view lifecycle, compare predicted vs actual, export CSV/JSON and replay decision. |
+| 8 | Strategies & Models | Strategy Registry and Learning | Strategy/model versions, champion/challenger status, TP/SL statistics, expectancy, drawdown, calibration and sample size. Filter by regime/profile, compare versions, run evaluation, quarantine, propose promotion. Promotion requires test gate and authorized approval. |
+| 9 | Brain & Memory | Strategy Lab / Decision Trace plus audit views | Decision trace, feature snapshots, concise rationale, model/prompt versions, memory records and learning proposals. Search/filter, inspect provenance, export trace and accept/reject research proposal. Never edit ledger history. |
+| 10 | Backtesting Lab | Backtest and Experiment Lab | Equity curve, drawdown, trade distribution, exit policy comparison, fee/slippage sensitivity and Monte Carlo bands. Filter date window/dataset/strategy/profile/Kelly fraction/fees/latency/slippage; Run, Compare, Export. |
+| 11 | Portfolio & Goals | Portfolio Goals and Calculators | Equity, milestones, compounding scenarios, capital allocation, goal status and pause policy. Set target, set pause-at-goal behavior, run scenarios and export progress; show assumptions/uncertainty. |
+| 12 | Risk Settings | Risk Policies and Settings | Position cap, daily loss cap, max drawdown, max slippage/impact, data freshness, provider disagreement, consecutive losses and fee cap. Edit draft, validate, compare versions, save pending and approve with MFA. The agent cannot loosen critical limits. |
+| 13 | Wallet & Signer | Wallet and Execution Health | Public address, balance, SOL fee reserve, signer health, transaction policy and latest signature status. Verify address, inspect permissions, rotate signer via runbook and run safe signer self-test. Never display seed/private key; no autonomous withdrawals. |
+| 14 | Data Sources & Health | Data Provider Health | RPC/stream status, providers, quotas, latency, stale fields, last successful update and discrepancy alerts. Enable/disable provider per approved policy, test connection, refresh health; changes of provider weights require reviewed configuration. |
+| 15 | Alerts & Incidents | Alerts and Incident Center | Security event, drawdown, failed transactions, liquidity collapse, provider outage, model drift and incident state. Acknowledge, assign, open runbook, stop new entries and resolve only after evidence is attached. |
+| 16 | Audit & Reports | Audit and Decision History | Access events, configuration/model releases, risk approvals, agent transitions, signer decisions and exports. Search/filter, export, verify event chain/hash and view approval evidence. Trade lifecycle history is append-only/tamper-evident. |
+| 17 | Settings & Integrations | Risk Settings and Documentation/Operations; expose explicit integrations section | Masked data-credential status, notification channels, retention, locale, log settings and environment. Test provider, configure alerts, rotate API key through secret manager and manage notifications. Secrets are never shown again after entry. |
+
+## Cross-page design rules
+- A page may be a route, tab or shared component, but canonical capabilities must not be lost.
+- Every button/action has a permission, confirmation requirement, backend state transition, pending/success/failure state, audit event and test ID.
+- A disabled or cosmetic frontend control must never imply a backend policy change.
+- The UI reads financial values from the canonical ledger and clearly labels estimated, quoted, simulated and actual data.
+- Critical stale/unknown state disables new entry controls.
+- Live mode, risk policy changes, key rotation and model promotion require re-authentication/MFA, explicit acknowledgement, a server-side authorization check and audit record.
+- No page exposes seed phrases/private keys or provides an unrestricted arbitrary transaction path.
+- Accessible keyboard interaction, focus handling, errors, loading/empty states and responsive layouts are specified in Phase 4 UX design.
