@@ -1,10 +1,10 @@
 # Document Register and Version Integrity
 
-**Register version:** 1.1  
+**Register version:** 1.2  
 **Snapshot date:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Repository tree SHA at snapshot:** `3ef1e62563cb0e524befd9efdb3bbc4aa6126d19`  
+**Repository tree SHA at snapshot:** `d50fb05427493f662c60fa4f4ebde016337a7621`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.
 
 ## Status definitions
@@ -32,7 +32,7 @@ The original DOCX/PDF are not currently committed as binary assets. The Markdown
 
 ## Phase 1 documents and current Git integrity values
 
-The hash shown is Git's blob object SHA, not a SHA-256 digest of the plain file contents. Values were read from the GitHub main-branch tree at this snapshot.
+Hashes below are Git blob object SHAs from the main-branch tree identified at the top; they are not SHA-256 digests of plain file text. The register file itself is excluded to avoid a self-referential hash.
 
 | Repository path | Coverage/status class | Git blob SHA | Bytes |
 |---|---|---|---:|
@@ -62,7 +62,6 @@ The hash shown is Git's blob object SHA, not a SHA-256 digest of the plain file 
 | `docs/phase-1/24-canonical-phase-map-and-repository-structure.md` | canonical phases/repository | `3a53392fa32560cebc64237ba53190aa9fbafd0c` | 6072 |
 | `docs/phase-1/25-canonical-dashboard-page-crosswalk.md` | DOC-09 / canonical dashboard crosswalk | `3601e5145dd8d67350c31ef9a85cf49d4125893d` | 6520 |
 | `docs/phase-1/26-official-source-verification-report.md` | official source verification pass 1 | `78efa6415a8bdc62631b0ea91946085fedefeeb4` | 15680 |
-| `docs/phase-1/DOCUMENT-REGISTER.md` | Phase 1 documentation | `f42e5a3ed3fb9047b88f373f0ff67afd3f5b7cc6` | 7881 |
 | `docs/phase-1/README.md` | Phase 1 index | `c993288ef43f56477e8809100a23b7553a62078b` | 7383 |
 | `docs/phase-1/SOURCES.md` | official source register | `dcf8db54983fdf6979a5bfcd5d2f81faaceb30b9` | 6548 |
 
@@ -79,7 +78,7 @@ The hash shown is Git's blob object SHA, not a SHA-256 digest of the plain file 
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded source files, not Git blob IDs.
 - Git blob SHA values apply to the GitHub main-branch snapshot identified above. Every edit changes the relevant blob SHA.
 - Refresh this register after a controlled documentation release; do not change the canonical source-file SHA unless the source artifact itself is replaced.
-- This register intentionally does not include its own hash.
+- This register intentionally excludes its own hash.
 - A document being present or owner-approved does not mean its implementation, tests, provider account, or legal/tax assessment is complete.
 - Source-verification status describes public documentation as reviewed on the date above. Verify current plan/account details and terms before implementation.
 - Roadmap scope and phase order remain frozen unless the owner explicitly approves a dated change.
