@@ -1,20 +1,20 @@
 # Phase 5.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active until checks are implemented and evidence is recorded.
+**Status:** Active. Main push CI evidence exists for the checks marked complete below; pull-request-specific verification and owner-side repository settings remain open.
 
 ## 1. Acceptance checklist
 
-- [ ] Clean checkout and npm ci reproducibly install the exact package-lock dependency tree on Node 24.
-- [ ] Each intended workspace package is discoverable by npm.
-- [ ] TypeScript strict typecheck and build complete on the supported runtime.
-- [ ] Deterministic tests pass, including safe configuration defaults and live-mode rejection.
-- [ ] Repository validation rejects unsafe local environment files and secret-like values in source paths.
-- [ ] GitHub Actions runs on pull requests/pushes and fails on any mandatory check.
-- [ ] Dependency audit and secret scan are active; their actual run results are retained.
-- [ ] No production credentials are needed for install/build/test/CI.
-- [ ] Development/staging/production boundaries and secret handling are documented.
-- [ ] Rollback/recovery procedure and dependency-update workflow are reviewable.
-- [ ] Owner confirms the initial monorepo/tooling choices and any external GitHub settings needed.
+- [x] Clean CI checkout and npm ci --ignore-scripts installed the exact package-lock dependency tree on Node 24.
+- [x] Each intended workspace package was validated/discovered by the repository check.
+- [x] TypeScript strict typecheck and build completed on the supported runtime in main push CI.
+- [x] Deterministic configuration tests passed, including safe defaults and live-mode rejection.
+- [x] Repository validation passed for workspace manifests, safe environment defaults, ignored local env files and common secret-pattern checks.
+- [ ] Main push CI is passing; verify a new pull-request run after the Gitleaks full-history checkout fix and confirm mandatory checks fail closed.
+- [x] npm audit and Gitleaks secret scan are active and passed in the main push workflow. GitHub Dependency Review remains deferred until the repository dependency graph is enabled.
+- [x] No production credentials are needed for install/build/test/CI.
+- [x] Development/staging/production boundaries and secret handling are documented.
+- [x] Rollback/recovery instructions and dependency-update workflow are documented.
+- [ ] Owner confirms initial tooling choices and configures repository dependency graph, branch protection, required reviews and required status checks.
 
 ## 2. Carry-forward decisions
 
