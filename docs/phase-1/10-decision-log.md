@@ -126,3 +126,13 @@ See [CR-001 — Commercial Scope Amendment](29-commercial-scope-amendment.md). T
 | D-027 | Product UI direction is formal, professional trader-agent dashboard with both light and dark themes, responsive desktop/tablet/mobile layouts, accessibility, financial-data legibility and truthful status/evidence display. Phase 2 defines acceptance requirements; detailed visual design belongs to canonical Phase 4. | **LOCKED requirement** |
 
 These decisions do not alter the frozen Roadmap v1.0 phase order. D-026 does not imply that a calendar is already configured or that support is unlimited. D-027 does not mean visual design or production UI code is complete.
+
+
+## Requirements handoff and brand decisions — 28 October 2026
+
+| ID | Decision | Status |
+|---|---|---|
+| D-028 | Establish the Auto-Trading-Agent visual identity with original vector logo lockups for dark/light backgrounds and a compact icon mark. The design language is formal, professional, responsive and data-truthful; avoid guaranteed-profit messaging. | **LOCKED initial brand baseline** |
+| D-029 | Phase 2 requirements/specification is complete for handoff to canonical Phase 3. Acceptance identifiers are documented. All unresolved execution-affecting numeric thresholds remain explicitly excluded from executable trading scope until owner-approved and tested. | **CLOSED for handoff only; no trading authorization** |
+
+D-028's SVG assets are under `assets/brand/`. Detailed sizing, responsive placements, final design tokens and screen layouts remain in Phase 4. D-029 does not claim tests have run or imply legal/payment clearance, provider approval or production readiness.
