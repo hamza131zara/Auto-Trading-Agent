@@ -57,3 +57,15 @@ Keep raw base-unit amounts and exact token decimals. Reconcile SOL balance chang
 - A license entitlement never replaces per-request authentication/authorization.
 - No access state can be inferred only from an email link or browser redirect.
 - Preserve immutable event history and link provider/bank evidence without logging full financial account credentials or raw payment card data.
+
+
+## Self-hosted deployment boundary (D-025)
+The central licensing portal stores only necessary commercial records (quote, invoice, settlement evidence reference, invitation, registration, admin decision, license/installation binding and commercial audit). It is not the canonical trading ledger.
+
+The customer's self-hosted instance stores its own market snapshots, features, security assessments, strategy decisions, risk events, wallet/position state, execution attempts, fills, fees, realized PnL and post-trade memory. These records remain under customer-controlled storage unless the customer explicitly opts to share a sanitized diagnostic export under the support terms.
+
+- Each event and trade record is scoped to one installation/portfolio; one position cap is enforced per running instance.
+- The central portal must never store private keys/seed phrases or customer trade secrets.
+- License activation records should store license/installation ID, signed entitlement version/status and non-secret installation binding. Decide privacy-preserving device fingerprinting or instance binding in Phase 2; avoid collecting invasive hardware identifiers without a need and disclosure.
+- Any optional telemetry must be disclosed, minimized, configurable where feasible and scrubbed of keys, API tokens and unnecessary wallet data.
+- License portal outage does not make its database a trading-state source of truth; the running agent continues to enforce local deterministic risk policy and keeps its local ledger consistent.
