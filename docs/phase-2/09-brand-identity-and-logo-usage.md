@@ -11,6 +11,8 @@
 
 The assets are authored as SVG vector files so they can scale without raster blur. Use the light lockup on light backgrounds and the dark lockup on dark backgrounds. Do not place either on a surface with insufficient contrast.
 
+- [3D market-intelligence hero illustration](../../assets/brand/auto-trading-agent-3d-hero.svg) — layered isometric core, orbit rings and a floating chart panel for selective use on hero/product/architecture sections.
+
 ## Concept
 
 The mark combines a geometric A-like structure, ascending bars and a directional line. It signals analysis, market movement and automation without implying guaranteed performance or representing any particular token/DEX as endorsed.
