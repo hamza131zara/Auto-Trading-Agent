@@ -80,3 +80,7 @@ Normative lifecycle rules:
 - Monitor the current position until full reconciliation. A partial exit, remaining dust policy not resolved, failed sell or unknown transaction status does not permit advancing to a new position.
 - Once fully closed, reconcile actual net PnL and fees, record the full audit/Trade Passport, update research statistics, check milestone and halt policies, then loop to discovery if allowed.
 - On data inconsistency, execution uncertainty, risk breach or kill switch, stop new entries and follow the applicable existing-position recovery/exit runbook.
+
+
+## Commercial tenant scope note — CR-001
+The original frozen single-operator baseline used one open position across the single portfolio. The owner-requested paid customer access model implies separate customer portfolios. The proposed hosted multi-tenant design therefore applies the one-open-or-unresolved-position invariant **per customer workspace**, with distinct balances, risk settings, histories and signer boundaries. This is a documented scope amendment and must be explicitly confirmed before Phase 2 design; never pool positions or funds across customers.
