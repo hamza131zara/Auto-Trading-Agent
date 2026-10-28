@@ -136,3 +136,6 @@ These decisions do not alter the frozen Roadmap v1.0 phase order. D-026 does not
 | D-029 | Phase 2 requirements/specification is complete for handoff to canonical Phase 3. Acceptance identifiers are documented. All unresolved execution-affecting numeric thresholds remain explicitly excluded from executable trading scope until owner-approved and tested. | **CLOSED for handoff only; no trading authorization** |
 
 D-028's SVG assets are under `assets/brand/`. Detailed sizing, responsive placements, final design tokens and screen layouts remain in Phase 4. D-029 does not claim tests have run or imply legal/payment clearance, provider approval or production readiness.
+
+
+| D-030 | Add a coherent, selective 3D/isometric visual layer to appropriate frontend frames/sections: landing hero, architecture/system flow, security/self-hosting, setup/onboarding and selected empty states. Financial charts, numeric tables, risk controls and operational state must remain accurate, legible and non-distorted. Respect reduced motion, mobile performance, accessibility and theme contrast. | **LOCKED visual requirement for Phase 4 design** |
