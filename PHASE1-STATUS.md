@@ -1,12 +1,13 @@
 # Phase 1 Status
 
 **Repository:** hamza131zara/Auto-Trading-Agent  
-**Canonical phase:** Phase 1 — Documentation research and source verification  
+**Phase 1:** CLOSED for design handoff  
+**Active phase:** Phase 2 — Product Requirements and Quantitative Policy  
 **Core documentation:** Owner-approved in conversation.  
 **Roadmap comparison/source verification:** Completed and committed.  
 **Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
 **Deployment model:** **LOCKED — self-hosted, customer-isolated licensed software**, per owner decision D-025 on 28 October 2026.  
-**Current disposition:** Phase 1 is complete for Phase 2 design handoff. External payment/bank eligibility, qualified legal/tax review and account-specific provider verification remain pre-sale/live-launch gates.
+**Current disposition:** Phase 1 is formally closed for design handoff. Phase 2 requirements and quantitative-policy work is active. Bank/payment eligibility, qualified legal/tax review and account-specific provider verification remain pre-sale/live-launch gates.
 
 ## Phase 1 deliverables completed
 - Product, functional, trading/exit, security, quantitative, architecture, data, audit and testing requirements.
@@ -44,9 +45,11 @@
 - No profitability/win-rate guarantee is made.
 
 ## Phase 2 entry
-**Phase 1 is complete for design handoff.** Begin Phase 2 with the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed.
+**Phase 1 is closed for design handoff. Phase 2 is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed.
 
 ## Canonical source references
+- [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
+- [Phase 2 requirements and quantitative policy](docs/phase-2/README.md)
 - [Phase 1 document index](docs/phase-1/README.md)
 - [D-025 self-hosted deployment decision](docs/phase-1/30-self-hosted-deployment-decision.md)
 - [CR-001 commercial scope amendment](docs/phase-1/29-commercial-scope-amendment.md)
