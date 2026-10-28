@@ -1,15 +1,15 @@
 # Document Register and Version Integrity
 
-**Register version:** 1.2  
+**Register version:** 1.3  
 **Snapshot date:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Repository tree SHA at snapshot:** `d50fb05427493f662c60fa4f4ebde016337a7621`  
+**Snapshot reference:** `85b04a2e0dd976285089c048e2fde68e89ff6ebd`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.
 
 ## Status definitions
 
-- **Owner-approved core:** owner said the existing repository documentation had been read and approved on 28 October 2026.
+- **Owner-approved core:** the owner said the existing repository documentation had been read and approved on 28 October 2026.
 - **Supplemental:** material added after comparison with the approved roadmap or source verification. It does not alter frozen scope or phase order.
 - **Open verification:** depends on account-specific plan/terms, measurements, numeric policy decisions or qualified legal/tax review.
 - **Frozen baseline:** the canonical roadmap is not to be modified without explicit owner approval and a dated decision-log record.
@@ -32,7 +32,7 @@ The original DOCX/PDF are not currently committed as binary assets. The Markdown
 
 ## Phase 1 documents and current Git integrity values
 
-Hashes below are Git blob object SHAs from the main-branch tree identified at the top; they are not SHA-256 digests of plain file text. The register file itself is excluded to avoid a self-referential hash.
+Hashes below are Git blob object SHAs from the main-branch tree identified above; they are not SHA-256 digests of plain file text. The register file itself is excluded to avoid a self-referential hash.
 
 | Repository path | Coverage/status class | Git blob SHA | Bytes |
 |---|---|---|---:|
@@ -57,13 +57,13 @@ Hashes below are Git blob object SHAs from the main-branch tree identified at th
 | `docs/phase-1/19-agent-brain-and-memory-spec.md` | DOC-06 / brain and memory | `69f76d34508204887aae0a4bcc159db9073e07e5` | 6893 |
 | `docs/phase-1/20-execution-reconciliation-and-signer-contract.md` | DOC-07/08 / execution and signer | `6b4899439ab7e54b54599a94949fd0ec20a8b150` | 5714 |
 | `docs/phase-1/21-cost-and-operations-plan.md` | DOC-11 / costs and operations | `6d8e0634f91c25e9467e65a7de123857afa1ce7f` | 7745 |
-| `docs/phase-1/22-legal-tax-and-service-boundary-review.md` | DOC-12 / legal and tax review | `529bc6bbf66148df9deec1e7f22e86b1e9d9d770` | 7032 |
+| `docs/phase-1/22-legal-tax-and-service-boundary-review.md` | DOC-12 / legal and tax review | `4b9c2e0ca657842354797b01108f826df9a1457c` | 7307 |
 | `docs/phase-1/23-shadow-canary-launch-and-post-launch-governance.md` | DOC-10 / launch governance | `6d1d29b0aeca0b84f4891a9004de714886d8a3a2` | 7489 |
 | `docs/phase-1/24-canonical-phase-map-and-repository-structure.md` | canonical phases/repository | `3a53392fa32560cebc64237ba53190aa9fbafd0c` | 6072 |
 | `docs/phase-1/25-canonical-dashboard-page-crosswalk.md` | DOC-09 / canonical dashboard crosswalk | `3601e5145dd8d67350c31ef9a85cf49d4125893d` | 6520 |
 | `docs/phase-1/26-official-source-verification-report.md` | official source verification pass 1 | `78efa6415a8bdc62631b0ea91946085fedefeeb4` | 15680 |
 | `docs/phase-1/README.md` | Phase 1 index | `c993288ef43f56477e8809100a23b7553a62078b` | 7383 |
-| `docs/phase-1/SOURCES.md` | official source register | `dcf8db54983fdf6979a5bfcd5d2f81faaceb30b9` | 6548 |
+| `docs/phase-1/SOURCES.md` | official source register | `94020412a8310d9c9f068841311349169f342128` | 7723 |
 
 ## Roadmap companion documents
 
