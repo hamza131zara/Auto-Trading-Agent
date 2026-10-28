@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="640" viewBox="0 0 960 640" role="img" aria-labelledby="title desc">
+  <title id="title">Auto-Trading-Agent 3D market intelligence illustration</title>
+  <desc id="desc">A reusable isometric illustration with a dimensional AI core, floating market chart, orbital data rings and layered platforms in blue, cyan and teal. Decorative only; no live trading metrics are represented.</desc>
+  <defs>
+    <linearGradient id="metalTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#24456D"/><stop offset=".55" stop-color="#142C4A"/><stop offset="1" stop-color="#0B172A"/>
+    </linearGradient>
+    <linearGradient id="blueFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4B87FF"/><stop offset=".5" stop-color="#2563EB"/><stop offset="1" stop-color="#273C9A"/>
+    </linearGradient>
+    <linearGradient id="cyanFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#61F0E4"/><stop offset=".45" stop-color="#24C6D8"/><stop offset="1" stop-color="#1879B8"/>
+    </linearGradient>
+    <linearGradient id="violetFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8F86FF"/><stop offset=".55" stop-color="#6564E8"/><stop offset="1" stop-color="#3347A8"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1A4569" stop-opacity=".92"/><stop offset="1" stop-color="#0B1930" stop-opacity=".82"/>
+    </linearGradient>
+    <linearGradient id="chartLine" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#4D7DFF"/><stop offset=".55" stop-color="#31C4ED"/><stop offset="1" stop-color="#52E8B8"/>
+    </linearGradient>
+    <radialGradient id="coreGlow">
+      <stop offset="0" stop-color="#35D9F5" stop-opacity=".55"/><stop offset="1" stop-color="#35D9F5" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="220%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <pattern id="grid" width="36" height="30" patternUnits="userSpaceOnUse">
+      <path d="M36 0H0V30" fill="none" stroke="#5FC9F4" stroke-opacity=".17" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <!-- Ambient aura and data orbit -->
+  <ellipse cx="482" cy="515" rx="315" ry="60" fill="#0D85C9" opacity=".18" filter="url(#shadow)"/>
+  <circle cx="492" cy="295" r="205" fill="url(#coreGlow)" opacity=".75"/>
+  <g fill="none" stroke-linecap="round">
+    <ellipse cx="484" cy="310" rx="338" ry="132" transform="rotate(-18 484 310)" stroke="#33C6E9" stroke-opacity=".42" stroke-width="2"/>
+    <ellipse cx="484" cy="310" rx="298" ry="174" transform="rotate(32 484 310)" stroke="#617FFF" stroke-opacity=".4" stroke-width="2" stroke-dasharray="7 13"/>
+    <ellipse cx="484" cy="310" rx="358" ry="84" transform="rotate(12 484 310)" stroke="#3DE1C0" stroke-opacity=".25" stroke-width="1.5"/>
+  </g>
+  <g>
+    <circle cx="177" cy="242" r="7" fill="#4B87FF"/><circle cx="177" cy="242" r="20" fill="#4B87FF" opacity=".18" filter="url(#softGlow)"/>
+    <circle cx="790" cy="211" r="6" fill="#36DBCF"/><circle cx="790" cy="211" r="18" fill="#36DBCF" opacity=".25" filter="url(#softGlow)"/>
+    <circle cx="704" cy="442" r="5" fill="#8A8AFF"/><circle cx="268" cy="420" r="5" fill="#3BC7F0"/>
+  </g>
+  <!-- Floating glass market panel -->
+  <g transform="translate(548 98)">
+    <path d="M0 36 228 0 228 202 0 238Z" fill="#23BFE8" opacity=".12" filter="url(#softGlow)"/>
+    <path d="M0 35 224 0 224 202 0 237Z" fill="url(#glass)" stroke="#4ACCEB" stroke-opacity=".85" stroke-width="2"/>
+    <path d="M0 35 224 0 224 202 0 237Z" fill="url(#grid)"/>
+    <path d="M18 195 18 63 206 32" fill="none" stroke="#67CFF0" stroke-opacity=".35"/>
+    <path d="M18 163 206 133M18 130 206 100M18 96 206 66" fill="none" stroke="#67CFF0" stroke-opacity=".14"/>
+    <path d="M18 178 38 167 55 173 75 140 94 150 112 113 133 125 151 77 172 88 190 49 207 41" fill="none" stroke="url(#chartLine)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#55E6C0">
+      <circle cx="75" cy="140" r="4"/><circle cx="112" cy="113" r="4"/><circle cx="151" cy="77" r="4"/><circle cx="190" cy="49" r="4"/>
+    </g>
+    <g stroke="#55DDBD" stroke-width="2" opacity=".9">
+      <path d="M48 203v-18m8 13v-28m8 28v-12m8 1v-37m8 28v-17m8 8v-25m8 25v-15m8-10v-32m8 27v-13m8 7v-26m8 19v-8m8-6v-38m8 31v-20m8-2v-18m8 13v-31"/>
+    </g>
+    <path d="M0 237 224 202" stroke="#69E8F4" stroke-width="3"/>
+  </g>
+  <!-- Dimensional AI core -->
+  <g transform="translate(365 166)">
+    <circle cx="118" cy="136" r="122" fill="#28C7E8" opacity=".12" filter="url(#softGlow)"/>
+    <path d="M118 4 206 55 206 157 118 208 30 157 30 55Z" fill="#0B1D34" stroke="#4A9FF7" stroke-width="2"/>
+    <path d="M118 4 206 55 118 107 30 55Z" fill="url(#cyanFace)" fill-opacity=".96"/>
+    <path d="M30 55 118 107 118 208 30 157Z" fill="url(#blueFace)"/>
+    <path d="M206 55 118 107 118 208 206 157Z" fill="url(#violetFace)"/>
+    <path d="M118 4 118 107M30 55 118 4 206 55M30 157 118 208 206 157" fill="none" stroke="#B6F9FF" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M71 66 118 39 165 66 165 119 118 146 71 119Z" fill="#092541" fill-opacity=".88" stroke="#74F0ED" stroke-width="2"/>
+    <path d="M89 80 118 63 147 80 147 106 118 123 89 106Z" fill="none" stroke="#35D5EC" stroke-width="3"/>
+    <path d="M100 99 117 88 137 99 137 117 117 128 100 117Z" fill="#52E7D0" opacity=".9"/>
+    <path d="M118 107V208" stroke="#A0FAF0" stroke-opacity=".75" stroke-width="2"/>
+  </g>
+  <!-- Isometric foundation layers -->
+  <g>
+    <path d="M276 470 480 352 693 470 487 590Z" fill="#020A16" opacity=".7"/>
+    <path d="M276 451 480 333 693 451 487 571Z" fill="url(#metalTop)" stroke="#2E7BB5" stroke-width="2"/>
+    <path d="M276 451 487 571V592L276 472Z" fill="#102641" stroke="#2C75B0" stroke-width="1.5"/>
+    <path d="M693 451 487 571V592L693 472Z" fill="#09172B" stroke="#275F9A" stroke-width="1.5"/>
+    <path d="M316 451 480 357 652 451 487 546Z" fill="none" stroke="#38CDE7" stroke-opacity=".45" stroke-width="2"/>
+    <path d="M343 451 480 372 625 451 487 530Z" fill="#12385A" stroke="#36C7E3" stroke-opacity=".55" stroke-width="1.5"/>
+    <path d="M343 451 487 530V550L343 471Z" fill="#15416B"/>
+    <path d="M625 451 487 530V550L625 471Z" fill="#101F44"/>
+    <path d="M387 451 480 397 580 451 487 505Z" fill="url(#blueFace)" stroke="#8FBAFF" stroke-opacity=".75" stroke-width="1.5"/>
+    <path d="M387 451 487 505V524L387 469Z" fill="#203B92"/>
+    <path d="M580 451 487 505V524L580 469Z" fill="#142760"/>
+    <path d="M421 451 480 416 544 451 487 486Z" fill="url(#cyanFace)" stroke="#B2FFF5" stroke-opacity=".85" stroke-width="1.5"/>
+    <path d="M421 451 487 486V500L421 465Z" fill="#168AB8"/>
+    <path d="M544 451 487 486V500L544 465Z" fill="#14557E"/>
+    <path d="M299 453 316 443M328 469 345 459M625 459 642 449M659 443 676 433" stroke="#3DE1C0" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <!-- Floating signal blocks -->
+  <g transform="translate(203 352)">
+    <path d="M0 32 42 8 85 32 43 56Z" fill="#294E9C"/>
+    <path d="M0 32 43 56V86L0 62Z" fill="#19366D"/>
+    <path d="M85 32 43 56V86L85 62Z" fill="#10254F"/>
+    <path d="M10 19 43 0 76 19 43 38Z" fill="url(#blueFace)" stroke="#7BAEFF" stroke-width="1.5"/>
+    <path d="M10 19 43 38V66L10 47Z" fill="#2449A8"/>
+    <path d="M76 19 43 38V66L76 47Z" fill="#172F78"/>
+    <path d="M17 12 43 26 67 12" fill="none" stroke="#7AE5F4" stroke-width="2"/>
+  </g>
+  <g transform="translate(718 344)">
+    <path d="M0 37 31 20 62 37 31 55Z" fill="#14627E"/>
+    <path d="M0 37 31 55V91L0 73Z" fill="#104A70"/>
+    <path d="M62 37 31 55V91L62 73Z" fill="#0C3154"/>
+    <path d="M8 23 31 10 54 23 31 36Z" fill="url(#cyanFace)" stroke="#9BFFF0" stroke-width="1.5"/>
+    <path d="M8 23 31 36V70L8 57Z" fill="#137BA2"/>
+    <path d="M54 23 31 36V70L54 57Z" fill="#0C4E78"/>
+  </g>
+  <!-- Subtle node links -->
+  <g fill="none" stroke="#4BD5EB" stroke-opacity=".6" stroke-width="2">
+    <path d="M287 383 336 359 369 379"/>
+    <path d="M664 324 700 345 735 326"/>
+  </g>
+  <g fill="#65E8DD">
+    <circle cx="287" cy="383" r="4"/><circle cx="336" cy="359" r="4"/><circle cx="369" cy="379" r="4"/>
+    <circle cx="664" cy="324" r="4"/><circle cx="700" cy="345" r="4"/><circle cx="735" cy="326" r="4"/>
+  </g>
+</svg>
