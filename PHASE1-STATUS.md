@@ -10,7 +10,7 @@
 **Roadmap comparison/source verification:** Completed and committed.  
 **Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
 **Deployment model:** **LOCKED — self-hosted, customer-isolated licensed software**, per owner decision D-025 on 28 October 2026.  
-**Current disposition:** Phase 1 is formally closed for design handoff. Phase 2 requirements and quantitative-policy work is complete for handoff to Phase 3. Bank/payment eligibility, qualified legal/tax review and account-specific provider verification remain pre-sale/live-launch gates.
+**Current disposition:** Phases 1 and 2 are closed for their documented handoffs; Phase 3 is closed for design handoff at owner direction; Phase 4 UX/visual design is active. Bank/payment eligibility, qualified legal/tax review, provider verification and unresolved signer/security/risk decisions remain implementation or launch gates.
 
 ## Phase 1 deliverables completed
 - Product, functional, trading/exit, security, quantitative, architecture, data, audit and testing requirements.
