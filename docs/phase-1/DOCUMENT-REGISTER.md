@@ -3,11 +3,11 @@
 | `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 completion, Phase 3 closeout and Phase 4 start | `a8564ff7530ac21634e07198eda7138f14552d59` | 6256 |
 | `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, 3D hero identity and usage guidance | `b576b91323ea547815befa69ce571672dee62c24` | 3057 |
 
-**Register version:** 2.1  
+**Register version:** 2.2  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `91dedd51f744e16b73e5e0dcf1fefc6415076ac2`  
+**Source snapshot before this register refresh:** `0c2fd1f6adbbcfda2d1f75ef0396012d0963c960`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -31,7 +31,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | Phase 1/2 closed; Phase 3 handoff closed; Phase 4 active | `9df9370c7773f11a8ac422c49be42d877d1cae48` | 6002 |
+| `PHASE1-STATUS.md` | Phases 1–3 handoff closed; Phase 4 active; external gates retained | `ea7fc79428e07a722654e3ba3a63a3fbc371c097` | 6049 |
 | `README.md` | Project overview, active Phase 4 design and SVG previews | `a23328cbbc2876d0c22a9d2f777a0e6c5ff71d76` | 6104 |
 
 ## Phase 1 documents
@@ -111,7 +111,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-3/README.md` | Phase 3 closed for design handoff; Phase 4 active | `f4019b070a74bbcb74d7c6acbe30afa37f760555` | 4553 |
+| `docs/phase-3/README.md` | Phase 3 closed for design handoff; residual gates retained | `cc9171410f7a0aea58ee917468de051cee2b1784` | 4580 |
 | `docs/phase-3/01-threat-model-and-trust-boundaries.md` | Assets, adversaries, trust boundaries and threat register | `f56f73ea94ca7464fc7b9fa176d161b41c0587e6` | 11689 |
 | `docs/phase-3/02-custody-and-transaction-signing-architecture.md` | Customer custody, signer policy and transaction validation design | `2f0c128293d932d96f1070dfb919d6268641671f` | 7917 |
 | `docs/phase-3/03-license-portal-admin-and-release-security.md` | Portal identity, license entitlement and release integrity | `3a8023ceba2f4c9bf5b3f946403db4fa7d77db5b` | 7016 |
