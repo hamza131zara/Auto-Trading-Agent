@@ -1,12 +1,12 @@
 # Document Register and Version Integrity
 
-**Register version:** 1.5  
+**Register version:** 1.6  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Pre-register source tree snapshot:** `d5e7b31f2805c1697fde87379632788d38589c55`  
+**Pre-register source tree snapshot:** `b1295a2a6031a2c181d6285ecea411ab31157b0b`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
-**Commercial deployment decision:** D-025, self-hosted and customer-isolated, locked by owner instruction on 28 October 2026.
+**Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
 ## Status definitions
 - **Owner-approved core:** the owner said the existing repository documentation had been read and approved.
@@ -38,20 +38,20 @@ Git blob SHA values below are from the pre-register main-branch snapshot above. 
 | Repository path | Coverage/status | Git blob SHA | Bytes |
 |---|---|---|---:|
 | `docs/phase-1/01-product-charter.md` | Product charter / DOC-01 | `87ca28af50b072e7daa39c6aea112589e9624c7b` | 6744 |
-| `docs/phase-1/02-functional-requirements.md` | Requirements / commercial access | `30db3e0a65cb9bbc2bbac496a89da87762060421` | 16871 |
+| `docs/phase-1/02-functional-requirements.md` | Requirements / commercial access | `6a3a3531e5f9e70ad3034718dece3f13f39f92e7` | 18002 |
 | `docs/phase-1/03-trading-and-exit-policy.md` | Trading policy / DOC-02 | `d13967eb61efc5008e5fb98cf8ec72a7968835f2` | 6857 |
 | `docs/phase-1/04-token-security-risk.md` | Token security / DOC-04 | `7cc450bf743c4d793796e745c65cf38aaf93f699` | 3905 |
 | `docs/phase-1/05-quantitative-methodology.md` | Quant methods / DOC-03 | `2c1e0f35fb65701743dfad981109d8724236d733` | 4022 |
 | `docs/phase-1/06-architecture-and-data-sources.md` | Architecture/data | `401308daeefac63368cf0f73b13d3b7bf2b9987a` | 5855 |
 | `docs/phase-1/07-security-privacy-and-operations.md` | Security operations / DOC-07 | `d1f33edd49e23f8cdaa225095cbbd276c3ab01c0` | 3832 |
 | `docs/phase-1/08-data-dictionary-and-audit.md` | Data/audit/license entities | `d974ceb740fd424b414b573ae9f5b37c35513efe` | 7757 |
-| `docs/phase-1/09-test-plan-and-acceptance.md` | Testing / DOC-10 | `d872eaf550e7f2ec8b1b5e4c641af48b5323f14b` | 7586 |
+| `docs/phase-1/09-test-plan-and-acceptance.md` | Testing / DOC-10 | `af860ec980f34edcc0b5a6df28952aef3d7cd815` | 7661 |
 | `docs/phase-1/10-decision-log.md` | Decision log incl. D-025 | `75c0020d11fc68669379c9bc72dca2c785975c64` | 13083 |
 | `docs/phase-1/11-requirements-traceability.md` | Requirements traceability | `8e6d47527829cf34f6ac4e7ab20e5bd82a127abc` | 5656 |
 | `docs/phase-1/12-dashboard-pages-and-operator-controls.md` | Dashboard / commercial portal UX | `f7647db7451d1eef25a717869c1a6d847a275a62` | 13141 |
 | `docs/phase-1/13-tooling-and-technology-decisions.md` | Technology candidates | `9c19e976ab985e32f41dd20ec4c6a96d136ed654` | 5607 |
 | `docs/phase-1/14-provider-and-integration-matrix.md` | Provider matrix | `fee394995c498d6289294ff188afb1ded2e78b9d` | 8280 |
-| `docs/phase-1/15-threat-model-and-risk-register.md` | Threat model | `cd0d6a768c8f3b9e77ef2e970adba1b344b060db` | 7790 |
+| `docs/phase-1/15-threat-model-and-risk-register.md` | Threat model | `20a363a026e5d40801b47904a16e9bfaee2d7a38` | 7818 |
 | `docs/phase-1/16-autonomous-trading-workflow.md` | Autonomous trading workflow | `0ba26fb2cda89036142eef39454abef0dad035f7` | 15945 |
 | `docs/phase-1/17-roadmap-coverage-audit.md` | Coverage audit | `ec10ddad3771acc6e827b673b565570f461fa256` | 11723 |
 | `docs/phase-1/18-indicators-formulas-and-units.md` | Formulas and units | `e2d3b265a511279cc5428693997696cff1c17b35` | 8727 |
