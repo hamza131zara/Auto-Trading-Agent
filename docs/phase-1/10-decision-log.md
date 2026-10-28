@@ -7,7 +7,7 @@ This log records product decisions and unresolved questions. Changes to the froz
 |---|---|---|
 | D-001 | Use Roadmap v1.0 dated 20 October 2026 as the frozen project baseline. | Accepted by owner in conversation |
 | D-002 | V1 targets Solana spot DEX only. | Accepted baseline |
-| D-003 | Limit to one open position globally. | Accepted baseline |
+| D-003 | Limit to one open or unresolved position per running agent/portfolio. Under the locked self-hosted model, each customer's licensed instance enforces this independently; there is no cross-customer global position lock. | Accepted baseline, clarified by D-025 |
 | D-004 | Deterministic security and risk rules have veto authority over AI/LLM output. | Accepted baseline |
 | D-005 | LLM/agent never receives private keys/seed phrases and cannot initiate unrestricted signing. | Accepted baseline |
 | D-006 | Start with documentation approval, then design, build, testing, paper trading and controlled launch. | Accepted baseline |
@@ -85,7 +85,7 @@ Do not convert any public pricing table or vendor statement into a trading thres
 |---|---|---|
 | D-018 | Owner requested no free tier/trial and a one-time lifetime license, with quote/invoice, payment first, then registration invitation and mandatory owner/admin approval before access. | Owner-requested requirement recorded |
 | D-019 | USD $12,000 is the proposed standard lifetime-license price; quoted terms define actual amount/currency, service-lifetime meaning, inclusions, exclusions, usage limits and refund/dispute terms. | Proposed price; publish only after owner and legal review |
-| D-020 | Paid customer-facing hosted service requires tenant isolation. Proposed default is one open/unresolved position per customer workspace rather than a globally shared position. | Blocking architecture assumption; explicit owner confirmation required before Phase 2 |
+| D-020 | Customer-facing commercial distribution will use self-hosted, customer-isolated licensed software, not hosted multi-tenant trading SaaS. Each licensed running instance has its own portfolio and one-position limit. | Locked by owner on 28 October 2026; see D-025 |
 | D-021 | Initial payment path: owner-issued invoice and manually verified cleared bank settlement. No online checkout provider has been approved for this product/seller location. | Proposed; bank/provider/counsel must confirm eligibility |
 | D-022 | Stripe is not selected: public supported-country list reviewed does not list Pakistan and crypto/financial businesses require restricted-business underwriting. | Source-reviewed, no account eligibility conclusion |
 | D-023 | Paddle and Lemon Squeezy are not selected by default: published policies appear to prohibit cryptocurrency trading platform/trading-strategy or crypto-related products of this type. | Source-reviewed; do not integrate absent explicit written approval |
@@ -95,10 +95,24 @@ Do not convert any public pricing table or vendor statement into a trading thres
 The current Birdeye pricing page returned conflicting quota/overage values between its rendered page and more recent indexed result. Base plan prices appeared consistent, but included compute-unit quotas/overage should be treated as **unverified** until confirmed in the actual provider portal or in writing. Do not budget or select a plan based on stale values.
 
 ## Commercial scope amendment
-See [CR-001 — Commercial Scope Amendment](29-commercial-scope-amendment.md). This request changes the earlier private single-operator concept into a paid customer access model. It does not change the canonical roadmap phase order or authorize public sales/live trading. The key design decision still needing owner confirmation is whether the application is hosted multi-tenant SaaS with a separate portfolio per customer, or self-hosted single-operator licensed software per purchaser.
+See [CR-001 — Commercial Scope Amendment](29-commercial-scope-amendment.md). This request adds paid customer access to the original product roadmap without changing the canonical phase order or authorizing public sales/live trading. The owner has now locked self-hosted, customer-isolated licensed software; the central portal handles payment/license/approval, while each customer runs a separate agent instance and controls their own environment and wallet. See D-025.
 
 ## Remaining Phase 1 close-out items
-- Confirm the commercial deployment model and position-cap scope before Phase 2 design.
+- Deployment model is locked by D-025: self-hosted, customer-isolated licensed software; one open/unresolved position per running licensed instance. Remaining design questions are license activation/update mechanics, customer installation requirements, wallet/signer isolation and payment/legal launch gates.
 - Obtain written bank/payment institution confirmation for the invoice/settlement process and counsel review of the service classification/refund and tax terms before accepting public payments.
 - Select provider plans after account-specific rate/term/usage verification.
 - Pre-register quantitative and paper/shadow pass criteria before test runs.
+
+
+## Locked deployment decision — D-025 (28 October 2026)
+| ID | Decision | Status |
+|---|---|---|
+| D-025 | Use self-hosted, customer-isolated licensed software for V1. No hosted multi-customer trading SaaS. The central portal handles quotes/invoices, verified payment records, registration invitations, owner/admin approval, signed license issuance and authorized downloads/updates only. Each customer runs an isolated instance in their own or dedicated environment with their own provider credentials, wallet/signer, risk policy, ledger and configuration. One open/unresolved position per running instance. No free tier/trial; proposed $12,000 one-time lifetime license; payment verified before invitation and admin approval before activation. | **LOCKED by explicit owner instruction on 28 October 2026** |
+
+### Implications of D-025
+- CR-001's prior proposed hosted multi-tenant model is superseded.
+- Do not build a central hosted trading runtime, shared portfolio database/worker, global cross-customer position lock or pooled wallet for V1.
+- The central license portal must never request/store private keys or seed phrases or exercise arbitrary signing authority.
+- Signed license token design, instance binding, online/offline validation/grace behavior, update signing, license transfer/reinstall, customer support boundary and install requirements remain Phase 2 design work.
+- Customer-specific infrastructure, RPC/market-data/LLM services, trading capital and execution/network fees are customer-paid unless the quote explicitly includes a separately reviewed item.
+- The frozen Roadmap v1.0 phase order does not change. Online payment processor, bank eligibility and legal/tax review remain external pre-sale gates.
