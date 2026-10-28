@@ -20,6 +20,7 @@ This is completion of the **requirements/specification phase only**. It does not
 - Bank invoice/settlement is only a candidate payment route pending written bank/legal/tax confirmation. Online card and crypto receipt remain disabled until exact-route eligibility is verified.
 - A guided setup documentation center and booking from real calendar availability are required; Google Meet is preferred. No calendar URL or business availability is claimed live until configured.
 - The runtime UI must support light/dark themes, responsive desktop/tablet/mobile behavior, semantic risk states, truthful actual-vs-estimated and gross-vs-net values, and auditability.
+- **D-030:** Use tasteful, selective 3D/isometric visuals in appropriate page frames/sections (landing hero, architecture, security/self-hosting, guided steps and selected empty states). Keep financial charts, tables, risk values and operational controls flat, precise and data-first. Respect reduced motion, accessibility, responsive simplification and performance.
 - Security/risk veto is deterministic. AI/LLM is advisory and never receives signing secrets or arbitrary signing/withdrawal authority.
 - One open/unresolved position per independent running instance/portfolio. Reconcile the prior position before another entry.
 - The +6% net profile and named strategy styles are hypotheses to test, not promises.
@@ -54,7 +55,7 @@ Phase 3 must threat-model and design:
 - Calendar account, real available slots, booking URL, timezone, session duration and cancellation policy before public booking.
 - Account-specific provider selection and quota/terms verification before implementation.
 - Numeric execution limits and backtest/OOS/paper/shadow gates before any executable trading enablement.
-- Detailed visual wireframes/design tokens belong to Phase 4, after Phase 3 security architecture.
+- Detailed visual wireframes/design tokens belong to Phase 4, after Phase 3 security architecture. Phase 4 should evaluate the reusable [3D hero illustration](../../assets/brand/auto-trading-agent-3d-hero.svg) and specify where the motif is appropriate; do not apply it indiscriminately to every card.
 
 ## Handoff acceptance
 
