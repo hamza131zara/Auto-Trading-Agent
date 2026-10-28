@@ -256,4 +256,7 @@ Each event must include a correlation ID, event time, relevant snapshot IDs, pol
 
 
 ## Commercial tenant isolation addendum — CR-001
-For the owner-requested paid customer model, the autonomous discovery-to-next-candidate cycle runs within a tenant-isolated portfolio. The proposed cap is one open/unresolved position per customer workspace, not one position shared by all customers on the platform. Every scan, selected candidate, quote, wallet/signer policy, position monitor, ledger and post-trade learning record must carry tenant context and pass server-side authorization. No customer can read another customer's data or funds; no tenant queue or failed trade can alter another tenant's state. This changes the single-operator baseline and must be explicitly confirmed before design.
+For the owner-requested paid customer model, the autonomous loop runs inside each customer's self-hosted, customer-isolated agent instance. Each instance has its own data, configuration, provider credentials, wallet/signer, portfolio ledger and learning records, with at most one open/unresolved position at a time. The central licensing portal does not host the trading loop or aggregate customer positions. No customer runtime shares funds or state with another installation. See locked decision D-025.
+
+## Locked deployment addendum — D-025
+Candidate discovery, decision-making, trading, monitoring, exits and learning run in the customer's own/customer-dedicated environment. The central portal can authorize the software license and distribute signed releases but cannot send trade instructions to the runtime, access private keys, modify local hard risk limits or force a sell. The one-position invariant applies per running licensed instance.
