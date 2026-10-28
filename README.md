@@ -9,6 +9,7 @@ Solana-only autonomous DEX trading research and execution system.
 > **Current phase:** Phase 3 — Threat Model, Custody Model and Security Architecture. Phase 1 and Phase 2 are closed for design/specification handoff. Live trading is not authorized; do not connect a production wallet or private key.
 
 ## Start here
+- [Phase 3 threat model and security architecture](docs/phase-3/README.md)
 - [Phase 3 handoff from completed Phase 2](docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md)
 - [Phase 2 requirements and quantitative policy](docs/phase-2/README.md)
 - [Brand assets and logo usage](docs/phase-2/09-brand-identity-and-logo-usage.md)
