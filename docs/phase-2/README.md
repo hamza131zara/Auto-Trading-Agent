@@ -33,7 +33,7 @@ Turn the approved product/commercial baseline into testable product requirements
 - Bank invoice/settlement remains a candidate pending legal/bank confirmation. Online card and crypto payments are not approved/enabled.
 - Setup documentation and bookable guided onboarding are required. Real calendar availability and Meet links must be configured before booking is advertised.
 - Both light/dark themes, accessibility, responsive layouts and truthful data/status rendering are required. Detailed visual design remains Phase 4.
-- Use selective 3D/isometric visuals where they improve comprehension (hero, architecture, security/self-hosting and setup sections). Financial charts and risk controls must remain data-faithful and undistorted. See [3D visual guidance](05-ui-theme-and-responsive-design-requirements.md) and the [reusable hero asset](../../assets/brand/auto-trading-agent-3d-hero.svg).
+- **D-030 is explicitly owner-locked (28 October 2026):** use selective 3D/isometric visuals where they improve comprehension (hero, architecture, security/self-hosting and setup sections). Financial charts and risk controls must remain data-faithful and undistorted. See [3D visual guidance](05-ui-theme-and-responsive-design-requirements.md) and the [reusable hero asset](../../assets/brand/auto-trading-agent-3d-hero.svg).
 
 ## Phase 2 disposition
 
