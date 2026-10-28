@@ -80,24 +80,27 @@ Use a dedicated low-balance wallet and SOL fee reserve; enable one approved stra
 ### Phase 17 — Post-launch governance and controlled learning
 Monitor calibration, regime shift, PnL/drawdown, execution costs, security misses, API health and latency. Run post-mortems, quarantine strategies under predeclared deterioration rules, validate challengers and version/rollback all live changes. Exit: every change is measured, traceable, approved and rollbackable.
 
-## Dashboard inventory
-1. Overview.
-2. Candidate Discovery.
-3. Candidate Detail.
-4. Security and Rug-Risk Center.
-5. Strategy Lab / Decision Trace.
-6. Active Position.
-7. Trade History and Ledger.
-8. Analytics and Strategy Performance.
-9. Backtest and Experiment Lab.
-10. Strategy Registry and Learning.
-11. Portfolio Goals and Calculators.
-12. Wallet and Execution Health.
-13. Data Provider Health.
-14. Alerts and Incident Center.
-15. Audit and Decision History.
-16. Risk Policies and Settings.
-17. Documentation and Operations.
+## Canonical dashboard page map
+
+The owner-supplied roadmap names these seventeen pages. Related views may share components/routes in the design, but every page capability, permission and workflow must remain available. See [canonical dashboard crosswalk](../phase-1/25-canonical-dashboard-page-crosswalk.md).
+
+1. Sign-in & Security.
+2. Overview.
+3. Live Scanner.
+4. Token / Pool Detail.
+5. Decision Center.
+6. Current Position.
+7. Trade History / Passport.
+8. Strategies & Models.
+9. Brain & Memory.
+10. Backtesting Lab.
+11. Portfolio & Goals.
+12. Risk Settings.
+13. Wallet & Signer.
+14. Data Sources & Health.
+15. Alerts & Incidents.
+16. Audit & Reports.
+17. Settings & Integrations.
 
 ## Core metrics and calculators
 Net realized PnL; portfolio return with deposits/withdrawals separated; expectancy; win rate with stated denominator; profit factor; maximum drawdown; average win/loss; probability calibration; exitability and sell impact; top-N holder concentration; HHI; rolling volatility; momentum/relative strength; volume/liquidity changes; quote-to-fill error; fees/slippage; transaction success/reconciliation; target-attainment simulation and uncertainty bands.
