@@ -109,3 +109,41 @@ Use the canonical mode names from Roadmap v1.0 consistently in the final design 
 - **Halted:** no new trade intents; existing-position recovery/exit follows its separate approved policy.
 
 Previous shorthand modes in this file (Research, Simulation, Paper/Shadow, Restricted Pilot) are aliases that must be mapped to these canonical states during design, not extra states. Transition into Live Canary/Live requires owner authorization, MFA/re-authentication, an approved policy/config version and all applicable release gates. The UI cannot transition the backend by cosmetic state alone. This addendum aligns names to the frozen roadmap; it does not add scope or authorize live trading.
+
+
+## FR-14 — Paid-only quote and lifetime-license model
+- The core product has no free tier, free trial, trial extension or free operational demo.
+- The proposed standard license is USD $12,000 as a one-time lifetime payment, not a recurring subscription. Final published price, currency, service lifetime, updates/support, included data/compute allowances and exclusions must appear in versioned terms and an owner-issued quote.
+- Public users may view marketing/pricing/terms and submit a quote request; this does not create an agent account or grant access to protected services.
+- Admin issues a versioned quote/invoice with unique ID, customer, amount, currency, expiry, included license/workspace/service scope, payment instructions, applicable fees/taxes, refund terms and terms version.
+- No payment provider is selected until it confirms seller-country and exact crypto-trading-product eligibility in writing. Initial proposed flow is invoice + verified cleared bank settlement.
+- Access is not granted from client-side redirect or customer-uploaded payment screenshot alone. Payment must be confirmed through a trusted provider webhook or manually reconciled bank settlement evidence.
+- The quote, payment, settlement, invitation, registration, admin approval, license entitlement, refund and dispute states are separately persisted and auditable.
+
+## FR-15 — Payment-first invitation and owner/admin registration approval
+- An invitation is issued only after the quote/invoice is verified as settled/paid.
+- Invitation is single-use, short-lived, bound to the quoted email/customer identity and cannot itself grant operational access.
+- User must complete registration, verify email, complete required MFA, accept the active license/terms/privacy notice and provide required account eligibility details.
+- Owner/admin approval is mandatory after registration. Approval does not override missing/failed payment, terms, MFA or compliance checks.
+- The server denies all protected UI/API/stream/agent jobs unless payment is verified, registration is complete, email verified, admin approval granted, required MFA satisfied, terms accepted, entitlement active and tenant enabled.
+- If the application is declined after payment, follow the documented refund/contract/legal policy; do not silently retain funds without a documented lawful basis.
+- No free-trial state, coupon, manual override or test seed may create an unpaid operational entitlement.
+
+## FR-16 — Commercial tenant isolation (scope amendment)
+- Each paid customer has an independent tenant/workspace, data namespace, configuration, audit history, licensed access and customer-specific wallet/signer boundary.
+- Server-side authorization and database isolation prevent one customer or background job from reading/changing another customer's wallet, keys, trade history, quotes, invoices, risk controls, decisions or PnL.
+- Proposed design default is at most one open/unresolved position per customer workspace, not one global position shared by all buyers. This changes the original single-operator/global-position assumption and must be explicitly confirmed before Phase 2 design.
+- Customer balances/funds must not be pooled. The agent cannot withdraw or move assets to a platform/admin wallet.
+- Whether unattended signing uses customer-controlled signing or an isolated customer-specific signing service is a security/legal design gate; do not place all customer keys in the general agent process.
+- Admin owner/support roles are distinct, least-privileged and audited. A payment administrator cannot change trading risk settings by virtue of payment privileges.
+
+## FR-17 — Lifetime entitlement lifecycle and payment-event integrity
+- Model Quote, Invoice/Order, Payment/Settlement, Invitation, Registration, AdminApproval, LicenseEntitlement, Refund and Dispute as distinct linked records.
+- Use idempotency for settlement/provider events; reject mismatched amount/currency/quote/customer, expired quotes and duplicate fulfillment.
+- Webhook integrations (if approved) must verify signatures, persist event IDs, handle duplicate/out-of-order deliveries, and reconcile against provider state.
+- A pending, reversed, refunded, disputed or charged-back transaction changes entitlement only under the reviewed contract/dispute policy and is auditable.
+- Admin pricing/quote/approval/refund/suspension/revocation actions require server-side permission checks, re-authentication/MFA when high impact, reason codes and audit trail.
+- No recurring subscription invoices are created for the core lifetime license. Any later change to recurring pricing requires explicit owner approval and a roadmap/business-model amendment.
+
+### Commercial acceptance tests
+See [27-commercial-pricing-access-and-lifetime-license.md](27-commercial-pricing-access-and-lifetime-license.md), [28-payment-provider-eligibility-assessment.md](28-payment-provider-eligibility-assessment.md) and [29-commercial-scope-amendment.md](29-commercial-scope-amendment.md).
