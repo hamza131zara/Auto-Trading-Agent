@@ -38,3 +38,16 @@ The lifecycle requirements are specified in [16-autonomous-trading-workflow.md](
 | Advance to next candidate | FR-13 | State-machine test proves no new position until prior position is fully reconciled and closed. |
 | Pause and target gates | FR-02, FR-09, FR-13 | Tests verify new entries stop under configured pause, goal and risk-halt conditions. |
 | Paper-mode boundary | FR-02, FR-13 | Test proves paper mode cannot broadcast asset-moving transactions. |
+
+
+## Commercial scope amendment traceability (CR-001)
+| Requirement | Specification | Planned acceptance evidence |
+|---|---|---|
+| No free tier/trial and one-time lifetime license | 27-commercial-pricing-access-and-lifetime-license.md | Schema/UI/API scan; attempts at free signup, trial entitlement and unpaid service access are denied |
+| Quote/invoice and settlement verification | 27-commercial-pricing-access-and-lifetime-license.md; 28-payment-provider-eligibility-assessment.md | Quote mismatch, expiry, pending/underpaid/reversed payment, forged webhook and manual reconciliation tests |
+| Payment-first invitation and admin approval | FR-15; commercial access spec | Invite absent until payment verified; registration remains blocked until admin approval/MFA/terms; rejected user cannot access |
+| Payment provider eligibility | 28-payment-provider-eligibility-assessment.md | Written merchant-country/product approval and account plan/terms evidence before provider adapter enabled |
+| Tenant isolation and portfolio scope | 29-commercial-scope-amendment.md; 19-agent-brain-and-memory-spec.md | Cross-tenant API/database/cache/job/storage/wallet access tests; one-position invariant tested at approved tenant scope |
+| Lifetime service economics | 21-cost-and-operations-plan.md; commercial access spec | Base/stress cost model, fair-use scope, updates/support/exclusions and no recurring charge are included in approved quote terms |
+| Refund/dispute/chargeback | Commercial access spec; 22-legal-tax-and-service-boundary-review.md | Refund/chargeback lifecycle, entitlement state, audit and customer communication tests |
+| Commercial launch permission | 23-shadow-canary-launch-and-post-launch-governance.md | Owner approval, bank/payment eligibility, legal review, privacy/security and tenant tests evidence |
