@@ -96,3 +96,16 @@ Every accepted requirement must have a stable ID, owner, rationale, source when 
 - All model decisions use typed schemas and allowlisted results. Model timeout, malformed output, insufficient confidence or contradictory inputs must abstain; it must not cause a buy.
 - The owner alone authorizes enabling live mode, changing hard risk limits, changing signing permissions, withdrawing funds, or promoting a production model/strategy version.
 - Paper/Shadow mode must exercise the same lifecycle without signing or broadcasting asset-moving transactions.
+
+
+## FR-02A — Canonical operating-mode taxonomy (roadmap alignment addendum)
+Use the canonical mode names from Roadmap v1.0 consistently in the final design state machine:
+- **Observe:** collect/display data only; no order intent can reach signing.
+- **Backtest:** historical replay only; fills are simulated.
+- **Paper:** generate simulated orders/fills; no signing or transaction broadcast.
+- **Shadow:** run live discovery and decisioning while transaction submission is disabled.
+- **Live Canary:** explicitly enabled limited-capital pilot with a small approved risk budget.
+- **Live:** approved operation under the same non-bypassable risk rules and versioned policy.
+- **Halted:** no new trade intents; existing-position recovery/exit follows its separate approved policy.
+
+Previous shorthand modes in this file (Research, Simulation, Paper/Shadow, Restricted Pilot) are aliases that must be mapped to these canonical states during design, not extra states. Transition into Live Canary/Live requires owner authorization, MFA/re-authentication, an approved policy/config version and all applicable release gates. The UI cannot transition the backend by cosmetic state alone. This addendum aligns names to the frozen roadmap; it does not add scope or authorize live trading.
