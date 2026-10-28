@@ -11,6 +11,7 @@
 | D-027 | Professional trader-agent UI with light/dark themes, responsive layouts, accessible status semantics and truthful data. Detailed visual design in Phase 4. | LOCKED requirement |
 | D-028 | Add original vector logo assets for dark/light surfaces and a compact icon mark; use a restrained professional trader-agent visual identity. | LOCKED brand baseline |
 | D-029 | Close Phase 2 requirements for handoff to Phase 3; numerical execution-affecting TBDs remain excluded from executable scope pending owner approval. | CLOSED for handoff, not trading approval |
+| D-030 | Add selective 3D/isometric visual treatments to appropriate frames/sections, with accessibility, performance and data-truthfulness constraints. | LOCKED additive Phase 4 visual requirement |
 | CR-001 | No free tier/trial; proposed USD $12,000 one-time lifetime license, no recurring core subscription. | Commercial baseline; final terms pending |
 
 ## Open decisions
@@ -47,4 +48,4 @@ Every requirement maps to a unique ID, design/implementation component or future
 - [x] Payment/legal/tax/crypto/provider dependencies remain visibly pending, not mislabeled approved.
 - [x] Threat/custody questions are handed to Phase 3, with roadmap order preserved.
 
-Phase 2 is closed for requirements handoff, not for production readiness. Do not fabricate thresholds, availability, payment/settlement status, provider results, analytics or booking URLs. Do not activate card/crypto payment or mainnet trading from this register. See [Phase 2 completion and Phase 3 handoff](08-phase-2-completion-and-phase-3-handoff.md).
+Phase 2 is closed for requirements handoff, not for production readiness. D-030 is a forward-looking Phase 4 visual-design requirement and does not reopen implementation scope or change the canonical roadmap order. Do not fabricate thresholds, availability, payment/settlement status, provider results, analytics or booking URLs. Do not activate card/crypto payment or mainnet trading from this register. See [Phase 2 completion and Phase 3 handoff](08-phase-2-completion-and-phase-3-handoff.md).
