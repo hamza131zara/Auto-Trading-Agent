@@ -8,6 +8,7 @@ Solana-only autonomous DEX trading research and execution system.
 - [Phase 1 document index](docs/phase-1/README.md)
 - [Document register with versions and hashes](docs/phase-1/DOCUMENT-REGISTER.md)
 - [Phase 1 status and exit checklist](PHASE1-STATUS.md)
+- [Official provider/source verification report](docs/phase-1/26-official-source-verification-report.md)
 - [Autonomous trading workflow: discovery to next candidate](docs/phase-1/16-autonomous-trading-workflow.md)
 - [Roadmap coverage audit vs approved DOCX/PDF](docs/phase-1/17-roadmap-coverage-audit.md)
 - [Frozen Roadmap v1.0 — canonical phase map](docs/roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
