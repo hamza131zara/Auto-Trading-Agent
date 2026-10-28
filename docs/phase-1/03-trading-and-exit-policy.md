@@ -68,3 +68,15 @@
 
 ## Required audit record
 Store candidate snapshot reference, rule/strategy/model versions, scores and inputs, estimated outcome distribution, quotes, cost breakdown, risk decision, signed intent reference, transaction signature, confirmation/fill state, actual amounts/fees, exit reason, realized net PnL, and post-trade assessment.
+
+## Autonomous discovery-to-next-candidate loop
+The full closed-loop state machine, operating-mode boundaries, trade-intent contract, failure matrix and acceptance tests are defined in [16-autonomous-trading-workflow.md](16-autonomous-trading-workflow.md).
+
+Normative lifecycle rules:
+- Check operating mode, kill switch, health, portfolio equity and open/unresolved positions before candidate discovery or entry.
+- Discover and screen candidates automatically; select only from eligible candidates that pass all hard gates. If none qualifies, log NO_TRADE and wait.
+- The agent can choose routine candidates and approved strategies automatically only within a previously owner-approved policy and operating mode.
+- The Risk Governor and signer independently revalidate the trade intent; scores, forecasts and AI judgments cannot authorize themselves.
+- Monitor the current position until full reconciliation. A partial exit, remaining dust policy not resolved, failed sell or unknown transaction status does not permit advancing to a new position.
+- Once fully closed, reconcile actual net PnL and fees, record the full audit/Trade Passport, update research statistics, check milestone and halt policies, then loop to discovery if allowed.
+- On data inconsistency, execution uncertainty, risk breach or kill switch, stop new entries and follow the applicable existing-position recovery/exit runbook.
