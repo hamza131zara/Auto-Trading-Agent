@@ -4,7 +4,7 @@
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `08bd46e9fc0596e1ee8ea5478665ae424e8501c6`  
+**Source snapshot before this register refresh:** `932a7a3f94f1f1115a7aabf03175bd8d27d48315`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -28,7 +28,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | `553e1d2e4a5ea79fcb6f4dd4f7924fbc7de750a1` | 5186 |
+| `PHASE1-STATUS.md` | `7385d4f737c3b8fcbe50739b20021a5d35d95c76` | 5188 |
 | `README.md` | `af63fedc68b180c58fb2724e110ad944dfd9e68f` | 5148 |
 
 ## Phase 1 documents
