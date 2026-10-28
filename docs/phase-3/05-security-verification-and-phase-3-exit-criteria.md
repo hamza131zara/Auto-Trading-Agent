@@ -1,6 +1,6 @@
 # Phase 3.5 — Security Verification Plan and Exit Criteria
 
-**Status:** Initial verification plan; tests are planned, not yet executed.  
+**Status:** Verification plan handed off. Phase 3 is closed for documentation/design handoff by owner direction; tests are planned, not yet executed.  
 **Purpose:** Convert the threat model and architecture requirements into independently verifiable security acceptance evidence.
 
 ## 1. Security verification principles
@@ -52,7 +52,7 @@
 
 ## 4. Phase 3 exit checklist
 
-Phase 3 may close only after:
+Under the normal exit criteria, Phase 3 may close only after:
 - [ ] Threat actors, assets, trust boundaries and external dependencies are inventoried.
 - [ ] Critical/high threats have a concrete mitigation, evidence plan, owner and residual-risk disposition.
 - [ ] Customer wallet custody and supported signing backend are explicitly chosen with documented trade-offs.
@@ -63,6 +63,8 @@ Phase 3 may close only after:
 - [ ] Threat-to-test traceability is complete and implementation tests are planned for relevant later phases.
 - [ ] Any open Critical risk blocks progression into implementation of the affected security-sensitive capability.
 - [ ] Owner reviews/accepts the architecture baseline and the next phase handoff is documented.
+
+The owner has elected to close the phase for design handoff before all these criteria are evidenced. Therefore the checklist remains an open verification checklist for later implementation/release gates; unchecked items must not be described as completed.
 
 ## 5. Explicit exclusions
 
