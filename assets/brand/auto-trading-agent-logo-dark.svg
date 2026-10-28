@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="156" viewBox="0 0 820 156" role="img" aria-labelledby="title desc">
+  <title id="title">Auto-Trading-Agent logo for dark backgrounds</title>
+  <desc id="desc">An original geometric A-shaped market signal mark with rising bars and an upward trajectory, followed by the Auto Trading Agent wordmark.</desc>
+  <defs>
+    <linearGradient id="signal" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#5577FF"/>
+      <stop offset=".52" stop-color="#22C7D8"/>
+      <stop offset="1" stop-color="#47D6B0"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(8 8)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 126 54 30Q60 17 67 30l43 96" stroke="url(#signal)" stroke-width="14"/>
+    <path d="M43 91 72 69 87 78 125 39" stroke="url(#signal)" stroke-width="9"/>
+    <path d="M107 39h18v18" stroke="#47D6B0" stroke-width="8"/>
+    <rect x="31" y="109" width="10" height="17" rx="2" fill="#5577FF" stroke="none"/>
+    <rect x="49" y="99" width="10" height="27" rx="2" fill="#348FEE" stroke="none"/>
+    <rect x="67" y="88" width="10" height="38" rx="2" fill="#22C7D8" stroke="none"/>
+  </g>
+  <g font-family="Inter, 'Segoe UI', Arial, sans-serif" font-weight="750" letter-spacing="-1.1">
+    <text x="166" y="76" font-size="49" fill="#F3F7FC">AUTO TRADING</text>
+    <text x="166" y="124" font-size="42" fill="url(#signal)">AGENT</text>
+  </g>
+  <text x="400" y="122" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" font-weight="600" letter-spacing="2.5" fill="#98A9BD">RULE-DRIVEN • AUDITABLE • SELF-HOSTED</text>
+</svg>
