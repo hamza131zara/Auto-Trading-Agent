@@ -37,7 +37,7 @@ Status values: **Proposed**, **Needs research**, **Accepted**, **Rejected**. Unl
 
 ## FR-06 — Risk and sizing
 - Apply a deterministic Risk Governor before order creation and immediately before signing.
-- Enforce the one-position invariant at the approved portfolio scope, plus wallet/balance limits, token and pool eligibility, liquidity/price-impact limits, configured loss budgets, daily drawdown, failure circuit breakers and system-health gates. The original single-operator baseline used one global position; CR-001 proposes one open/unresolved position per isolated customer workspace for a hosted multi-customer product. The scope amendment must be confirmed before design/implementation; never share positions or funds between tenants.
+- Enforce at most one open or unresolved position per running agent instance/portfolio, plus wallet/balance limits, token and pool eligibility, liquidity/price-impact limits, configured loss budgets, daily drawdown, failure circuit breakers and system-health gates. Under locked D-025, each self-hosted customer's instance enforces this independently; no shared position state or pooled funds.
 - Kelly estimates are constrained by policy and are not allowed to enlarge exposure beyond the independent risk cap.
 - If edge is non-positive, inputs are stale, or uncertainty exceeds the accepted threshold, do not trade.
 
@@ -132,7 +132,7 @@ Previous shorthand modes in this file (Research, Simulation, Paper/Shadow, Restr
 ## FR-16 — Commercial tenant isolation (scope amendment)
 - Each paid customer has an independent tenant/workspace, data namespace, configuration, audit history, licensed access and customer-specific wallet/signer boundary.
 - Server-side authorization and database isolation prevent one customer or background job from reading/changing another customer's wallet, keys, trade history, quotes, invoices, risk controls, decisions or PnL.
-- Proposed design default is at most one open/unresolved position per customer workspace, not one global position shared by all buyers. This changes the original single-operator/global-position assumption and must be explicitly confirmed before Phase 2 design.
+- Locked D-025 deployment: each customer runs self-hosted, customer-isolated software. Enforce at most one open/unresolved position per running licensed instance/portfolio. The central licensing portal does not host the trading runtime or keep a global portfolio lock.
 - Customer balances/funds must not be pooled. The agent cannot withdraw or move assets to a platform/admin wallet.
 - Whether unattended signing uses customer-controlled signing or an isolated customer-specific signing service is a security/legal design gate; do not place all customer keys in the general agent process.
 - Admin owner/support roles are distinct, least-privileged and audited. A payment administrator cannot change trading risk settings by virtue of payment privileges.
@@ -147,3 +147,14 @@ Previous shorthand modes in this file (Research, Simulation, Paper/Shadow, Restr
 
 ### Commercial acceptance tests
 See [27-commercial-pricing-access-and-lifetime-license.md](27-commercial-pricing-access-and-lifetime-license.md), [28-payment-provider-eligibility-assessment.md](28-payment-provider-eligibility-assessment.md) and [29-commercial-scope-amendment.md](29-commercial-scope-amendment.md).
+
+## FR-18 — Self-hosted runtime and central licensing boundary (D-025)
+- The trading agent, dashboard runtime, portfolio/ledger, provider/API credentials, wallet/signer boundary and risk configuration run in the customer's own or customer-dedicated environment.
+- The central portal handles quotes/invoices, verified-payment record, registration/MFA, admin approval, signed license issuance, authorized software downloads/updates and support/licensing administration only.
+- The central portal cannot initiate trades, access private keys/seed phrases, change local risk limits or force an exit from a customer's position.
+- Each licensed running instance is independent and enforces one open/unresolved position within its own portfolio. No shared platform-level position lock, central multi-customer trading worker or pooled customer funds exists in V1.
+- The customer configures their own provider and optional LLM credentials unless the quote explicitly includes a separately reviewed managed component. Credentials are stored only in the customer's protected local/host environment.
+- Activation uses a signed, installation-bound license entitlement issued after verified payment, registration completion, required MFA/terms and owner/admin approval.
+- Runtime validates entitlement signature and scope according to an approved online/offline validation and safe-grace policy. A licensing-service outage must not weaken risk gates or blindly force-sell a position.
+- Software updates use signed/versioned release artifacts with checksum/signature verification, migration instructions and rollback. No arbitrary remote code/config push may change production risk rules.
+- No hosted multi-tenant trading runtime is in V1. Any future hosted model requires a separate owner-approved scope amendment.
