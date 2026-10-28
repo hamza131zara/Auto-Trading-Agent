@@ -3,7 +3,9 @@
 - **Title:** Solana Autonomous DEX Trading Agent — Roadmap v1.0
 - **Date:** 20 October 2026
 - **Status:** Frozen baseline, approved by owner in conversation on 28 October 2026.
-- **Original files:** See downloadable DOCX/PDF roadmap supplied in conversation. Repository copies may be added as binary assets through a file-upload-capable workflow.
+- **Canonical source:** the owner's 22-page DOCX/PDF roadmap supplied in the conversation.
+- **Repository phase map:** [ROADMAP-CANONICAL-PHASE-MAP.md](ROADMAP-CANONICAL-PHASE-MAP.md).
+- **Companion full text summary:** [Solana_Dex_Agent_Roadmap_v1.md](Solana_Dex_Agent_Roadmap_v1.md).
 
 ## Change control
 Do not change the frozen roadmap scope, phase order or non-negotiable architecture principles without the owner's explicit approval. A proposed amendment must include:
@@ -13,8 +15,27 @@ Do not change the frozen roadmap scope, phase order or non-negotiable architectu
 4. Testing and acceptance changes.
 5. Explicit owner approval and dated decision-log entry.
 
-## Execution order
-Governance and scope freeze → Documentation and requirements approval → UX/system design → repository foundations → data ingestion → security intelligence → features/regime detection → decision and strategy registry → backtesting/quantitative research → portfolio/risk → quote/simulation/execution adapter → position monitoring/exits → ledger/memory → dashboard/operator controls → observability/incident response → integration/security testing → paper trading/shadow evaluation → controlled mainnet readiness/staged launch.
+The phase-map/summary updates correct repository cross-references to match the frozen source; they do not alter the approved roadmap.
+
+## Canonical execution order
+0. Project governance and scope freeze.
+1. Documentation research and source verification.
+2. Product requirements and quantitative policy.
+3. Threat model, custody model and security architecture.
+4. UX, dashboard information architecture and design system.
+5. Repository, environments, CI/CD and engineering foundation.
+6. Market-data ingestion and canonical data layer.
+7. Token safety, rug-risk and exitability engine.
+8. Quant features, regime model and strategy research.
+9. Decision brain, policy router and strategy memory.
+10. Risk governor, portfolio ledger and Kelly-aware sizing.
+11. Execution service, quote validation and isolated signer.
+12. Web dashboard and operator control surface.
+13. Backtesting, paper trading and replay lab.
+14. Testing, quality engineering and independent security review.
+15. Shadow mode and controlled paper launch.
+16. Live canary, launch controls and staged expansion.
+17. Post-launch governance and controlled learning.
 
 ## Invariants
-Solana-only V1; one open position portfolio-wide; deterministic security/risk veto; LLM cannot access signing secrets or bypass controls; isolated policy-enforcing signer; auditable decisions and actual execution reconciliation; no guaranteed profitability; out-of-sample testing and paper trading before mainnet consideration.
+Solana-only V1; one open position portfolio-wide; deterministic security/risk veto; LLM cannot access signing secrets or bypass controls; isolated policy-enforcing signer; auditable decisions and actual execution reconciliation; no guaranteed profitability; out-of-sample testing and paper/shadow evidence before mainnet consideration.
