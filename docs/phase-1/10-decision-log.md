@@ -39,3 +39,10 @@ This log records product decisions and unresolved questions. Changes to the froz
 
 ## Change protocol
 Every decision change records old value, new value, rationale, supporting evidence, affected requirement/test IDs, owner approval and date.
+
+## Additional workflow clarification
+| ID | Decision / clarification | Status |
+|---|---|---|
+| P-009 | Specify a fully automated discovery-to-next-candidate cycle: discover, screen, assess, select, risk-check, quote/simulate, execute only in an authorized mode, monitor, exit, reconcile, record learning evidence, check portfolio goals, then scan again. | Added to Phase 1 draft requirements; owner approval pending |
+
+The workflow clarification elaborates the already frozen automation concept and does not authorize live trading or change the roadmap's phase order. See [16-autonomous-trading-workflow.md](16-autonomous-trading-workflow.md). In particular, the next position cannot start until the prior one is fully reconciled and closed, and the agent must pause when no candidate qualifies or a safety/operational gate fails.
