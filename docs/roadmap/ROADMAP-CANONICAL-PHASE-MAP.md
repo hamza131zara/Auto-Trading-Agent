@@ -51,3 +51,6 @@ Observe → Backtest → Paper → Shadow → Live Canary → Live; Halted is th
 
 ## Change control
 Do not change roadmap scope, phase order or non-negotiable architecture principles without explicit owner approval and a dated decision-log entry. A proposal must explain dependencies, security/financial/operational effects, testing changes and rollback implications.
+
+## Subsequent commercial scope amendment (not part of original source baseline)
+The owner requested a no-free-trial, one-time lifetime license and a payment-first/admin-approved customer access path after the frozen Roadmap v1.0 was approved. This is documented separately in [CR-001](../phase-1/29-commercial-scope-amendment.md); it adds commercial access requirements without changing Phase 0–17 order. The proposed hosted multi-tenant deployment and one open position per customer workspace need owner confirmation before Phase 2 design.
