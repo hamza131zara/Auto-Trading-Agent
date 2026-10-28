@@ -61,6 +61,9 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 - The selected self-hosted model isolates each customer's runtime and data. Each licensed running instance enforces one open/unresolved position in its own portfolio; there is no shared trading runtime or platform-level position lock.
 - No payment or account approval authorizes live trading. Trading release gates remain separate.
 
+## Phase 3 continuation
+Phase 1 and Phase 2 are closed for handoff; Phase 3 security architecture is active. The 3D visual direction D-030 is owner-locked, while detailed placement remains in Phase 4. See the [Phase 3 security architecture package](../phase-3/README.md).
+
 ## Phase 1 completion and handoff conditions
 
 Phase 1 is closed for design handoff. D-025 locks the deployment direction to self-hosted, customer-isolated licensed software; D-026 requires setup documentation and availability-based guided onboarding; D-027 requires a professional responsive UI with light and dark modes. Phase 2 has defined testable product/quantitative requirements, planned acceptance IDs and its Phase 3 handoff. Detailed threat/custody architecture and visual design remain in their later canonical phases. Payment/bank/legal review remains a prerequisite for public sales; separate trading release gates remain mandatory.
