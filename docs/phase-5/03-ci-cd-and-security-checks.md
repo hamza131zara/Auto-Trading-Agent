@@ -22,6 +22,7 @@ Do not supply wallet, RPC, database, payment, LLM or production secrets to ordin
 - Built-in repository validator checks forbidden secret/config patterns in source paths and confirms local environment files are not tracked.
 - npm audit evaluates the dependency tree; dependabot proposes reviewable updates.
 - GitHub Action dependencies use full commit SHA pins and read-only token permissions where possible.
+- The separate Dependency Review Action is currently deferred because the initial run reported that this repository's GitHub dependency graph is not enabled. npm audit is active in CI. An authorized owner must enable the dependency graph in repository Settings → Security before adding that separate PR gate.
 - Later container builds must scan base images and built artifacts before publication; Phase 5 contains no container image and cannot claim container scans have run.
 - Code-scanning/secret-scanning repository settings and branch protection may require owner-side GitHub configuration. The files alone do not prove those settings are enabled.
 
