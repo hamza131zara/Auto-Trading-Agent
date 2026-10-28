@@ -46,3 +46,17 @@ Success is judged by data quality, safety-gate coverage, execution reliability, 
 
 ## Requirement status
 All statements are proposed until accepted in the Phase 1 decision log.
+
+## Commercial scope addendum — CR-001 (28 October 2026)
+The owner requested a paid customer access model. This is a scope amendment to the original private single-operator description; the canonical Roadmap v1.0 phase order remains unchanged.
+
+- No free tier, free trial, trial extension or complimentary operational access.
+- Proposed standard price: USD $12,000 one-time lifetime license; final price/definition/inclusions must be published in reviewed quote/license terms.
+- Customer requests a quote, receives a formal owner/admin-issued quote/invoice, pays, and only after settlement verification receives a single-use registration invitation.
+- Customer completes registration and is approved by owner/admin. Agent/dashboard/service access is allowed only after payment verified + registration complete + email verified + admin approval + required MFA + terms accepted + active license.
+- No recurring core subscription. Public marketing pages and documentation may be visible, but no free operational agent access is available.
+- Multi-customer hosting requires tenant isolation and individual customer wallet/signer boundaries. Proposed default is one open/unresolved position per customer workspace; this changes the earlier global portfolio-wide rule and must be confirmed before design.
+- Payment-provider eligibility and seller-country/legal/tax review are release prerequisites. The initial proposed collection method is admin-issued invoice plus manually verified cleared bank settlement; no automated checkout provider is approved yet.
+- “Lifetime” must be contractually defined as product/service lifetime, including exact updates/support/hosting/data allowance/fair-use terms. It is not a promise that a company/service will operate forever and cannot be advertised as guaranteed uninterrupted service.
+
+See [CR-001](29-commercial-scope-amendment.md), [commercial license and access requirements](27-commercial-pricing-access-and-lifetime-license.md), and [payment-provider assessment](28-payment-provider-eligibility-assessment.md). These additions do not authorize production trading, custody, or public sales before applicable gates are passed.
