@@ -52,8 +52,10 @@ jobs:
       pull-requests: read
       security-events: write
     steps:
-      - name: Checkout
+      - name: Checkout full history for pull-request range scans
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          fetch-depth: 0
 
       - name: Scan with Gitleaks
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
