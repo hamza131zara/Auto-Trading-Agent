@@ -12,7 +12,7 @@ Solana-only autonomous DEX trading research and execution system.
 - [Active Phase 5 repository and CI foundation](docs/phase-5/README.md)
 - [Locked Phase 4 design handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
 - [Clickable responsive dashboard prototype](docs/phase-4/design-previews/dashboard-prototype.html)
-- [Active Phase 4 UX and visual design](docs/phase-4/README.md)
+- [Locked Phase 4 UX and visual design](docs/phase-4/README.md)
 - [Dark dashboard design preview](docs/phase-4/design-previews/dashboard-dark-concept.svg)
 - [Light dashboard design preview](docs/phase-4/design-previews/dashboard-light-concept.svg)
 - [Phase 3 security architecture closeout](docs/phase-3/08-phase-3-closeout-and-phase-4-handoff.md)
