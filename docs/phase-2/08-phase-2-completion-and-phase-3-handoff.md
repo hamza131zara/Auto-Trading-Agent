@@ -59,4 +59,4 @@ Phase 3 must threat-model and design:
 
 ## Handoff acceptance
 
-Phase 3 has now been opened, and its initial threat-model/security-architecture package is available at [docs/phase-3](../phase-3/README.md). Phase 3 may proceed from this specification package. It must not interpret Phase 2 completion as permission for live trading, payment collection or public sales. Security architecture must trace each threat/mitigation to tests and must preserve the frozen product scope and phase sequence.
+Phase 3 was opened and its initial threat-model/security-architecture package was created, then closed for documentation/design handoff at owner direction. Phase 4 UX and visual design is now active; see [the Phase 3 closeout](../phase-3/08-phase-3-closeout-and-phase-4-handoff.md) and [Phase 4 design package](../phase-4/README.md). It must not interpret Phase 2 completion as permission for live trading, payment collection or public sales. Security architecture must trace each threat/mitigation to tests and must preserve the frozen product scope and phase sequence.
