@@ -31,8 +31,8 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | `7385d4f737c3b8fcbe50739b20021a5d35d95c76` | 5188 |
-| `README.md` | `af63fedc68b180c58fb2724e110ad944dfd9e68f` | 5148 |
+| `PHASE1-STATUS.md` | Phase 1/2 closeout; Phase 3 active | `37e8033cc9fac842fcb748fb3f261e07f4e25878` | 5400 |
+| `README.md` | Root overview, current phase and brand logo | `7e65172cd18ac0d413702bd20a3075453d64fce2` | 5462 |
 
 ## Phase 1 documents
 
@@ -49,7 +49,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/07-security-privacy-and-operations.md` | Security operations / DOC-07 | `d1f33edd49e23f8cdaa225095cbbd276c3ab01c0` | 3832 |
 | `docs/phase-1/08-data-dictionary-and-audit.md` | Data/audit/license entities | `d974ceb740fd424b414b573ae9f5b37c35513efe` | 7757 |
 | `docs/phase-1/09-test-plan-and-acceptance.md` | Testing / DOC-10 | `af860ec980f34edcc0b5a6df28952aef3d7cd815` | 7661 |
-| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025, D-026 and D-027 | `df2cd70fbb9e3021bf63eb23333b5d52753b82cf` | 14119 |
+| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-029 | `37676df13c23a74400d11d3feab171e3e17c9cd8` | 15110 |
 | `docs/phase-1/11-requirements-traceability.md` | Requirements traceability | `8e6d47527829cf34f6ac4e7ab20e5bd82a127abc` | 5656 |
 | `docs/phase-1/12-dashboard-pages-and-operator-controls.md` | Dashboard / commercial portal UX | `f7647db7451d1eef25a717869c1a6d847a275a62` | 13141 |
 | `docs/phase-1/13-tooling-and-technology-decisions.md` | Technology candidates | `9c19e976ab985e32f41dd20ec4c6a96d136ed654` | 5607 |
@@ -71,7 +71,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/29-commercial-scope-amendment.md` | CR-001 | `c1830fd68a7ce55aa41807fc0ea7a6ba4c85fcb8` | 8404 |
 | `docs/phase-1/30-self-hosted-deployment-decision.md` | D-025 locked deployment | `126e4eef541677056909be4ad92d62735287d8f2` | 8485 |
 | `docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md` | Final closeout, D-026/D-027 and Phase 2 handoff | `38dfc598c0a5eb02c551dccfbb70d864e15f888c` | 4632 |
-| `docs/phase-1/README.md` | Phase 1 index and Phase 2 handoff | `c5292809987d0ec7b8c39208c9c84feaeddce9d5` | 9683 |
+| `docs/phase-1/README.md` | Phase 1 index and Phase 2/3 handoff | `82ffa0bb662315c81b8beb132147f5de53dc1750` | 9859 |
 | `docs/phase-1/SOURCES.md` | Official source register | `95dd96929939ff766225fa0cf5eabefb82d842ca` | 9465 |
 
 ## Roadmap companion documents
@@ -97,12 +97,12 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-2/README.md` | Phase 2 index and guardrails | `dd7dd4010bb1edf554b5a109d3e3038da337d6d3` | 2861 |
+| `docs/phase-2/README.md` | Completed requirements baseline and Phase 3 handoff | `191ed564a8f41f10059d19b31962730fe5ec0701` | 3667 |
 | `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
 | `docs/phase-2/02-quantitative-policy-and-evaluation-contract.md` | PnL, safety, evaluation and threshold register | `7984c4672717df664a2b48453b4fd560918fe905` | 5784 |
 | `docs/phase-2/03-customer-portal-and-runtime-requirements.md` | Portal/runtime split and payment constraints | `2e8fbdee6916347fef06aea1f4bfc2b373ebc851` | 4098 |
 | `docs/phase-2/04-installation-onboarding-and-support.md` | Setup guide and Google Meet booking requirements | `dc0cbb1a0d3a29ede4b2e60bb9584ee247300372` | 4371 |
-| `docs/phase-2/05-ui-theme-and-responsive-design-requirements.md` | Dark/light, responsive trader-agent UI requirements | `64ab0aa630d4c431c7686e1024a26335319712b0` | 4933 |
+| `docs/phase-2/05-ui-theme-and-responsive-design-requirements.md` | Light/dark, responsive UI requirements and brand assets | `2243266642d77deaa2d882dba676e7d5d4f94a39` | 5354 |
 | `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Decision register and exit checklist | `4305c883fceb0537048f004dab142a7df51b0845` | 3901 |
 
 ## Brand assets
