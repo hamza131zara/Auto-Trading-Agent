@@ -36,6 +36,9 @@ Translate the frozen roadmap into explicit, testable and source-backed requireme
 25. 24-canonical-phase-map-and-repository-structure.md — frozen Phase 0–17 order, operating modes, package layout and engineering foundation.
 26. 25-canonical-dashboard-page-crosswalk.md — canonical 17-page roadmap map mapped to existing UI concepts.
 
+## Document identity and versioning
+- DOCUMENT-REGISTER.md — document IDs, versions/statuses, source file SHA-256 hashes and Git blob hashes for the repository snapshot used in the audit.
+
 ## Canonical roadmap references
 - [Frozen roadmap baseline](../roadmap/ROADMAP-BASELINE.md)
 - [Canonical phase map](../roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
