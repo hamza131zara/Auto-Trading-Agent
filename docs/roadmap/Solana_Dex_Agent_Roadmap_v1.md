@@ -118,3 +118,12 @@ Discovery adapters; normalizer; token/pool security engine; feature and regime e
 
 ## Review rules
 The detailed specifications under docs/phase-1/ refine this roadmap. If a specification appears to conflict with a frozen invariant, stop and record the conflict for owner decision rather than silently changing the roadmap.
+
+## Separate commercial scope overlay — CR-001 (requested after the frozen baseline)
+The owner subsequently requested a no-free-tier/no-trial, USD $12,000 proposed one-time lifetime license, quote/invoice → verified payment → registration invitation → user registration → owner/admin approval workflow. This is a later scope addendum, not a rewrite of the original source roadmap.
+
+- No recurring core subscription; no unpaid operational access.
+- No online payment provider is approved for this product yet. Initial proposed collection is an owner-issued invoice and manually verified cleared bank settlement, subject to bank/legal approval.
+- Paid hosted customer access requires tenant isolation. The proposed design is one open/unresolved position per customer workspace, not one shared position globally; confirm before Phase 2 design.
+- See [CR-001 commercial amendment](../phase-1/29-commercial-scope-amendment.md), [commercial access requirements](../phase-1/27-commercial-pricing-access-and-lifetime-license.md), and [payment provider assessment](../phase-1/28-payment-provider-eligibility-assessment.md).
+- The original roadmap phase order and trading safety gates remain unchanged.
