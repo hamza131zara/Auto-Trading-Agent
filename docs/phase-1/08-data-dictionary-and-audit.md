@@ -36,3 +36,24 @@ Record candidate discovered, assessment completed, candidate rejected, strategy 
 
 ## Financial ledger
 Keep raw base-unit amounts and exact token decimals. Reconcile SOL balance changes, token amounts, network/priority fees, swaps and any extra fees. Distinguish estimated, quoted, submitted, confirmed and realized values; never silently replace estimates with actuals or vice versa.
+
+
+## Commercial access entities (CR-001)
+- **Quote:** unique ID, customer/contact, version, amount, currency, issue/expiry time, included license scope, terms version, taxes/fees and payment instructions.
+- **InvoiceOrder:** quote ID/version, issuer, invoice number, issued/accepted/cancelled/expired state and immutable commercial terms snapshot.
+- **PaymentEvent:** payment/order/provider ID, amount/currency, event ID, event type/time, verified signature/provider status or manual evidence reference, idempotency key and reconciliation state.
+- **Settlement:** settled amount/currency/date, reference, bank/provider evidence, reconciliation actor and approval record. Customer-provided screenshots alone are not settlement proof.
+- **RegistrationInvitation:** customer/quote binding, email, token hash, expiry, single-use state and creation/revocation audit; never store the raw invitation secret in plaintext logs.
+- **RegistrationApplication:** user identity/contact, email verification, terms version, MFA status, requested tenant and admin-review state.
+- **AdminApproval:** admin actor, decision, reason code, evidence references, time and previous/new status.
+- **LicenseEntitlement:** customer/entity, tenant ID, license type, one-time paid price/currency, entitlement start, product/service-lifetime terms version, active/suspended/revoked/disputed/refunded state and included usage scope.
+- **CustomerTenant:** isolated workspace, configuration, data namespace, access policy, portfolio and signer boundary reference. Tenant is not a pooled custody account.
+- **RefundDispute:** linked payment/quote/license, request/provider dispute status, amount/currency, reason, review decision and entitlement consequence.
+- **CommercialAuditEvent:** quote issued/changed, payment reconciled, invite issued/revoked, registration approved/rejected, license activated/suspended/revoked, refund/dispute and commercial terms changed.
+
+## Tenant and access invariants
+- Every customer-owned table, queue/job, cache key, object-storage path and report includes tenant scope and is server-side authorized.
+- Payment admin privileges do not imply access to wallet secrets or authority to change risk policies.
+- A license entitlement never replaces per-request authentication/authorization.
+- No access state can be inferred only from an email link or browser redirect.
+- Preserve immutable event history and link provider/bank evidence without logging full financial account credentials or raw payment card data.
