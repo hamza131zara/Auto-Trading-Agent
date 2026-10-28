@@ -1,7 +1,7 @@
 # Payment Provider Eligibility Assessment — One-Time Lifetime License
 
 **Review date:** 28 October 2026  
-**Product:** hosted Solana DEX auto-trading agent; proposed USD $12,000 one-time lifetime license.  
+**Product:** self-hosted, customer-isolated Solana DEX auto-trading software; proposed USD $12,000 one-time lifetime license.  
 **Conclusion:** no online payment processor is approved yet. Use an owner-issued invoice and a compliant, bank/provider-approved settlement path for initial sales only after bank/legal approval; provider automation can be added only after written underwriting approval.
 
 ## Why normal SaaS checkout cannot be selected by default
@@ -62,3 +62,7 @@ Payment confirmed + registration complete + email verified + admin approved + MF
 - Paddle acceptable use policy.
 - Lemon Squeezy prohibited products and supported countries.
 - Stripe's documented recommendation to trigger fulfillment from server-side webhook events rather than a browser redirect.
+
+
+## Deployment-model update (D-025)
+The owner has locked V1 to self-hosted, customer-isolated software; the central portal handles licensing/registration only and does not host the trading runtime. Reassess the exact product description with each prospective payment institution using this self-hosted model. The restrictions above remain relevant; self-hosting does not guarantee processor eligibility.
