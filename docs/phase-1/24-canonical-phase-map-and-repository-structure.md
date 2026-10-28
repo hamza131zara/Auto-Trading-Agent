@@ -87,18 +87,20 @@ The package layout defines logical boundaries, not a requirement to run every mo
 
 
 ## Commercial scope amendment cross-reference
-The source roadmap remains the frozen canonical baseline. The owner subsequently requested a paid customer-access model; see [CR-001](29-commercial-scope-amendment.md). It adds quote/payment/registration/license and tenant isolation requirements without changing Phase 0–17 order. The proposed position cap is per customer workspace and requires owner confirmation before design.
+The source roadmap remains the frozen canonical baseline. The owner subsequently requested paid customer access and locked self-hosted, customer-isolated software under [D-025](30-self-hosted-deployment-decision.md). CR-001 adds quote/payment/registration/license administration without changing Phase 0–17 order. Each running licensed instance has its own portfolio and one-position limit; no hosted trading SaaS is in V1.
 
 ## Commercial access module extension (CR-001)
-For the separately requested paid multi-customer model, the proposed later code layout also needs a commercial boundary (it remains a design item, not code created in Phase 1):
+For the separately requested paid software model, the proposed architecture includes a central licensing portal and a customer-local trading runtime. This remains a design item, not code created in Phase 1:
 
 ```text
-services/
-  commercial-access/    quotes, invoices, verified settlement, invitations and entitlements
-  admin-approvals/      owner review, approval/rejection, refund/dispute workflows
+apps/
+  license-portal/       public quote request, admin approval, license issuance and authorized downloads
 packages/
   commercial-contracts/ quote/payment/invitation/license schemas and state machines
-  tenant-authz/         server-side entitlement and tenant-scope authorization helpers
+  license-verification/ signed entitlement verification and instance binding
+customer-runtime/
+  local-config/         customer's provider credentials, risk policy and deployment secrets
+  local-data/           customer's own ledger, snapshots, decisions and trading history
 ```
 
-This should initially be a logical module, not automatically another deployed microservice. It must not be able to sign transactions or modify Risk Governor limits. A provider adapter stays disabled until the seller country and exact product category are approved by the provider; no free-trial entitlement is permitted.
+The licensing portal must never sign transactions, host customer trading loops or modify local Risk Governor limits. Provider adapters for payment stay disabled until seller-country and exact product eligibility are approved; no free-trial entitlement is permitted. The customer runtime should keep functioning safely if the licensing portal is temporarily unavailable, according to the approved signed-license grace policy.
