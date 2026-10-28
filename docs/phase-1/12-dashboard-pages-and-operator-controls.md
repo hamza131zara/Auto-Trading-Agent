@@ -124,10 +124,14 @@ These workflows sit outside the 17 authenticated operator dashboard pages; they 
 - **Admin console:** review paid registrations, view quote/settlement/license linkage and eligibility check status, Approve, Reject with reason, Request Additional Information, Suspend or Revoke License. Admin action requires role authorization and audit event.
 - **No bypass:** Owner/admin can resolve an exception only through a documented, permitted, audited refund/compliance workflow; no silent unpaid access.
 
-### Workspace provision
-- **Admin/automation action:** Create Tenant Workspace after all entitlement conditions pass; attach tenant-specific policy, wallet/signer reference and data namespace.
-- **Verification:** cross-tenant access denied, one-time license linked to exact entity, one position cap scope confirmed, audit records separated.
-- **No shared wallet:** UI must not suggest that platform/customer funds are pooled; never display private keys.
+### License issue and self-hosted installation
+- **Admin/automation action:** issue a signed, installation-bound license and grant authorized software-release download after all entitlement conditions pass.
+- **Customer action:** install the software in their own/customer-dedicated environment, configure their own provider credentials, database and wallet/signer, and activate the license.
+- **Verification:** license is bound to the correct customer/scope, portal access records are isolated, no private keys are sent to the portal, and each running instance enforces its one-position cap.
+- **No shared runtime or wallet:** UI must state that the platform does not pool customer funds or host a shared trading process.
 
 ### Commercial UI acceptance
 All public pages may be viewed without purchase, but protected agent functionality is never free. There is no customer trial or free tier.
+
+## Locked deployment direction (D-025)
+Customer trading pages run in a self-hosted instance. The central portal only provides public marketing/quote request, owner/admin invoice and settlement workflow, registration/MFA/approval, license activation, authorized downloads/updates and support. Do not build a central hosted trading dashboard that aggregates customer positions or provides remote transaction control.
