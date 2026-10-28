@@ -72,3 +72,13 @@ Translate the frozen roadmap into explicit, testable and source-backed requireme
 5. Pre-register quantitative and paper/shadow evaluation gates.
 6. Obtain qualified review of the applicable legal/tax/service boundary before relevant live use or any public/third-party service.
 7. Record remaining decisions and evidence. Phase 1 exit does not automatically authorize mainnet trading; later gates still apply.
+
+27. 26-official-source-verification-report.md — dated official-source pass with provider limits/prices, Solana/Jupiter execution findings, security/auth findings, FBR freshness correction and open decisions.
+
+## Latest source-verification snapshot
+- [Official source verification report — 28 October 2026](26-official-source-verification-report.md)
+- [Updated provider/integration matrix](14-provider-and-integration-matrix.md)
+- [Updated cost/operations plan](21-cost-and-operations-plan.md)
+- [Legal/tax source-freshness correction](22-legal-tax-and-service-boundary-review.md)
+
+This is a first verification pass, not the full exit of Phase 1. Account-specific plan checks, selected-provider tests, numeric policy thresholds, and qualified legal/tax review remain open.
