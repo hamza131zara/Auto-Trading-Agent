@@ -22,7 +22,7 @@
 | Owner-supplied Roadmap v1.0 PDF | Frozen baseline source | `108c8a5ca56e38810c604765ff90f5b412af155696651a1143f240369528437c` | Not committed as binary |
 | `docs/roadmap/ROADMAP-BASELINE.md` | Frozen baseline index | N/A | `89d0b64d7e1e01ce10f1861b9c12a112e9e79848` |
 | `docs/roadmap/ROADMAP-CANONICAL-PHASE-MAP.md` | Frozen source phase crosswalk | N/A | `2a1df79b4ff06a6bdd9c7793278805e9e474ecc8` |
-| `docs/roadmap/Solana_Dex_Agent_Roadmap_v1.md` | Markdown companion aligned to source phase order | N/A | `025287a32eb5d5d5ef76b3c1e190f3272c80ddd0` |
+| `docs/roadmap/Solana_Dex_Agent_Roadmap_v1.md` | Markdown companion aligned to source phase order | N/A | `7cd23987eb38205ce569dec33e57c701320bdfdc` |
 
 ## Core requirements documents
 
