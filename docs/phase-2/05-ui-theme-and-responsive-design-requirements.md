@@ -2,6 +2,10 @@
 
 **Status:** UX requirements locked for design handoff. Detailed visual design remains canonical Phase 4; UI implementation follows the roadmap.
 
+## Brand assets
+
+Use the vector assets documented in [Brand identity and logo usage](09-brand-identity-and-logo-usage.md): [dark lockup](../../assets/brand/auto-trading-agent-logo-dark.svg), [light lockup](../../assets/brand/auto-trading-agent-logo-light.svg) and [compact mark](../../assets/brand/auto-trading-agent-mark.svg). Preserve contrast and aspect ratio; detailed placement is a Phase 4 design-system decision.
+
 ## Design direction
 
 The interface should feel like a serious, modern trader-agent control room: formal, professional, precise, calm under pressure, data-dense without clutter, and trustworthy. It should not look like a casino, gaming HUD, meme-coin landing page or neon-heavy speculative trading toy.
