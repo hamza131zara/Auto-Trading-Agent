@@ -37,7 +37,7 @@ Turn the approved product/commercial baseline into testable product requirements
 
 ## Phase 2 disposition
 
-Phase 2 requirements are complete for handoff. Phase 3 has since been closed for documentation/design handoff at owner direction; Phase 4 UX and visual design is now active. All requirements have planned acceptance IDs. Numerical trading limits and quantitative release thresholds that remain TBD are explicitly excluded from executable scope and must be owner-approved before any live-capable release. No implementation tests are claimed as run by these documents. See [Phase 3 closeout](../phase-3/08-phase-3-closeout-and-phase-4-handoff.md) and [the active Phase 4 package](../phase-4/README.md).
+Phase 2 requirements are complete for handoff. Phase 3 has been closed for documentation/design handoff, and Phase 4 design is locked for handoff; Phase 5 engineering foundation is now active. All requirements have planned acceptance IDs. Numerical trading limits and quantitative release thresholds that remain TBD are explicitly excluded from executable scope and must be owner-approved before any live-capable release. No implementation tests are claimed as run by these documents. See [Phase 3 closeout](../phase-3/08-phase-3-closeout-and-phase-4-handoff.md), [Phase 4 closeout](../phase-4/08-phase-4-closeout-and-phase-5-handoff.md) and [the active Phase 5 package](../phase-5/README.md).
 
 ## Phase 2 workflow
 
