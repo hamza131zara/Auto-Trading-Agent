@@ -6,7 +6,7 @@
 
 ## Why normal SaaS checkout cannot be selected by default
 
-The product is not generic downloadable software only: its advertised primary purpose includes automated cryptocurrency trading/transaction preparation and hosted agent services. Processor policy may classify it as crypto trading, a financial service or a platform enabling cryptocurrency transactions. Do not misdescribe the product to obtain processing approval.
+The product is self-hosted software whose advertised primary purpose includes automated cryptocurrency trading and transaction preparation. A processor may classify it as crypto-trading software, a financial service or a product enabling cryptocurrency transactions even though the trading runtime is run by the customer. Do not misdescribe the product to obtain processing approval.
 
 ### Stripe
 Official sources:
@@ -40,7 +40,7 @@ Lemon Squeezy's prohibited-product page explicitly lists NFT and crypto-related 
 ## Requirements before automated checkout is reconsidered
 1. Seller country/entity/bank eligibility confirmed.
 2. Product description and operation model disclosed accurately to prospective processor.
-3. Written provider approval specifically covers hosted Solana DEX auto-trading software, one-time lifetime license, customer registration/admin approval and the countries served.
+3. Written provider approval specifically covers self-hosted Solana DEX auto-trading software, one-time lifetime license, customer registration/admin approval and the countries served.
 4. Confirm supported one-time invoice/checkout, high ticket amount, card/bank payment methods, settlement currency, chargeback/dispute handling, payout timing and reserves.
 5. Confirm fees, taxes/merchant-of-record scope, refund requirements, customer verification, sanctions/AML obligations and prohibited territories.
 6. Test webhook signature verification, replay/idempotency, duplicate/out-of-order events, amount/currency mismatch, refunds and chargebacks in sandbox.
