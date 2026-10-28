@@ -24,8 +24,8 @@ The PVARA page publishes a Virtual Assets Act, 2026 and regulatory documents, bu
 Document a written answer for each relevant scenario:
 1. Operator runs the bot solely on their own wallet and their own capital, with no customer access, custody or fee-based service.
 2. Bot is made public as downloadable software but users self-host and manage their own keys.
-3. Hosted platform provides market analysis/signals only.
-4. Hosted platform prepares/sends transactions from a user's wallet or integrates with a wallet.
+3. (Future model only) A hosted platform provides market analysis/signals only.
+4. (Future model only) A hosted platform prepares/sends transactions from a user's wallet or integrates with a wallet.
 5. Platform has custody, control, co-signing, discretionary control, withdrawal ability or trading authority over customer assets.
 6. Platform trades on behalf of others, pools funds, copies trades, routes/arranges transactions, charges performance fees or offers subscriptions.
 7. Platform markets to or onboards users in Pakistan or another jurisdiction.
@@ -63,7 +63,10 @@ For each reviewed jurisdiction and service model, record:
 - owner approval and date.
 
 ## 7. Re-review triggers
-Reassess before enabling mainnet with an entity account; onboarding another operator/customer; offering a paid hosted service; custody/co-signing/trading on behalf of others; adding exchange/arranging/brokerage-like functions; expanding jurisdiction; changing fee model; or upon a material change in applicable law.
+Reassess before enabling mainnet with an entity account; onboarding a customer for licensing/support; changing the self-hosted software into a hosted service; adding custody/co-signing/trading on behalf of others; adding exchange/arranging/brokerage-like functions; expanding jurisdiction; changing fee model; or upon a material change in applicable law.
 
 ## Gate
 No public/third-party service rollout, custody, customer transaction execution or related business claim until the service boundary is reviewed and written approval is recorded. A private own-capital pilot still requires the operator to follow applicable laws and tax duties; this document does not certify it as legally cleared.
+
+## Current product model update (D-025)
+V1 is self-hosted, customer-isolated software. Scenarios involving a hosted trading runtime or central transaction service are listed above only as potential future models for legal analysis; they are not part of the locked V1 deployment. The central licensing portal handles commercial approval and software license distribution only. Qualified counsel must still review the actual self-hosted software sale, customer-controlled wallet/signer assumptions, seller jurisdiction, payment path, terms and tax treatment before public sales.
