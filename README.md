@@ -5,7 +5,7 @@ Solana-only autonomous DEX trading research and execution system.
 > **Current phase: Phase 1 — Documentation and Requirements.** Live trading is not authorized. Do not connect a production wallet or private key during this phase.
 
 ## Start here
-- [Phase 1 document index](docs/phase-1/README.md)
+- [Phase 1 document index](docs/phase-1/README.md)\n- [Autonomous trading workflow: discovery to next candidate](docs/phase-1/16-autonomous-trading-workflow.md)
 - [Phase 1 status and approval gate](PHASE1-STATUS.md)
 - [Frozen Roadmap v1.0 — full Markdown baseline](docs/roadmap/Solana_Dex_Agent_Roadmap_v1.md)
 - [Roadmap baseline and change-control policy](docs/roadmap/ROADMAP-BASELINE.md)
