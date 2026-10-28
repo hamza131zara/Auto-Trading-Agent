@@ -1,6 +1,6 @@
 # Phase 1 — Documentation and Requirements
 
-**Status:** Core documentation, roadmap comparison and first official source-verification pass are complete. Commercial requirements are documented under CR-001 and the deployment model is locked by owner decision D-025: **self-hosted, customer-isolated licensed software**. Phase 2 design may begin from this baseline. Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
+**Status:** Phase 1 CLOSED for design handoff on 28 October 2026. Core documentation, roadmap comparison/source verification, commercial requirements (CR-001), self-hosted deployment (D-025), guided onboarding requirement (D-026) and UI direction requirement (D-027) are recorded. Phase 2 — Product Requirements and Quantitative Policy — is now ACTIVE. Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
 
 **Mode:** Documentation only. No production trading code, wallet connection, private-key handling, automated payment checkout, or live execution is authorized during Phase 1.
 
@@ -49,6 +49,7 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 29. [28 Payment Provider Eligibility Assessment](28-payment-provider-eligibility-assessment.md) — Stripe/Paddle/Lemon Squeezy policy review and proposed invoice/settlement path.
 30. [29 Commercial Scope Amendment CR-001](29-commercial-scope-amendment.md) — paid license and activation flow, now aligned to self-hosted distribution.
 31. [30 Self-Hosted Deployment Decision D-025](30-self-hosted-deployment-decision.md) — locked self-hosted architecture and central license-portal boundary.
+32. [31 Phase 1 Final Closeout and Phase 2 Handoff](31-phase-1-closeout-and-phase-2-handoff.md) — Phase 1 closeout, onboarding requirement D-026, UI direction D-027 and entry gates.
 
 ## Commercial access rules now documented
 
@@ -62,7 +63,7 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 
 ## Phase 1 completion and handoff conditions
 
-Documentation, roadmap comparison and the first public-source verification pass are complete. D-025 locks the deployment direction to self-hosted, customer-isolated licensed software. Phase 2 can now design the central license portal, signed license activation, customer installation/runtime, local wallet/signer boundaries and update/rollback mechanics. Payment/bank/legal review remains a prerequisite for public sales; separate trading release gates remain mandatory.
+Phase 1 is closed for design handoff. D-025 locks the deployment direction to self-hosted, customer-isolated licensed software; D-026 requires setup documentation and availability-based guided onboarding; D-027 requires a professional responsive UI with light and dark modes. Phase 2 now defines testable product/quantitative requirements. Detailed threat/custody architecture and visual design remain in their later canonical phases. Payment/bank/legal review remains a prerequisite for public sales; separate trading release gates remain mandatory.
 
 Before public sales, separately complete:
 1. Bank/payment institution and qualified legal/tax confirmation for the real service model and seller jurisdiction.
@@ -83,4 +84,4 @@ Before live trading, additionally pass all backtest, out-of-sample, independent 
 - The frozen roadmap's canonical phase order cannot be changed without explicit owner approval and a dated record.
 
 ## Locked deployment decision
-[D-025 — Self-Hosted Deployment Decision](30-self-hosted-deployment-decision.md) is the approved design baseline for V1. No hosted multi-tenant trading SaaS in V1. The central portal handles commercial licensing and downloads only.
+[D-025 — Self-Hosted Deployment Decision](30-self-hosted-deployment-decision.md) is the approved design baseline for V1. No hosted multi-tenant trading SaaS in V1. The central portal handles commercial licensing, onboarding and authorized downloads only. See the [Phase 2 requirements package](../phase-2/README.md) for the active handoff.
