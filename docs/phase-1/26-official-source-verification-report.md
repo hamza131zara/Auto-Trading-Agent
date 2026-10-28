@@ -214,6 +214,6 @@ See [27 Commercial Access](27-commercial-pricing-access-and-lifetime-license.md)
 
 ## 7. Scope consequence / Phase 1 close-out
 
-The commercial model extends the earlier private single-operator concept to paid customer access. The one-position invariant is now a design decision: the proposed hosted multi-tenant default is one open/unresolved position per customer workspace, not one shared position globally. This must be explicitly confirmed before Phase 2 design.
+The owner has now locked self-hosted, customer-isolated licensed software under [D-025](30-self-hosted-deployment-decision.md). The central portal handles commercial licensing, registration approval and authorized releases only; each customer runs an independent runtime and enforces one open/unresolved position per running instance. No hosted multi-tenant trading SaaS is in V1. The payment-provider and legal/tax questions remain open pre-sale gates.
 
 The source/documentation work is complete enough to produce design inputs, but this does not constitute merchant account approval, legal clearance, provider account verification, or authority to launch publicly or trade live.
