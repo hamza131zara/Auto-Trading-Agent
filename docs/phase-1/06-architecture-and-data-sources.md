@@ -49,13 +49,16 @@ See SOURCES.md. Provider selection and current endpoint/product versions remain 
 
 
 ## Commercial access boundary — CR-001
-The requested paid hosted access model adds a commercial-access component alongside the trading services. Its responsibilities are quote/invoice versioning, payment/settlement verification, single-use registration invitations, registration status, owner/admin approval, lifetime-license entitlement, refund/dispute state and commercial audit events.
+The requested paid access model adds a central commercial licensing portal alongside the self-hosted customer runtime. Its responsibilities are quote/invoice versioning, payment/settlement verification, single-use registration invitations, registration status, owner/admin approval, signed lifetime-license entitlement, authorized software download/update access, refund/dispute state and commercial audit events.
 
 The commercial component must be separate from the decision brain, Risk Governor, execution and signer:
 - Payment/registration administration cannot create a trade intent or loosen a risk limit.
-- The trading agent cannot mark invoices paid, approve a customer, issue license entitlements or process refunds.
-- Entitlement evaluation runs server-side and applies to every protected API, stream, background job and workspace route.
+- The customer-local trading agent cannot mark invoices paid, approve a customer, issue license entitlements or process refunds.
+- Entitlement evaluation runs in the central portal for licensing/registration/download actions; the self-hosted runtime separately verifies signed entitlement and enforces local policy.
 - If a payment provider is added later, its adapter is selected only after written seller-country and product-category approval. Until then, the proposed initial path is manual invoice and verified settlement.
-- Customer data, balances, position state, model history, data-source credentials and signer policies must be tenant-scoped. No customer funds are pooled.
+- Each self-hosted installation keeps customer data, balances, position state, model history, data-source credentials and signer policies inside its own environment. The central portal stores only necessary commercial/license metadata. No customer funds are pooled and no hosted trading runtime exists in V1.
 
 See [27 Commercial Access](27-commercial-pricing-access-and-lifetime-license.md) and [28 Payment Provider Assessment](28-payment-provider-eligibility-assessment.md).
+
+## Locked deployment model D-025
+The selected V1 shape is a central licensing portal plus separately self-hosted customer installations. Trading discovery, decisioning, execution, monitoring and memory run in the customer-controlled/customer-dedicated environment. The central portal cannot access signing secrets or issue transaction instructions. One open/unresolved position is enforced per running licensed instance. Any future hosted trading service requires a separate owner-approved change request.
