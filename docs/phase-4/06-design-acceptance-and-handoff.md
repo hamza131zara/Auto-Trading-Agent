@@ -1,20 +1,20 @@
 # Phase 4.6 — Design Acceptance and Implementation Handoff
 
-**Status:** Active design checklist. Requirements below describe evidence needed to close Phase 4; no code implementation or usability-test pass is claimed.
+**Status:** Locked design handoff checklist by owner direction. This records authored design deliverables and the verification work that remains for implementation; it does not claim production UI or automated accessibility tests are complete.
 
 ## 1. Design deliverables required
 
-- [ ] Tokenized light/dark design system with semantic color, type, spacing, radius, border, elevation and focus tokens.
-- [ ] Public website page hierarchy and main conversion flow (quote/request license), with visible limitations/risk wording.
-- [ ] Separate commercial portal IA and core screens (invoice/payment, registration/MFA, license/downloads, docs/booking/support).
-- [ ] Self-hosted runtime IA and critical screen designs (cockpit, market discovery, decision trail, positions/execution, risk, evaluation, configuration, health, audit/recovery).
-- [ ] Desktop, tablet and mobile compositions for critical screens.
-- [ ] States for loading, empty, stale, partial failure, full error, unknown, not tested, blocked, permission denied, paused and license/session failure.
-- [ ] Reusable components for navigation, metric summary, state indicator, table, chart, filter, form, confirmation, modal, toast and status banner.
-- [ ] D-030 3D/illustration placement review for hero, architecture, security/self-hosting and onboarding sections, including mobile/fallback behavior.
-- [ ] Accessibility and reduced-motion review for both themes.
-- [ ] Requirement traceability from Phase 2 PR/UI IDs to screens/components and planned tests.
-- [ ] Explicit handoff notes for unresolved security and numerical gates.
+- [x] Proposed tokenized light/dark design system with semantic color, type, spacing, radius, border, elevation and focus tokens documented.
+- [x] Public website page hierarchy and main conversion flow (quote/request license), with visible limitations/risk wording documented.
+- [x] Separate commercial portal IA and core screen requirements (invoice/payment, registration/MFA, license/downloads, docs/booking/support) documented.
+- [x] Self-hosted runtime IA and critical screen specifications (cockpit, market discovery, decision trail, positions/execution, risk, evaluation, configuration, health, audit/recovery) documented.
+- [x] Responsive requirements and static dashboard concepts for desktop/tablet/mobile documented; browser/device validation remains open.
+- [x] Required loading, empty, stale, partial failure, error, unknown, not tested, blocked, permission denied, paused and license/session failure states specified.
+- [x] Reusable component patterns for navigation, metric summary, state indicator, table, chart, filter, form, confirmation, modal, toast and status banner specified.
+- [x] D-030 selective 3D/illustration placement rules and mobile/fallback constraints documented.
+- [x] Accessibility/reduced-motion requirements documented for both themes; automated/manual contrast and assistive-technology verification remain Phase 12/QA work.
+- [x] Requirement traceability from Phase 2 PR/UI IDs to screens/components and planned tests documented.
+- [x] Explicit handoff notes for unresolved security and numerical gates recorded.
 
 ## 2. Design quality acceptance
 
