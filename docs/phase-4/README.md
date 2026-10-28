@@ -9,6 +9,8 @@
 
 Turn the locked Phase 2 requirements, Phase 3 trust/security boundaries, brand assets and owner-approved visual direction into a consistent design system and usable screen-level specifications. Phase 4 is design work; it does not implement trading, select unresolved security providers or authorize live execution.
 
+Phase 4 design handoff is recorded in [08 Phase 4 Closeout and Phase 5 Handoff](08-phase-4-closeout-and-phase-5-handoff.md). The next active phase is Phase 5: [Repository, Environments, CI/CD and Engineering Foundation](../phase-5/README.md).
+
 ## Design documents
 
 1. [Design system and theme tokens](01-design-system-and-theme-tokens.md)
