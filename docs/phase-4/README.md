@@ -1,6 +1,6 @@
 # Phase 4 — UX and Visual Design
 
-**Status:** ACTIVE — visual system and core-screen design in progress.  
+**Status:** CLOSED FOR DESIGN HANDOFF by owner direction on 28 October 2026.  
 **Started:** 28 October 2026.  
 **Previous phase:** Phase 3 closed for documentation/design handoff at owner direction.  
 **Frozen roadmap:** Roadmap v1.0 remains unchanged. Phase 5 repository/CI foundations follows Phase 4.
@@ -19,12 +19,14 @@ Turn the locked Phase 2 requirements, Phase 3 trust/security boundaries, brand a
 6. [Design acceptance and implementation handoff](06-design-acceptance-and-handoff.md)
 7. [Design decisions and unresolved choices](07-design-decisions-and-open-questions.md)
 
-## Initial dashboard previews
+## Locked design previews and prototype
 
 - [Dark dashboard concept (SVG)](design-previews/dashboard-dark-concept.svg)
 - [Light dashboard concept (SVG)](design-previews/dashboard-light-concept.svg)
+- [Clickable responsive dashboard prototype (HTML)](design-previews/dashboard-prototype.html)
+- [Phase 4 closeout and Phase 5 handoff](08-phase-4-closeout-and-phase-5-handoff.md)
 
-These are static review mockups with clearly labelled illustrative demo data, not a live dashboard or implemented product.
+The SVGs are static review mockups and the HTML file is a local interaction prototype with theme/nav interactions. All market figures are illustrative; no live data, trading, wallet, payment or customer backend is connected.
 
 ## Existing design assets
 
@@ -53,6 +55,6 @@ These are static review mockups with clearly labelled illustrative demo data, no
 - Light/dark mockups, brand/3D placement guide and accessibility requirements.
 - Traceability from design components to Phase 2 requirements and later implementation tests.
 
-## Phase 4 exit rule
+## Phase 4 closeout
 
-Phase 4 may close when the design tokens, site/portal/runtime information architecture, critical screens, state variants, responsive layouts, theme contrast, 3D placement, accessibility review and implementation handoff are reviewed. Phase 5 remains the next canonical phase; frontend implementation is not started by these design documents.
+Phase 4 is closed for design handoff by owner direction. The locked baseline comprises the written design system, information architecture, screen specs, responsive/accessibility rules, D-030 3D placement map, SVG concepts and clickable local prototype. Full implementation and automated accessibility/browser verification remain later work; the prototype is not a production app. Phase 5 repository/CI foundation is active.
