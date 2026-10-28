@@ -1,84 +1,82 @@
 # Phase 1 — Documentation and Requirements
 
-**Status:** The original repository documentation set was reviewed and approved by the owner. The supplemental comparison documents below have been added to close gaps found against the frozen Roadmap v1.0. Provider-specific decisions, numeric thresholds and legal/tax applicability remain research questions until evidence and owner decisions are recorded.  
-**Mode:** Documentation only. No production trading code, wallet connection, private-key handling or live execution is authorized during Phase 1.
+**Status:** Core documentation was approved by the owner. Roadmap comparison and first official source-verification pass are complete; commercial requirements requested on 28 October 2026 have been documented as CR-001. This package is ready for design handoff **after the owner confirms the proposed hosted multi-tenant model and per-customer position cap**. Account-specific provider verification and legal/payment underwriting remain pre-sale/live-launch gates, not claims of current clearance.
 
-## Objective
-Translate the frozen roadmap into explicit, testable and source-backed requirements before UX design or implementation.
+**Mode:** Documentation only. No production trading code, wallet connection, private-key handling, automated payment checkout, or live execution is authorized during Phase 1.
 
-## Existing approved core documents
-1. 01-product-charter.md — goals, scope, actors, operating modes and non-goals.
-2. 02-functional-requirements.md — use cases, operator workflows and controls.
-3. 03-trading-and-exit-policy.md — candidate lifecycle, one-position rule, exit profiles and re-entry policy.
-4. 04-token-security-risk.md — token, pool, holder, wallet-cluster and exitability risk.
-5. 05-quantitative-methodology.md — PnL, expectancy, outcome labels, calibration, Kelly research and compounding.
-6. 06-architecture-and-data-sources.md — services, trust boundaries and integration candidates.
-7. 07-security-privacy-and-operations.md — authentication, authorization, signer isolation, secrets and incident response.
-8. 08-data-dictionary-and-audit.md — state entities, event records and strategy/model versions.
-9. 09-test-plan-and-acceptance.md — quality strategy and stage gates.
-10. 10-decision-log.md — confirmed decisions, open decisions and approvals.
-11. 11-requirements-traceability.md — requirement-to-test traceability.
-12. 12-dashboard-pages-and-operator-controls.md — existing dashboard inventory, UI controls, filters and indicators.
-13. 13-tooling-and-technology-decisions.md — candidate stack and selection criteria.
-14. 14-provider-and-integration-matrix.md — provider responsibilities, data ownership and fail-closed behavior.
-15. 15-threat-model-and-risk-register.md — assets, trust boundaries, threats, mitigations and incident workflow.
-16. 16-autonomous-trading-workflow.md — closed-loop discovery, selection, risk approval, execution, profit/exit, reconciliation and next-token cycle.
-17. SOURCES.md — official documentation register and revalidation notes.
+## Frozen roadmap and source alignment
+- [Canonical Roadmap v1.0 phase map](../roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
+- [Frozen roadmap baseline and change control](../roadmap/ROADMAP-BASELINE.md)
+- [Markdown companion aligned to the frozen phase order](../roadmap/Solana_Dex_Agent_Roadmap_v1.md)
+- [Source-to-repository coverage audit](17-roadmap-coverage-audit.md)
+- [Document register and file/hash identities](DOCUMENT-REGISTER.md)
 
-## Supplementary documents added after roadmap comparison
-18. 17-roadmap-coverage-audit.md — source-to-repository coverage and DOC-01 through DOC-12 mapping.
-19. 18-indicators-formulas-and-units.md — quantitative formulas, indicators, units and implementation cautions.
-20. 19-agent-brain-and-memory-spec.md — complete decision-module authority matrix, typed Choice/Score/proposition outputs and memory policy.
-21. 20-execution-reconciliation-and-signer-contract.md — order state machine, trade intent, signer checks and unknown transaction recovery.
-22. 21-cost-and-operations-plan.md — DOC-11 provider usage, operating budgets, run-rate calculators and incident ownership.
-23. 22-legal-tax-and-service-boundary-review.md — DOC-12 jurisdiction/service classification, tax questions and review gate; this is not legal clearance.
-24. 23-shadow-canary-launch-and-post-launch-governance.md — canonical modes, shadow/paper criteria, live canary and post-launch governance.
-25. 24-canonical-phase-map-and-repository-structure.md — frozen Phase 0–17 order, operating modes, package layout and engineering foundation.
-26. 25-canonical-dashboard-page-crosswalk.md — canonical 17-page roadmap map mapped to existing UI concepts.
+The original owner-approved DOCX/PDF remains the frozen baseline. Commercial scope CR-001 is a separate addendum; it does not reorder or overwrite the canonical Phase 0–17 roadmap.
 
-## Document identity and versioning
-- DOCUMENT-REGISTER.md — document IDs, versions/statuses, source file SHA-256 hashes and Git blob hashes for the repository snapshot used in the audit.
+## Core requirements package
 
-## Canonical roadmap references
-- [Frozen roadmap baseline](../roadmap/ROADMAP-BASELINE.md)
-- [Canonical phase map](../roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
-- [Roadmap Markdown companion](../roadmap/Solana_Dex_Agent_Roadmap_v1.md)
-- [Roadmap coverage audit](17-roadmap-coverage-audit.md)
+1. [01 Product Charter](01-product-charter.md) — purpose, scope, actors, modes, success metrics and commercial addendum.
+2. [02 Functional Requirements](02-functional-requirements.md) — core operating requirements, autonomous loop, paid access, registration approval and tenant isolation.
+3. [03 Trading and Exit Policy](03-trading-and-exit-policy.md) — candidate lifecycle, position cap, Quick Compound, Trend Capture, High-Upside Runner and re-entry.
+4. [04 Token Security and Rug-Risk](04-token-security-risk.md) — token program/extensions, authorities, holder concentration, wallet-cluster evidence, liquidity and exitability gates.
+5. [05 Quantitative Methodology](05-quantitative-methodology.md) — net PnL, expected return, outcome labels, calibration, Kelly research and compounding.
+6. [06 Architecture and Data Sources](06-architecture-and-data-sources.md) — logical services, trust boundaries and integration candidates.
+7. [07 Security, Privacy and Operations](07-security-privacy-and-operations.md) — auth, secrets, signing isolation, incident response and fail-safe behavior.
+8. [08 Data Dictionary and Audit](08-data-dictionary-and-audit.md) — token/trade state, provenance, audit events and commercial/payment/tenant records.
+9. [09 Test Plan and Acceptance](09-test-plan-and-acceptance.md) — unit/integration/security/recovery/quantitative and commercial entitlement tests.
+10. [10 Decision Log](10-decision-log.md) — accepted baseline, owner-requested decisions, open choices and scope-change record.
+11. [11 Requirements Traceability](11-requirements-traceability.md) — requirements-to-test mapping.
+12. [12 Dashboard Pages and Operator Controls](12-dashboard-pages-and-operator-controls.md) — filters, controls, security actions, pricing/quote and admin workflows.
+13. [13 Technology Decision Candidates](13-tooling-and-technology-decisions.md) — technologies and selection criteria.
+14. [14 Provider and Integration Matrix](14-provider-and-integration-matrix.md) — data ownership, providers, limits, source findings and open verification.
+15. [15 Threat Model and Risk Register](15-threat-model-and-risk-register.md) — system, signer, payment, fraud and tenant-isolation risks.
+16. [16 Autonomous Trading Workflow](16-autonomous-trading-workflow.md) — closed-loop discovery, selection, risk approval, execution, exit, reconciliation and next candidate.
+17. [SOURCES Source Register](SOURCES.md) — official docs and review links.
 
-## Approval and evidence process
-- Existing core documents remain owner-approved as previously recorded.
-- The supplemental files are additive coverage corrections. Review them as an amendment set; they do not change roadmap scope or phase sequence.
-- Mark remaining policy items as Proposed, Needs research, Accepted or Rejected, and record evidence/rationale in 10-decision-log.md.
-- Provider/API version, rates, quotas, contract terms and legal/tax classification must be checked against authoritative sources before relying on them.
-- Numeric trading thresholds and performance gates must be predeclared before the evaluation run; do not tune them after inspecting holdout results.
-- No design/build phase begins until the remaining Phase 1 exit items and exact phase gate in the frozen roadmap are satisfied.
+## Roadmap coverage and technical supplements
 
-## Non-negotiable constraints
+18. [17 Roadmap Coverage Audit](17-roadmap-coverage-audit.md) — canonical phase/DOC-01 to DOC-12 crosswalk.
+19. [18 Indicators, Formulas and Units](18-indicators-formulas-and-units.md) — financial formulas, indicator units, costs, Kelly and target calculations.
+20. [19 Agent Brain and Memory](19-agent-brain-and-memory-spec.md) — module authority, Choice/Score/proposition outputs, memory and promotion controls.
+21. [20 Execution, Reconciliation and Signer Contract](20-execution-reconciliation-and-signer-contract.md) — transaction states, intent contract, signer checks and unknown-state recovery.
+22. [21 Cost and Operations Plan](21-cost-and-operations-plan.md) — provider/LLM/hosting cost models, service budgets and lifetime-license economics.
+23. [22 Legal, Tax and Service Boundary Review](22-legal-tax-and-service-boundary-review.md) — questions requiring qualified legal/tax review; not legal clearance.
+24. [23 Shadow, Canary and Post-Launch Governance](23-shadow-canary-launch-and-post-launch-governance.md) — operating modes and release gates.
+25. [24 Canonical Phase Map and Repository Structure](24-canonical-phase-map-and-repository-structure.md) — exact phase sequence, package structure and commercial amendment reference.
+26. [25 Canonical Dashboard Page Crosswalk](25-canonical-dashboard-page-crosswalk.md) — 17-page source roadmap mapping and permissions.
+27. [26 Official Source Verification Report](26-official-source-verification-report.md) — dated official source pass, provider limits/prices, payment-provider findings and source caveats.
+28. [27 Commercial Pricing, Access and Lifetime License](27-commercial-pricing-access-and-lifetime-license.md) — no-free-trial policy, proposed USD $12,000 lifetime license, quote/payment/registration/admin approval workflow.
+29. [28 Payment Provider Eligibility Assessment](28-payment-provider-eligibility-assessment.md) — Stripe/Paddle/Lemon Squeezy policy review and proposed invoice/settlement path.
+30. [29 Commercial Scope Amendment CR-001](29-commercial-scope-amendment.md) — owner-requested paid multi-customer scope, proposed tenant model and design decision.
+
+## Commercial access rules now documented
+
+- No customer free tier, free trial, trial extension or unpaid operational access.
+- Proposed standard price is USD $12,000 as a one-time lifetime license, not a recurring subscription.
+- Quote/invoice → verified cleared payment → single-use registration invitation → user registration/email verification/MFA/terms → owner/admin approval → license/tenant activation.
+- Public marketing pages do not provide access to the agent or protected services.
+- **No online payment gateway has been approved.** Initial proposed collection is an owner-issued invoice and manually verified cleared bank settlement, subject to bank and qualified legal approval.
+- The product's customer-facing hosted model requires tenant isolation. The proposed default is one open/unresolved position per customer workspace; the owner must confirm this change from the original single-operator/global-position baseline before Phase 2 design.
+- No payment or account approval authorizes live trading. Trading release gates remain separate.
+
+## Phase 1 completion and handoff conditions
+
+Documentation and the first public-source research pass are complete. Before Phase 2 design begins, the owner must confirm the one scope decision in [CR-001](29-commercial-scope-amendment.md): hosted multi-tenant service with a separate portfolio and one-open-position limit per customer workspace, rather than self-hosted single-operator licensing.
+
+Before public sales, separately complete:
+1. Bank/payment institution and qualified legal/tax confirmation for the real service model and seller jurisdiction.
+2. Explicit lifetime-license terms: service lifetime, updates, support, included API/data/compute usage, fair-use limits, exclusions and refund/dispute obligations.
+3. Account-specific provider plan/terms/quotas and source freshness verification.
+4. A documented service cost model supporting the one-time price.
+5. Tenant isolation, payment/registration/entitlement tests and the public-sale release checklist.
+
+Before live trading, additionally pass all backtest, out-of-sample, independent security, paper/shadow, signer and staged-canary gates.
+
+## Non-negotiable safety constraints
+
 - Solana spot DEX only for V1; no leverage or borrowing.
-- Maximum one open position globally across the trading portfolio.
-- NO_TRADE is a valid and often correct outcome.
-- Deterministic security and risk gates have final veto authority.
-- LLM/agent components cannot access signing secrets, withdraw assets, bypass risk rules or alter hard limits.
-- Fixed-target, trend-capture and high-upside runner strategies are hypotheses to test, not assumed profitable policies.
-- Kelly sizing remains research-only until assumptions, uncertainty, tail-loss and exposure constraints are tested.
+- AI cannot access signing secrets, withdraw funds, bypass deterministic security/risk controls or change hard limits.
+- Every customer workspace is isolated; no pooled customer funds.
+- Reconcile the current position fully before opening the next one in its portfolio scope.
 - No claim or guarantee of win rate, return or target attainment.
-- Backtests, out-of-sample tests, paper/shadow trading, independent security review, incident drills and explicit release approval precede live trading.
-
-## Phase 1 remaining exit work
-1. Revalidate selected providers, exact API/SDK versions, rate limits, prices, product terms and failure behavior.
-2. Choose and document measurable hard token-security, data-freshness, quote-age, liquidity, price-impact and risk thresholds.
-3. Finalize signer/custody design and the complete authentication/authorization policy.
-4. Resolve owner decisions about target milestone behavior, operating-mode transitions, approved strategies and budget ceilings.
-5. Pre-register quantitative and paper/shadow evaluation gates.
-6. Obtain qualified review of the applicable legal/tax/service boundary before relevant live use or any public/third-party service.
-7. Record remaining decisions and evidence. Phase 1 exit does not automatically authorize mainnet trading; later gates still apply.
-
-27. 26-official-source-verification-report.md — dated official-source pass with provider limits/prices, Solana/Jupiter execution findings, security/auth findings, FBR freshness correction and open decisions.
-
-## Latest source-verification snapshot
-- [Official source verification report — 28 October 2026](26-official-source-verification-report.md)
-- [Updated provider/integration matrix](14-provider-and-integration-matrix.md)
-- [Updated cost/operations plan](21-cost-and-operations-plan.md)
-- [Legal/tax source-freshness correction](22-legal-tax-and-service-boundary-review.md)
-
-This is a first verification pass, not the full exit of Phase 1. Account-specific plan checks, selected-provider tests, numeric policy thresholds, and qualified legal/tax review remain open.
+- The frozen roadmap's canonical phase order cannot be changed without explicit owner approval and a dated record.
