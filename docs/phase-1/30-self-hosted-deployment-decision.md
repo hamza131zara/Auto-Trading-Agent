@@ -51,7 +51,13 @@ Proposed activation flow:
 
 The signed entitlement format, instance binding, offline verification, periodic validation interval, grace behavior, privacy/telemetry stance and revocation consequences remain design items. Because the license is a lifetime one-time purchase, revocation must be limited to defined contractual/security/fraud grounds and must not blindly force-sell a customer's position.
 
-## 5. Security and commercial implications
+## 5. Commercial responsibility split
+- Vendor supplies the licensed software and the precisely stated lifetime/update/support scope in the quote.
+- Customer supplies and pays for their own deployment environment, RPC/market-data subscriptions, optional LLM usage, trading capital, Solana network fees and DEX/swap fees unless the signed quote explicitly includes an item.
+- The central portal's ongoing vendor costs are license management, authorized release distribution, security/release signing, customer-support operations and any explicitly included services.
+- No unlimited vendor-hosted trading runtime, API quota or support obligation is implied by the one-time license. The license/quote must state inclusions and exclusions clearly; no undisclosed recurring core fee is allowed.
+
+## 6. Security and commercial implications
 
 - Self-hosting reduces central operational custody and cross-tenant runtime risk, but does not remove software-supply-chain, customer-server, license-server, or local key-management risks.
 - The central portal still needs strict admin controls, payment/invitation integrity, MFA, audit history and protection against license forgery/replay.
@@ -60,7 +66,7 @@ The signed entitlement format, instance binding, offline verification, periodic 
 - Document a clear support boundary: what the vendor can see remotely, what logs the customer may choose to share, and how secrets/addresses are redacted.
 - Legal/tax/payment/bank eligibility review remains required before public sales; no payment processor is approved yet.
 
-## 6. Scope exclusions for V1
+## 7. Scope exclusions for V1
 
 - No hosted SaaS trading runtime.
 - No central multi-tenant trading worker, customer-hosted positions in a shared database, or platform-controlled customer funds.
@@ -69,7 +75,7 @@ The signed entitlement format, instance binding, offline verification, periodic 
 - No recurring core software subscription.
 - No automatic arbitrary code/configuration push that changes risk rules without a signed, owner-approved version and customer-controlled update process.
 
-## 7. Design handoff requirements
+## 8. Design handoff requirements
 
 Phase 2 must design:
 - public marketing/pricing/quote-request pages;
@@ -82,7 +88,7 @@ Phase 2 must design:
 - documentation of the one-position-per-instance invariant;
 - self-hosted threat model, supported OS/container/deployment targets and upgrade/recovery process.
 
-## 8. Change control
+## 9. Change control
 
 This decision replaces the previously proposed hosted multi-tenant default in CR-001. It does not change the frozen Roadmap v1.0 Phase 0–17 order, Solana-only scope, risk invariants, no-free-trial requirement, proposed one-time price or mandatory payment-before-registration and owner/admin-approval flow.
 
