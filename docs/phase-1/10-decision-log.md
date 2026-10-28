@@ -58,3 +58,24 @@ The workflow clarification elaborates the already frozen automation concept and 
 | D-013 | Use canonical operating-mode labels Observe, Backtest, Paper, Shadow, Live Canary, Live and Halted in the design state machine, mapping older shorthand as aliases. | Added to requirements; design crosswalk required |
 
 The gap-closure documents are listed in the Phase 1 index and roadmap coverage audit. They do not authorize implementation, live signing or mainnet trading. Any changes to risk thresholds, provider selections, legal conclusions or release criteria still require evidence and an explicit decision record.
+
+
+## Official source-verification pass 1 — 28 October 2026
+| ID | Finding / decision record | Status |
+|---|---|---|
+| D-014 | First official source pass is recorded in 26-official-source-verification-report.md; Solana Kit/RPC/fees, Jupiter Swap V2, Helius, Birdeye holder API/pricing, DEX Screener limits/terms, Supabase MFA, OWASP agentic risks and Pakistan tax/regulatory indexes were reviewed. | Research snapshot committed; revalidation required before implementation |
+| D-015 | Public prices suggest an illustrative $113/month sum for Jupiter Developer + Helius Developer + Birdeye Lite, excluding all other costs. This is not a selected budget or commitment to purchase all providers. | Recorded for cost planning; account-specific usage pending |
+| D-016 | DEX Screener will be treated as discovery/market data only, not a security/holder source of truth; its published API terms require renewed review before any public/third-party data exposure. | Proposed architecture rule pending owner/provider terms review |
+| D-017 | The current FBR index pages inspected in this pass display older consolidated Ordinance/Rules texts than earlier notes implied. | Correction accepted; current tax position remains unresolved pending primary-source review/adviser |
+
+## Provider and numeric-policy decisions still open
+- Primary/fallback RPC provider, and measured failover behavior.
+- Whether Birdeye's holder endpoint/plan meets required coverage and budget.
+- Jupiter V2 path choice (/order + /execute versus /build/submission), after quote-only and signer-inspection tests.
+- DEX Screener account plan and acceptable terms for the exact intended private V1; re-review for any public service.
+- Provider and LLM budget ceilings and safe quota exhaustion policy.
+- Hard token-security, liquidity/exitability, quote-age, slippage/impact, per-position, daily-loss, drawdown and error-breaker thresholds.
+- Pre-registered backtest/shadow/paper observation window, sample size, multi-regime coverage and pass/fail metrics.
+- Qualified legal/tax review for the actual operating model.
+
+Do not convert any public pricing table or vendor statement into a trading threshold or production approval.
