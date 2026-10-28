@@ -79,3 +79,26 @@ The gap-closure documents are listed in the Phase 1 index and roadmap coverage a
 - Qualified legal/tax review for the actual operating model.
 
 Do not convert any public pricing table or vendor statement into a trading threshold or production approval.
+
+## Commercial model and source-based payment findings — 28 October 2026
+| ID | Decision / proposal | Status |
+|---|---|---|
+| D-018 | Owner requested no free tier/trial and a one-time lifetime license, with quote/invoice, payment first, then registration invitation and mandatory owner/admin approval before access. | Owner-requested requirement recorded |
+| D-019 | USD $12,000 is the proposed standard lifetime-license price; quoted terms define actual amount/currency, service-lifetime meaning, inclusions, exclusions, usage limits and refund/dispute terms. | Proposed price; publish only after owner and legal review |
+| D-020 | Paid customer-facing hosted service requires tenant isolation. Proposed default is one open/unresolved position per customer workspace rather than a globally shared position. | Blocking architecture assumption; explicit owner confirmation required before Phase 2 |
+| D-021 | Initial payment path: owner-issued invoice and manually verified cleared bank settlement. No online checkout provider has been approved for this product/seller location. | Proposed; bank/provider/counsel must confirm eligibility |
+| D-022 | Stripe is not selected: public supported-country list reviewed does not list Pakistan and crypto/financial businesses require restricted-business underwriting. | Source-reviewed, no account eligibility conclusion |
+| D-023 | Paddle and Lemon Squeezy are not selected by default: published policies appear to prohibit cryptocurrency trading platform/trading-strategy or crypto-related products of this type. | Source-reviewed; do not integrate absent explicit written approval |
+| D-024 | Core licensing has no recurring subscription, trial, free operational account or unpaid override. Payment and admin approval are independent access requirements. | Owner-requested rule, documented in CR-001 |
+
+## Source verification correction
+The current Birdeye pricing page returned conflicting quota/overage values between its rendered page and more recent indexed result. Base plan prices appeared consistent, but included compute-unit quotas/overage should be treated as **unverified** until confirmed in the actual provider portal or in writing. Do not budget or select a plan based on stale values.
+
+## Commercial scope amendment
+See [CR-001 — Commercial Scope Amendment](29-commercial-scope-amendment.md). This request changes the earlier private single-operator concept into a paid customer access model. It does not change the canonical roadmap phase order or authorize public sales/live trading. The key design decision still needing owner confirmation is whether the application is hosted multi-tenant SaaS with a separate portfolio per customer, or self-hosted single-operator licensed software per purchaser.
+
+## Remaining Phase 1 close-out items
+- Confirm the commercial deployment model and position-cap scope before Phase 2 design.
+- Obtain written bank/payment institution confirmation for the invoice/settlement process and counsel review of the service classification/refund and tax terms before accepting public payments.
+- Select provider plans after account-specific rate/term/usage verification.
+- Pre-register quantitative and paper/shadow pass criteria before test runs.
