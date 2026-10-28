@@ -1,0 +1,83 @@
+# Functional Requirements
+
+Status values: **Proposed**, **Needs research**, **Accepted**, **Rejected**. Unless explicitly approved, items below are Proposed.
+
+## FR-01 — Authentication and operator access
+- All dashboard and administrative APIs require authentication.
+- Enforce server-side authorization on every action, with deny-by-default permissions.
+- Destructive or high-impact actions require re-authentication or a deliberate confirmation step.
+- Record actor, timestamp, policy version and reason for changes to operating mode or risk configuration.
+
+## FR-02 — Operating mode
+- Display current mode prominently: Research, Simulation, Paper/Shadow, Restricted Pilot, or Halted.
+- Live trading remains disabled by default and must require explicit owner enablement after release gates.
+- A persistent global pause/kill-switch prevents new entry orders.
+- Mode transitions are audited; the UI must never report success before the backend confirms the transition.
+
+## FR-03 — Candidate discovery and review
+- Discover candidates from configured data sources and on-chain observations.
+- Deduplicate tokens and pools by canonical chain/program/address identifiers.
+- Show discovery timestamp, source, data freshness, pool age and missing/stale fields.
+- Allow filters for liquidity, pool age, volume quality, volatility, holders, concentration, price impact, estimated fees, strategy compatibility and risk status.
+- Support candidate states: Discovered, Screening, Rejected, Eligible, Watching, Proposed, In Position, Cooldown and Disabled.
+- Store rejection reason codes and key evidence.
+
+## FR-04 — Security assessment
+- Evaluate supported token program and extension behavior, authorities, transfer restrictions, pool state, liquidity concentration, holder concentration and available deployer/wallet-cluster evidence.
+- Unknown or unsupported high-risk token behavior fails closed under a documented policy.
+- Show individual findings and evidence; do not hide hard failures in an aggregate score.
+- A high-upside score never overrides a hard security rejection.
+
+## FR-05 — Strategy decision
+- Maintain versioned strategies with entry, invalidation, exit, regime, minimum sample and eligibility rules.
+- Allow only strategies approved for the current operating mode.
+- NO_TRADE and RESEARCH_MORE are valid decisions.
+- Keep deterministic calculations separate from model/LLM judgments.
+- Record inputs, model versions, scores, uncertainty, selected policy and rejection reason.
+
+## FR-06 — Risk and sizing
+- Apply a deterministic Risk Governor before order creation and immediately before signing.
+- Enforce one open position globally, wallet/balance limits, token and pool eligibility, liquidity/price-impact limits, configured loss budgets, daily drawdown, failure circuit breakers and system-health gates.
+- Kelly estimates are constrained by policy and are not allowed to enlarge exposure beyond the independent risk cap.
+- If edge is non-positive, inputs are stale, or uncertainty exceeds the accepted threshold, do not trade.
+
+## FR-07 — Execution lifecycle
+- Obtain buy quote and realistic sell/exit quote before entry where supported.
+- Estimate network fees, priority fees, DEX/aggregator fees, token transfer fees, slippage, price impact and route failure risks.
+- Simulate transaction when supported; perform a final freshness and risk check before signing.
+- Use idempotency keys and explicit lifecycle states to prevent duplicate orders.
+- Reconcile signature, confirmation, actual token amount, SOL changes, fees and realized fill.
+- Never treat a submitted transaction as a confirmed fill.
+
+## FR-08 — Position and exit management
+- Support configured Quick Compound, Trend Capture and High-Upside Runner profiles.
+- Exit rules must specify trigger source, partial size, net-PnL basis, trailing/invalidation logic, emergency override and failure handling.
+- Risk/security emergency exits supersede profit targets, subject to transaction feasibility.
+- A target reached must stop new entries when target-pause policy is active.
+- Partial fills, untradeable positions and unavailable routes must trigger explicit recovery states and alerts.
+
+## FR-09 — Portfolio goals
+- Support owner-defined balance milestones (illustrative: $100, $500, $1,000 and $5,000).
+- Define whether each milestone means realized equity or wallet mark-to-market equity; proposed default is reconciled equity after closing positions and reserving liabilities/costs.
+- On milestone hit: stop new entries, reconcile and notify; pause/continue behavior requires explicit configuration.
+- Never imply target dates or guaranteed achievement.
+
+## FR-10 — Analytics and history
+- Show net PnL, win rate, expectancy, profit factor, drawdown, fees, slippage, failed transactions, exit reasons, strategy/regime results and goal progress.
+- Track rejected candidates and shadow outcomes without pretending hypothetical fills equal real fills.
+- Export trade ledger and audit events in a machine-readable format.
+- Store full version lineage for rules, strategies, models, feature schemas and configurations.
+
+## FR-11 — Learning lifecycle
+- Post-trade analysis compares predicted and actual outcome.
+- An individual loss records evidence but does not automatically disable a strategy.
+- Strategy/model updates are proposals; validated champion/challenger evaluation is required before promotion.
+- Production policy, signer scope and hard risk limits cannot be changed by an LLM.
+
+## FR-12 — Reliability and audit
+- Monitor provider health, data freshness, RPC disagreement, queue lag, signer availability, transaction failures and database durability.
+- On material data inconsistency, unknown transaction state or risk-service failure, halt new entries.
+- Maintain append-only or tamper-evident logs for privileged changes and trade lifecycle events.
+
+## Acceptance approach
+Every accepted requirement must have a stable ID, owner, rationale, source when relevant, risk level, measurable acceptance criterion and linked test case in the traceability matrix.
