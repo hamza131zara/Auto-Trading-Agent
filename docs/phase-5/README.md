@@ -28,6 +28,10 @@ Create a reproducible, reviewable engineering foundation before market-data, tok
 
 The first TypeScript pin is an engineering bootstrap, not a final architecture choice. Reassess exact compiler/tool versions during Phase 5 validation before core product modules are built.
 
+## Initial CI status
+
+The first push workflow run completed successfully for install, repository validation, typecheck, build/tests, npm audit and the Gitleaks scan. A separate pull-request Gitleaks run initially failed because checkout was shallow; the workflow was updated to fetch full history. The Dependency Review Action was removed after GitHub reported that the repository dependency graph is not enabled; npm audit remains active. Recheck workflow results after the latest commit before treating the updated PR scan as passed.
+
 ## Security invariants
 
 - No production private keys, seed phrases, RPC secrets, API keys, payment credentials or real user data in repository, CI logs, test fixtures or sample environment files.
