@@ -28,7 +28,6 @@
 - **Self-hosted, customer-isolated software:** each customer runs their own instance in their own/customer-dedicated infrastructure. The central portal manages licensing, payment/registration approval and authorized downloads/updates; it does not host trading jobs or hold wallet keys.
 - Each running licensed instance enforces at most one open/unresolved position in its own portfolio. No hosted multi-tenant trading SaaS, shared trading runtime, shared position lock or pooled funds in V1.
 - Customer-provided infrastructure, RPC/data/LLM services, trading capital and network/DEX fees are excluded unless a quote explicitly states otherwise.
-- License activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback are Phase 2 design items.
 
 ## Remaining external gates (not blockers to UX/system design)
 1. Confirm payment collection eligibility with the actual bank/payment institution and qualified counsel before public sales.
@@ -45,7 +44,7 @@
 - No profitability/win-rate guarantee is made.
 
 ## Phase 2 entry
-**Phase 1 is closed for design handoff. Phase 2 is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed.
+**Phase 1 is closed for design handoff. Phase 2 is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work includes license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback.
 
 ## Canonical source references
 - [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
