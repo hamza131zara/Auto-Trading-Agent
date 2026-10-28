@@ -1,6 +1,6 @@
 # Phase 1 — Documentation and Requirements
 
-**Status:** Phase 1 CLOSED for design handoff on 28 October 2026. Core documentation, roadmap comparison/source verification, commercial requirements (CR-001), self-hosted deployment (D-025), guided onboarding requirement (D-026) and UI direction requirement (D-027) are recorded. Phase 2 — Product Requirements and Quantitative Policy — is now ACTIVE. Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
+**Status:** Phase 1 CLOSED for design handoff on 28 October 2026. Core documentation, roadmap comparison/source verification, commercial requirements (CR-001), self-hosted deployment (D-025), guided onboarding requirement (D-026) and UI direction requirement (D-027) are recorded. Phase 2 — Product Requirements and Quantitative Policy — is COMPLETE for handoff to Phase 3. See the [Phase 2 completion and Phase 3 handoff](../phase-2/08-phase-2-completion-and-phase-3-handoff.md). Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
 
 **Mode:** Documentation only. No production trading code, wallet connection, private-key handling, automated payment checkout, or live execution is authorized during Phase 1.
 
@@ -63,7 +63,7 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 
 ## Phase 1 completion and handoff conditions
 
-Phase 1 is closed for design handoff. D-025 locks the deployment direction to self-hosted, customer-isolated licensed software; D-026 requires setup documentation and availability-based guided onboarding; D-027 requires a professional responsive UI with light and dark modes. Phase 2 now defines testable product/quantitative requirements. Detailed threat/custody architecture and visual design remain in their later canonical phases. Payment/bank/legal review remains a prerequisite for public sales; separate trading release gates remain mandatory.
+Phase 1 is closed for design handoff. D-025 locks the deployment direction to self-hosted, customer-isolated licensed software; D-026 requires setup documentation and availability-based guided onboarding; D-027 requires a professional responsive UI with light and dark modes. Phase 2 has defined testable product/quantitative requirements, planned acceptance IDs and its Phase 3 handoff. Detailed threat/custody architecture and visual design remain in their later canonical phases. Payment/bank/legal review remains a prerequisite for public sales; separate trading release gates remain mandatory.
 
 Before public sales, separately complete:
 1. Bank/payment institution and qualified legal/tax confirmation for the real service model and seller jurisdiction.
