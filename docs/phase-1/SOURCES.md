@@ -43,3 +43,34 @@
 
 ## Source review record
 For each selected API/package: record exact endpoint/product version, access plan, auth method, request limits, cost/usage units, data-retention/redistribution restrictions, latency expectations, failure modes, last reviewed date and replacement plan.
+
+## Additional official sources required by the canonical Roadmap v1.0
+
+### Dashboard authentication and database permissions
+- Supabase Auth: https://supabase.com/docs/guides/auth
+- Supabase MFA: https://supabase.com/docs/guides/auth/auth-mfa
+- PostgreSQL Row-Level Security: https://www.postgresql.org/docs/current/ddl-rowsecurity.html
+
+### Agent/API security and AI risk governance
+- OWASP Top 10 for Agentic Applications 2026: https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/
+- OWASP API Security Top 10: https://owasp.org/API-Security/
+- NIST AI Risk Management Framework: https://www.nist.gov/itl/ai-risk-management-framework
+- NIST Secure Software Development Framework: https://csrc.nist.gov/pubs/sp/800/218/final
+- OWASP ASVS: https://asvs.owasp.org/
+
+### Durable workflow orchestration (optional)
+- Temporal documentation: https://docs.temporal.io/
+Evaluate only if workflows/retries/long-running recovery justify its cost and operational load.
+
+### Pakistan legal/tax/service boundary review (if applicable to the operator/service)
+- PVARA regulatory framework and published 2026 regulations: https://pvara.gov.pk/regulations
+- PVARA licensing FAQ: https://www.pvara.gov.pk/licensing
+- Virtual Assets Act, 2026 official copy: https://www.pvara.gov.pk/documents/Virtual%20assets%20Act%202026%20passed%20by%20NA.pdf
+- State Bank of Pakistan circular on accounts for PVARA NOC/licensed VASPs: https://www.sbp.org.pk/circulars/bprd-circular-letter-no-10
+- FBR Income Tax Ordinance: https://fbr.gov.pk/Categ/Income-Tax--Income-Tax-Ordinance/326
+- FBR Income Tax Rules: https://www.fbr.gov.pk/categ/income-tax-rules-2002/335
+
+These are research sources, not legal/tax conclusions. Record the jurisdiction, applicable service model, exact primary text/regulation version, review date and qualified adviser conclusion in DOC-12 before relying on the result.
+
+## Provider and policy review metadata
+For every selected integration, add a review record containing exact product/API/SDK version, endpoint names, auth method, applicable plan, rate/quota units, current pricing, terms/licensing, data retention/redistribution rights, latency/failure behavior, tested fallback and date reviewed. Links alone do not constitute an approved integration decision.
