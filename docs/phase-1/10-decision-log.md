@@ -46,3 +46,15 @@ Every decision change records old value, new value, rationale, supporting eviden
 | P-009 | Specify a fully automated discovery-to-next-candidate cycle: discover, screen, assess, select, risk-check, quote/simulate, execute only in an authorized mode, monitor, exit, reconcile, record learning evidence, check portfolio goals, then scan again. | Added to Phase 1 draft requirements; owner approval pending |
 
 The workflow clarification elaborates the already frozen automation concept and does not authorize live trading or change the roadmap's phase order. See [16-autonomous-trading-workflow.md](16-autonomous-trading-workflow.md). In particular, the next position cannot start until the prior one is fully reconciled and closed, and the agent must pause when no candidate qualifies or a safety/operational gate fails.
+
+
+## Roadmap comparison and document approval record
+| ID | Decision / record | Status |
+|---|---|---|
+| D-009 | Owner explicitly approved the existing Phase 1 repository documents on 28 October 2026. | Accepted by owner in conversation |
+| D-010 | Compare repository docs with the supplied 22-page Roadmap v1.0 DOCX/PDF and add missing documentation without changing the frozen scope or canonical phase order. | Completed as documentation-only supplement |
+| D-011 | Use the source roadmap's exact Phase 0–17 sequence for roadmap references; treat earlier abbreviated numbering as a repository-summary inconsistency, not a baseline amendment. | Accepted alignment |
+| D-012 | Add DOC-11 Cost & Operations and DOC-12 Legal/Tax/Service Boundary Review; provider costs and legal/tax applicability remain open until sourced/reviewed. | Added; verification/review remains open |
+| D-013 | Use canonical operating-mode labels Observe, Backtest, Paper, Shadow, Live Canary, Live and Halted in the design state machine, mapping older shorthand as aliases. | Added to requirements; design crosswalk required |
+
+The gap-closure documents are listed in the Phase 1 index and roadmap coverage audit. They do not authorize implementation, live signing or mainnet trading. Any changes to risk thresholds, provider selections, legal conclusions or release criteria still require evidence and an explicit decision record.
