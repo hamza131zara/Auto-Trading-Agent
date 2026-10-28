@@ -157,3 +157,12 @@ D-030 is now explicitly confirmed as owner-locked. This does not change the froz
 | D-031 | At owner direction, close Phase 3 for documentation/design handoff and begin canonical Phase 4 UX and Visual Design. The security architecture package is handed off, but unresolved signing/key backend, instruction allowlist, license security and numeric-risk choices remain blockers for dependent implementation and release. | **OWNER-LOCKED HANDOFF STATUS; not production/security approval** |
 
 D-031 does not waive the open decision register or the planned security verification checklist. It does not authorize live signing, mainnet execution, public sales or payment acceptance. Phase 4 is limited to visual/interaction design and must continue to represent blocked or unconfigured capabilities truthfully.
+
+
+## Phase 4 lock and Phase 5 start — 28 October 2026
+
+| ID | Decision | Status |
+|---|---|---|
+| D-032 | Lock the Phase 4 design baseline for handoff, including the responsive light/dark design system, portal/runtime IA, screen specifications, D-030 selective 3D rules, static concepts and clickable local HTML prototype. Advance to canonical Phase 5 repository/environment/CI foundation. Production UI and automated accessibility/browser validation remain later work. | **OWNER-LOCKED HANDOFF STATUS; not production UI approval** |
+
+D-032 does not change the frozen roadmap and does not waive security or numeric-risk blockers. Phase 5 must not add production trading, wallet signing, real payment collection or provider-connected data flows.
