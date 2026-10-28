@@ -1,0 +1,85 @@
+# DOC-11 — Cost and Operations Plan
+
+**Status:** Requirements template; provider plans and numeric ceilings require owner approval after current official pricing/terms are reviewed. No vendor price is assumed here.
+
+## 1. Cost principles
+- Keep Phase 1 and paper/shadow environments low-cost.
+- Purchase only data/compute capacity with a documented requirement and measurable benefit.
+- Preserve security-critical checks even when approaching a cost ceiling. Degrade optional LLM analysis or research throughput before compromising mandatory safety controls.
+- Distinguish operating expenditure from trade-level execution cost and realized trading loss.
+- Every estimate records provider/product/plan, date checked, usage unit, allowance/quota, overage, taxes where applicable and fallback option.
+
+## 2. Budget categories
+1. RPC and streaming (requests, subscriptions, stream units, archival/history and overage).
+2. Market-data/analytics APIs (discovery, price/volume, holder/wallet analytics, historical data and per-endpoint quotas).
+3. Execution infrastructure (quotes, swap/transaction API calls, simulation, priority fees and failed-transaction fees).
+4. LLM/model usage (input/output tokens, cached input if applicable, parallel questions, retries, summaries and batch jobs).
+5. Hosting/runtime (dashboard/API, background workers, storage, egress, domains/TLS and environments).
+6. Database/backup (compute, storage, retention, backup copies, restore testing and analytics).
+7. Security/signing (KMS/HSM/MPC or managed signer usage, authentication/MFA, secret manager and security scanning).
+8. Observability/alerts (logs, metrics, traces, retention, monitoring, notification delivery and incident handling).
+9. Development/release (CI minutes, artifact storage, staging environments, independent security review and penetration testing).
+10. Legal/accounting/operations (qualified legal/tax review, operational support, record retention and periodic reviews).
+
+## 3. Provider usage model
+Estimate activity for each mode and profile:
+- candidates discovered per minute/hour/day;
+- data calls per candidate and fields required for security vs optional scoring;
+- shortlisted candidates and buy/sell quote counts per shortlisted candidate;
+- snapshot frequency for open position and watchlist;
+- holder/deployer/wallet-cluster query frequency and historical backfill needs;
+- stream subscriptions, reconnects and replay volume;
+- execution/failed-transaction reconciliation queries;
+- LLM calls per decision, number of parallel questions, tokens/request and post-mortem frequency;
+- expected retries, provider rate-limit responses and failover overhead.
+
+Avoid fetching premium holder/security data for every newly discovered token if a cheaper deterministic first filter can safely reduce the set. This optimization must never remove a required security gate before a candidate is eligible to trade.
+
+## 4. Core calculators
+### Monthly provider cost
+Monthly provider cost = fixed plan cost + sum(usage units × applicable unit rate) + overage + applicable taxes.
+If usage is credit-based, model credit consumption by endpoint and verify quotas/overage terms.
+
+### LLM cost
+For each model/endpoint:
+Model cost = input tokens × input rate + output tokens × output rate + other billed units/retries.
+Use current vendor pricing and real instrumented token counts; do not assume cached/batch pricing applies unless confirmed.
+
+### Run-rate
+Monthly run-rate = RPC + market data + LLM + hosting + database/backup + security/signing + monitoring + CI + operational/review allowance.
+Report fixed and variable components separately.
+
+### Cost per candidate and completed round trip
+- Cost per screened candidate = attributable data/compute/LLM cost divided by candidates screened.
+- Cost per completed round trip = attributable trading infrastructure cost divided by fully reconciled round trips, reported separately from network/DEX/price-impact costs charged to the trade.
+- Show how costs vary with rejection rate and number of candidates; the agent may be unprofitable at small position sizes even if gross signal performance looks positive.
+
+### Trade-level execution costs
+Use actual confirmed entry/exit amounts and fee records to calculate DEX/aggregator/provider fees, network/priority fees, transfer fees, realized impact/slippage and failed transaction costs. Do not double-count impact already reflected in realized proceeds.
+
+## 5. Budget governance
+Before each environment is enabled, configure:
+- monthly total operations ceiling;
+- per-provider ceiling and quota alert thresholds;
+- monthly LLM ceiling;
+- per-candidate or per-decision optional-model budget;
+- transaction fee ceiling and per-trade maximum execution-cost ratio;
+- emergency reserve for provider failover/incident work;
+- owner responsible for budget changes.
+
+Recommended alert stages are 50%, 75%, 90% and 100% of a configured budget; these are proposed defaults, not locked limits. At a ceiling, pause optional expensive analysis and notify. If required safety data cannot be obtained within the budget, block new entries instead of skipping the check.
+
+## 6. Operational model
+- Keep local, test, paper, shadow and live configuration/secrets separated.
+- Monitor provider uptime, request/error rates, quota exhaustion, data freshness, stream/RPC lag, p50/p95 latency, queue age, database lag, signer health, transaction unknown/failure rates and audit persistence.
+- Implement backup and restoration drills for the ledger, approved policies and configuration; caches are not the financial source of truth.
+- Define owner/on-call responsibilities, alert channels, retention, escalation, incident note taking and post-incident review.
+- Reconcile wallet and open position after restarts and provider failover.
+- Record recurring cloud/data costs and actual execution fees in monthly operating reports.
+
+## 7. Cost operations acceptance
+- Provider matrix contains current plan, prices/quotas/terms and last-reviewed date for each selected integration.
+- A request-volume worksheet estimates normal, peak and incident/failover activity.
+- Budget alerts and safe behavior at quota/budget limit are tested.
+- Required security checks never silently downgrade due to cost.
+- The application can export a monthly cost report separating operating costs, execution costs and trading PnL.
