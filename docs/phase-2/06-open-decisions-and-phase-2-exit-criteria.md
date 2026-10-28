@@ -11,7 +11,7 @@
 | D-027 | Professional trader-agent UI with light/dark themes, responsive layouts, accessible status semantics and truthful data. Detailed visual design in Phase 4. | LOCKED requirement |
 | D-028 | Add original vector logo assets for dark/light surfaces and a compact icon mark; use a restrained professional trader-agent visual identity. | LOCKED brand baseline |
 | D-029 | Close Phase 2 requirements for handoff to Phase 3; numerical execution-affecting TBDs remain excluded from executable scope pending owner approval. | CLOSED for handoff, not trading approval |
-| D-030 | Add selective 3D/isometric visual treatments to appropriate frames/sections, with accessibility, performance and data-truthfulness constraints. | LOCKED additive Phase 4 visual requirement |
+| D-030 | Add selective 3D/isometric visual treatments to appropriate frames/sections, with accessibility, performance and data-truthfulness constraints. | OWNER-LOCKED by explicit approval on 28 October 2026; detailed placement in Phase 4 |
 | CR-001 | No free tier/trial; proposed USD $12,000 one-time lifetime license, no recurring core subscription. | Commercial baseline; final terms pending |
 
 ## Open decisions
