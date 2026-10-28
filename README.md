@@ -12,6 +12,7 @@ Solana-only autonomous DEX trading research and execution system.
 - [Commercial access and lifetime license](docs/phase-1/27-commercial-pricing-access-and-lifetime-license.md)
 - [Payment provider eligibility assessment](docs/phase-1/28-payment-provider-eligibility-assessment.md)
 - [Commercial scope amendment CR-001](docs/phase-1/29-commercial-scope-amendment.md)
+- [Locked self-hosted deployment decision D-025](docs/phase-1/30-self-hosted-deployment-decision.md)
 - [Autonomous trading workflow: discovery to next candidate](docs/phase-1/16-autonomous-trading-workflow.md)
 - [Roadmap coverage audit vs approved DOCX/PDF](docs/phase-1/17-roadmap-coverage-audit.md)
 - [Frozen Roadmap v1.0 — canonical phase map](docs/roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
@@ -41,7 +42,9 @@ Use the phase titles/order in [ROADMAP-CANONICAL-PHASE-MAP.md](docs/roadmap/ROAD
 - Proposed price: USD $12,000 one-time lifetime license; no recurring core subscription.
 - Quote/invoice → verified cleared settlement → single-use registration invitation → user registration and MFA → owner/admin approval → active license/tenant.
 - No online payment processor is approved yet. The initial candidate is an owner-issued invoice with manually reconciled bank settlement, subject to bank/legal confirmation.
-- A paid hosted multi-tenant model is a scope addendum. Proposed cap is one open/unresolved position per customer workspace, pending owner confirmation before Phase 2 design.
+- **Locked deployment:** self-hosted, customer-isolated licensed software (D-025). No hosted multi-tenant trading SaaS in V1. The central portal handles quote/payment/registration/admin approval, signed license activation and authorized downloads/updates only.
+- Each customer runs their own isolated agent instance, provider credentials, wallet/signer, ledger and risk configuration. One open/unresolved position per running instance. No pooled funds or shared platform-level trading state.
+- Proposed standard price remains USD $12,000 one-time lifetime license, with no free tier/trial and no recurring core subscription. Payment/bank eligibility and legal review remain pre-sale gates.
 
 ## Current rule
 Phase 1 documentation/source research is complete for design handoff except the scope confirmation recorded in CR-001. No production wallet, private key, live signing or mainnet trading is authorized. Public sales also remain gated on payment/bank eligibility, explicit license terms and qualified legal/tax review.
