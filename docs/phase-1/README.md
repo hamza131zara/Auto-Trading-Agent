@@ -1,6 +1,6 @@
 # Phase 1 — Documentation and Requirements
 
-**Status:** Core documentation was approved by the owner. Roadmap comparison and first official source-verification pass are complete; commercial requirements requested on 28 October 2026 have been documented as CR-001. This package is ready for design handoff **after the owner confirms the proposed hosted multi-tenant model and per-customer position cap**. Account-specific provider verification and legal/payment underwriting remain pre-sale/live-launch gates, not claims of current clearance.
+**Status:** Core documentation, roadmap comparison and first official source-verification pass are complete. Commercial requirements are documented under CR-001 and the deployment model is locked by owner decision D-025: **self-hosted, customer-isolated licensed software**. Phase 2 design may begin from this baseline. Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
 
 **Mode:** Documentation only. No production trading code, wallet connection, private-key handling, automated payment checkout, or live execution is authorized during Phase 1.
 
@@ -47,7 +47,8 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 27. [26 Official Source Verification Report](26-official-source-verification-report.md) — dated official source pass, provider limits/prices, payment-provider findings and source caveats.
 28. [27 Commercial Pricing, Access and Lifetime License](27-commercial-pricing-access-and-lifetime-license.md) — no-free-trial policy, proposed USD $12,000 lifetime license, quote/payment/registration/admin approval workflow.
 29. [28 Payment Provider Eligibility Assessment](28-payment-provider-eligibility-assessment.md) — Stripe/Paddle/Lemon Squeezy policy review and proposed invoice/settlement path.
-30. [29 Commercial Scope Amendment CR-001](29-commercial-scope-amendment.md) — owner-requested paid multi-customer scope, proposed tenant model and design decision.
+30. [29 Commercial Scope Amendment CR-001](29-commercial-scope-amendment.md) — paid license and activation flow, now aligned to self-hosted distribution.
+31. [30 Self-Hosted Deployment Decision D-025](30-self-hosted-deployment-decision.md) — locked self-hosted architecture and central license-portal boundary.
 
 ## Commercial access rules now documented
 
@@ -56,12 +57,12 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 - Quote/invoice → verified cleared payment → single-use registration invitation → user registration/email verification/MFA/terms → owner/admin approval → license/tenant activation.
 - Public marketing pages do not provide access to the agent or protected services.
 - **No online payment gateway has been approved.** Initial proposed collection is an owner-issued invoice and manually verified cleared bank settlement, subject to bank and qualified legal approval.
-- The product's customer-facing hosted model requires tenant isolation. The proposed default is one open/unresolved position per customer workspace; the owner must confirm this change from the original single-operator/global-position baseline before Phase 2 design.
+- The selected self-hosted model isolates each customer's runtime and data. Each licensed running instance enforces one open/unresolved position in its own portfolio; there is no shared trading runtime or platform-level position lock.
 - No payment or account approval authorizes live trading. Trading release gates remain separate.
 
 ## Phase 1 completion and handoff conditions
 
-Documentation and the first public-source research pass are complete. Before Phase 2 design begins, the owner must confirm the one scope decision in [CR-001](29-commercial-scope-amendment.md): hosted multi-tenant service with a separate portfolio and one-open-position limit per customer workspace, rather than self-hosted single-operator licensing.
+Documentation, roadmap comparison and the first public-source verification pass are complete. D-025 locks the deployment direction to self-hosted, customer-isolated licensed software. Phase 2 can now design the central license portal, signed license activation, customer installation/runtime, local wallet/signer boundaries and update/rollback mechanics. Payment/bank/legal review remains a prerequisite for public sales; separate trading release gates remain mandatory.
 
 Before public sales, separately complete:
 1. Bank/payment institution and qualified legal/tax confirmation for the real service model and seller jurisdiction.
@@ -80,3 +81,6 @@ Before live trading, additionally pass all backtest, out-of-sample, independent 
 - Reconcile the current position fully before opening the next one in its portfolio scope.
 - No claim or guarantee of win rate, return or target attainment.
 - The frozen roadmap's canonical phase order cannot be changed without explicit owner approval and a dated record.
+
+## Locked deployment decision
+[D-025 — Self-Hosted Deployment Decision](30-self-hosted-deployment-decision.md) is the approved design baseline for V1. No hosted multi-tenant trading SaaS in V1. The central portal handles commercial licensing and downloads only.
