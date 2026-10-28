@@ -22,7 +22,7 @@ Translate the frozen roadmap into explicit, testable and source-backed requireme
 13. 13-tooling-and-technology-decisions.md — candidate stack and selection criteria.
 14. 14-provider-and-integration-matrix.md — provider responsibilities, data ownership and fail-closed behavior.
 15. 15-threat-model-and-risk-register.md — assets, trust boundaries, threats, mitigations and incident workflow.
-16. SOURCES.md — official documentation register and revalidation notes.
+16. 16-autonomous-trading-workflow.md — closed-loop discovery, selection, risk approval, execution, profit/exit, reconciliation and next-token cycle.\n17. SOURCES.md — official documentation register and revalidation notes.
 
 ## Approval workflow
 - Mark each requirement as Proposed, Needs research, Accepted, or Rejected.
