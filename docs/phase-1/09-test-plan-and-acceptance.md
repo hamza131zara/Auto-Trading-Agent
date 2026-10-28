@@ -56,12 +56,12 @@ No numerical performance gate should be invented after viewing results. Set eval
 - **License behavior:** one-time payment creates one license under exact terms; no recurring invoice/subscription gets created; suspension/refund/revocation follows approved policy.
 - **Commercial admin:** privilege tests ensure only authorized roles issue/change quotes, verify payment, approve registrations, grant/revoke license and execute refunds. High-impact operations require step-up auth/MFA.
 - **Customer/installation isolation:** central portal prevents cross-customer access to quote/payment/invitation/license records; separate self-hosted installations do not share runtime state, ledger, provider credentials or wallets. Test license activation/download authorization and customer support diagnostic redaction.
-- **Position isolation:** if the owner approves a tenant model, race/restart tests enforce at most one open/unresolved position per tenant and prohibit one customer's activity from blocking or modifying another's position.
+- **Position isolation:** concurrency/restart tests enforce at most one open/unresolved position per running licensed instance. Independent customer instances must not share or modify each other's position, ledger, configuration or wallet state.
 - **High-ticket financial controls:** duplicate invoice, wrong settlement currency, bank reversal, refund, chargeback and failed reconciliation scenarios are tested.
 - **Payment provider restrictions:** production checkout remains feature-flagged off unless seller country and exact product/category receive written provider approval and the approved webhook path passes tests.
 
 ## Commercial release gate
-Public sales require an approved payment/settlement route, versioned license/refund terms, legal/tax/service-boundary review, privacy notice, tenant isolation tests, chargeback/refund operations and explicit owner launch approval. A checkout success page alone can never authorize account activation.
+Public sales require an approved payment/settlement route, versioned license/refund terms, legal/tax/service-boundary review, privacy notice, central license-record isolation and separate-installation isolation tests, chargeback/refund operations and explicit owner launch approval. A checkout success page alone can never authorize account activation.
 
 ## Self-hosted licensing and update tests (D-025)
 - A signed license entitlement cannot be forged, modified, copied to an unauthorized installation or reused beyond its licensed scope.
