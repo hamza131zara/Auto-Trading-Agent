@@ -138,4 +138,13 @@ These decisions do not alter the frozen Roadmap v1.0 phase order. D-026 does not
 D-028's SVG assets are under `assets/brand/`. Detailed sizing, responsive placements, final design tokens and screen layouts remain in Phase 4. D-029 does not claim tests have run or imply legal/payment clearance, provider approval or production readiness.
 
 
-| D-030 | Add a coherent, selective 3D/isometric visual layer to appropriate frontend frames/sections: landing hero, architecture/system flow, security/self-hosting, setup/onboarding and selected empty states. Financial charts, numeric tables, risk controls and operational state must remain accurate, legible and non-distorted. Respect reduced motion, mobile performance, accessibility and theme contrast. | **LOCKED visual requirement for Phase 4 design** |
+| D-030 | Add a coherent, selective 3D/isometric visual layer to appropriate frontend frames/sections: landing hero, architecture/system flow, security/self-hosting, setup/onboarding and selected empty states. Financial charts, numeric tables, risk controls and operational state must remain accurate, legible and non-distorted. Respect reduced motion, mobile performance, accessibility and theme contrast. | **OWNER-LOCKED by explicit approval on 28 October 2026; implement/design in Phase 4** |
+
+
+## Phase 3 opened — 28 October 2026
+
+| Status entry | Scope | Status |
+|---|---|---|
+| PHASE-3-START | Begin threat modeling, custody and signer architecture, license/admin/release security, secrets/audit/incident response and security verification. Use the security reference register and keep open architecture decisions explicit. | **ACTIVE — initial architecture package committed; implementation and independent review not claimed** |
+
+D-030 is now explicitly confirmed as owner-locked. This does not change the frozen roadmap: security architecture is Phase 3; final visual wireframes and visual placement are Phase 4. Live/mainnet trading remains unauthorized.
