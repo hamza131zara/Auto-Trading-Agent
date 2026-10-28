@@ -125,17 +125,17 @@ Previous shorthand modes in this file (Research, Simulation, Paper/Shadow, Restr
 - Invitation is single-use, short-lived, bound to the quoted email/customer identity and cannot itself grant operational access.
 - User must complete registration, verify email, complete required MFA, accept the active license/terms/privacy notice and provide required account eligibility details.
 - Owner/admin approval is mandatory after registration. Approval does not override missing/failed payment, terms, MFA or compliance checks.
-- The server denies all protected UI/API/stream/agent jobs unless payment is verified, registration is complete, email verified, admin approval granted, required MFA satisfied, terms accepted, entitlement active and tenant enabled.
+- The central portal denies protected licensing/download/account actions unless payment is verified, registration is complete, email verified, admin approval granted, required MFA satisfied, terms accepted and license/installation entitlement is active. The self-hosted runtime independently validates the signed entitlement and applies its local authentication/risk controls; the portal does not run agent jobs.
 - If the application is declined after payment, follow the documented refund/contract/legal policy; do not silently retain funds without a documented lawful basis.
 - No free-trial state, coupon, manual override or test seed may create an unpaid operational entitlement.
 
-## FR-16 — Commercial tenant isolation (scope amendment)
-- Each paid customer has an independent tenant/workspace, data namespace, configuration, audit history, licensed access and customer-specific wallet/signer boundary.
-- Server-side authorization and database isolation prevent one customer or background job from reading/changing another customer's wallet, keys, trade history, quotes, invoices, risk controls, decisions or PnL.
-- Locked D-025 deployment: each customer runs self-hosted, customer-isolated software. Enforce at most one open/unresolved position per running licensed instance/portfolio. The central licensing portal does not host the trading runtime or keep a global portfolio lock.
+## FR-16 — Customer and installation isolation (CR-001 / D-025)
+- Each paid customer receives a separately licensed installation with its own configuration, local data namespace, audit history, provider credentials, wallet/signer boundary, risk settings, position state and strategy memory.
+- The central licensing portal isolates customer quote, payment, invitation and license records. It does not store the trading ledger, customer private keys, seed phrases or runtime provider secrets.
+- Locked D-025 deployment: each customer runs self-hosted, customer-isolated software. Enforce at most one open/unresolved position per running licensed instance/portfolio. The central portal does not host the trading runtime or keep a global portfolio lock.
 - Customer balances/funds must not be pooled. The agent cannot withdraw or move assets to a platform/admin wallet.
-- Whether unattended signing uses customer-controlled signing or an isolated customer-specific signing service is a security/legal design gate; do not place all customer keys in the general agent process.
-- Admin owner/support roles are distinct, least-privileged and audited. A payment administrator cannot change trading risk settings by virtue of payment privileges.
+- The customer's wallet and approved signer configuration remain in their self-hosted/customer-dedicated environment. The central portal cannot sign transactions or remotely change risk rules; precise local signer and recovery design remains a Phase 2 security task.
+- Central portal owner/admin/support roles are distinct, least-privileged and audited. A payment administrator cannot change trading risk settings by virtue of payment privileges.
 
 ## FR-17 — Lifetime entitlement lifecycle and payment-event integrity
 - Model Quote, Invoice/Order, Payment/Settlement, Invitation, Registration, AdminApproval, LicenseEntitlement, Refund and Dispute as distinct linked records.
@@ -158,3 +158,9 @@ See [27-commercial-pricing-access-and-lifetime-license.md](27-commercial-pricing
 - Runtime validates entitlement signature and scope according to an approved online/offline validation and safe-grace policy. A licensing-service outage must not weaken risk gates or blindly force-sell a position.
 - Software updates use signed/versioned release artifacts with checksum/signature verification, migration instructions and rollback. No arbitrary remote code/config push may change production risk rules.
 - No hosted multi-tenant trading runtime is in V1. Any future hosted model requires a separate owner-approved scope amendment.
+
+## FR-18A — License service availability and safe runtime behavior
+- The trading runtime verifies a signed, instance-bound license entitlement. The precise validation cadence and grace duration are selected in Phase 2 and must be disclosed in the license terms.
+- A temporary licensing-portal outage must not bypass local deterministic security/risk controls, erase the local ledger or blindly force-sell an open position.
+- If an entitlement cannot be validated beyond the approved grace policy, block new entries and show a clear license state while following the approved existing-position monitoring/exit policy. Do not create an arbitrary remote transaction path.
+- Software updates are signed/versioned. A failed update or portal outage must not corrupt the current position, duplicate orders or disable risk limits.
