@@ -24,7 +24,7 @@
 | P5-O-002 | Is TypeScript 7.0 yet suitable for this repo? | Initial exact compiler pin is used for the foundation. Validate clean install/build on Node 24 and reassess before domain packages expand. |
 | P5-O-003 | Dashboard framework, database, migrations and auth provider? | Not selected/installed by Phase 5; review in the canonical phase that needs them. |
 | P5-O-004 | Staging/production deployment target and secret backend? | Not selected; no deployment credential or target assumed. |
-| P5-O-005 | Branch protection / required reviews / required status checks? | Configuration must be enabled in GitHub settings by an authorized owner; workflow files alone cannot enforce merge rules. |
+| P5-O-005 | Branch protection / required reviews / required status checks and GitHub dependency graph? | Configuration must be enabled in GitHub settings by an authorized owner; workflow files alone cannot enforce merge rules. Dependency Review Action must remain deferred until the dependency graph is enabled; npm audit is the current dependency gate. |
 | P5-O-006 | Required dependency exception process? | Require reason, owner, expiry/review date, scope and compensating control. Do not silently waive critical/high findings. |
 
 ## 3. Phase 5 exit rule
