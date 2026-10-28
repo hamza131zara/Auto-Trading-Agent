@@ -17,6 +17,7 @@ Define how the self-hosted trading runtime, customer-controlled signing boundary
 4. [Secrets, audit, privacy and incident response](04-secrets-audit-privacy-and-incident-response.md)
 5. [Security verification plan and Phase 3 exit criteria](05-security-verification-and-phase-3-exit-criteria.md)
 6. [External security reference register](06-security-reference-register.md)
+7. [Security architecture decisions and open questions](07-security-architecture-decisions.md)
 
 ## Locked baseline constraints
 
@@ -27,7 +28,7 @@ Define how the self-hosted trading runtime, customer-controlled signing boundary
 - One open or unresolved position per individual running instance/portfolio. Unknown transaction state blocks new entry until reconciled.
 - Production signing keys, wallet secrets or live order flow are not authorized during Phase 3 documentation. Do not connect a production wallet.
 - Numerical thresholds still marked TBD remain executable blockers. No component may invent them.
-- D-030 visual requirements are locked, including selective 3D/isometric assets; they do not alter security boundaries or trading behavior.
+- D-030 visual requirements are explicitly owner-locked, including selective 3D/isometric assets; they do not alter security boundaries or trading behavior. Final placement is Phase 4 work.
 
 ## Architecture workstreams
 
