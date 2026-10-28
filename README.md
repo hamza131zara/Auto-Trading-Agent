@@ -2,9 +2,11 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 1 — Documentation and Requirements. Live trading is not authorized. Do not connect a production wallet or private key during documentation work.
+> **Current phase:** Phase 2 — Product Requirements and Quantitative Policy. Phase 1 is closed for design handoff. Live trading is not authorized; do not connect a production wallet or private key.
 
 ## Start here
+- [Phase 2 requirements and quantitative policy](docs/phase-2/README.md)
+- [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
 - [Phase 1 document index](docs/phase-1/README.md)
 - [Document register with versions and hashes](docs/phase-1/DOCUMENT-REGISTER.md)
 - [Phase 1 status and exit checklist](PHASE1-STATUS.md)
@@ -47,4 +49,4 @@ Use the phase titles/order in [ROADMAP-CANONICAL-PHASE-MAP.md](docs/roadmap/ROAD
 - Proposed standard price remains USD $12,000 one-time lifetime license, with no free tier/trial and no recurring core subscription. Payment/bank eligibility and legal review remain pre-sale gates.
 
 ## Current rule
-Phase 1 documentation/source research is complete for design handoff except the scope confirmation recorded in CR-001. No production wallet, private key, live signing or mainnet trading is authorized. Public sales also remain gated on payment/bank eligibility, explicit license terms and qualified legal/tax review.
+Phase 1 is formally closed for design handoff and Phase 2 requirements/quantitative-policy work is active. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
