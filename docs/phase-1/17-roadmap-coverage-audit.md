@@ -73,3 +73,18 @@ The source roadmap explicitly calls for twelve documents before design approval.
 
 ## Change-control statement
 No change to scope, chain, one-position rule, safety architecture or phase order is proposed. Phase name/order corrections make the repository companion match the canonical roadmap; they are not a roadmap revision.
+
+## Commercial access amendment coverage — CR-001 (28 October 2026)
+
+The owner subsequently requested no free tier/trial, a proposed USD $12,000 one-time lifetime license, quote/invoice-first payment, registration invitation after settlement, and mandatory owner/admin approval before operational access. This is a separate commercial addendum and does not change the frozen Phase 0–17 sequence.
+
+| Commercial requirement | Repository coverage | Status |
+|---|---|---|
+| Pricing, lifetime service definition, inclusions/exclusions, fair-use limits, no recurring core fee | 27-commercial-pricing-access-and-lifetime-license.md; 21-cost-and-operations-plan.md | Documented; final contract/legal review required |
+| Quote/payment/invitation/registration/admin approval lifecycle | FR-14/15 in 02-functional-requirements.md; commercial access spec | Documented; payment settlement path requires bank confirmation |
+| Payment processor and seller-country eligibility | 28-payment-provider-eligibility-assessment.md; SOURCES.md; 26-official-source-verification-report.md | First public policy pass complete; no processor approved |
+| Admin controls, MFA, audit and tenant isolation | 12-dashboard-pages-and-operator-controls.md; 08-data-dictionary-and-audit.md; 15-threat-model-and-risk-register.md | Documented; test implementation belongs to later phases |
+| One-open-position scope for multi-customer service | 29-commercial-scope-amendment.md; FR-06/16-autonomous-trading-workflow.md addenda | Proposed per-customer workspace; owner confirmation required before design |
+| Public sales gate | 23-shadow-canary-launch-and-post-launch-governance.md; 22-legal-tax-and-service-boundary-review.md | Documented; no public sales until bank/provider/legal gate |
+
+**Important scope note:** customer registration and hosted service access imply tenant boundaries. The original baseline's single-operator/global-position rule cannot simply be applied across all paying customers without making customers share one position. The proposed default is an independent portfolio with one open/unresolved position per customer workspace. This must be explicitly confirmed before Phase 2 design; no pooled funds are proposed.
