@@ -45,3 +45,20 @@ Pre-agreed observation window/sample requirements and thresholds are met for dat
 Explicit owner approval, limited capital, isolated signer, independent kill switch, alerting, backup/restore drill, tested recovery, audit review and a rollback/disable plan.
 
 No numerical performance gate should be invented after viewing results. Set evaluation criteria before the relevant test period.
+
+## Commercial access and licensing tests (CR-001)
+- **No free access:** public self-signup cannot create an agent account; no trial state exists in schema/UI/API; an unpaid customer cannot access protected dashboard/API/streams/agent jobs.
+- **Payment-first:** no invite before verified settlement; payment pending, screenshot-only, underpaid, overpaid, wrong-currency, expired quote and unrelated invoice never auto-activate access.
+- **Registration approval:** paid user still cannot access before email verification, required MFA, terms acceptance and owner/admin approval.
+- **Webhook integrity:** invalid signature, replay, duplicate, out-of-order, delayed, refunded, disputed and chargeback events are tested; idempotency prevents duplicate license fulfillment.
+- **Manual settlement integrity:** payment reference/amount/currency/customer/quote must reconcile to trusted bank evidence; reviewer and audit trail recorded; suspicious/mismatched payments enter manual review.
+- **Invite security:** single-use/expiry/email binding, revocation, resend, replay and account takeover attempts are tested; raw invite token never appears in logs.
+- **License behavior:** one-time payment creates one license under exact terms; no recurring invoice/subscription gets created; suspension/refund/revocation follows approved policy.
+- **Commercial admin:** privilege tests ensure only authorized roles issue/change quotes, verify payment, approve registrations, grant/revoke license and execute refunds. High-impact operations require step-up auth/MFA.
+- **Tenant isolation:** cross-tenant IDOR/API/job/cache/object-store/database access tests; tenant-specific wallet, ledger, model/strategy history, risk policy and positions remain isolated.
+- **Position isolation:** if the owner approves a tenant model, race/restart tests enforce at most one open/unresolved position per tenant and prohibit one customer's activity from blocking or modifying another's position.
+- **High-ticket financial controls:** duplicate invoice, wrong settlement currency, bank reversal, refund, chargeback and failed reconciliation scenarios are tested.
+- **Payment provider restrictions:** production checkout remains feature-flagged off unless seller country and exact product/category receive written provider approval and the approved webhook path passes tests.
+
+## Commercial release gate
+Public sales require an approved payment/settlement route, versioned license/refund terms, legal/tax/service-boundary review, privacy notice, tenant isolation tests, chargeback/refund operations and explicit owner launch approval. A checkout success page alone can never authorize account activation.
