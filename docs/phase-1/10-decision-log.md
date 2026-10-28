@@ -148,3 +148,12 @@ D-028's SVG assets are under `assets/brand/`. Detailed sizing, responsive placem
 | PHASE-3-START | Begin threat modeling, custody and signer architecture, license/admin/release security, secrets/audit/incident response and security verification. Use the security reference register and keep open architecture decisions explicit. | **ACTIVE — initial architecture package committed; implementation and independent review not claimed** |
 
 D-030 is now explicitly confirmed as owner-locked. This does not change the frozen roadmap: security architecture is Phase 3; final visual wireframes and visual placement are Phase 4. Live/mainnet trading remains unauthorized.
+
+
+## Phase 3 handoff and Phase 4 start — 28 October 2026
+
+| ID | Decision | Status |
+|---|---|---|
+| D-031 | At owner direction, close Phase 3 for documentation/design handoff and begin canonical Phase 4 UX and Visual Design. The security architecture package is handed off, but unresolved signing/key backend, instruction allowlist, license security and numeric-risk choices remain blockers for dependent implementation and release. | **OWNER-LOCKED HANDOFF STATUS; not production/security approval** |
+
+D-031 does not waive the open decision register or the planned security verification checklist. It does not authorize live signing, mainnet execution, public sales or payment acceptance. Phase 4 is limited to visual/interaction design and must continue to represent blocked or unconfigured capabilities truthfully.
