@@ -36,3 +36,11 @@ For every dependency, evaluate: security maintenance, upstream support, API comp
 - Do not add Kubernetes/Kafka/microservices until traffic/reliability evidence requires them.
 - Do not select ML complexity before a reproducible baseline and labeled evaluation dataset exist.
 - Pin versions and record exact versions in the eventual dependency decision record.
+
+
+## Commercial access technologies — no provider selected yet
+- Add a provider-neutral commercial-access module for quote/invoice, verified settlement, invitation, registration review, approval, entitlement, suspension, refund and dispute.
+- Use idempotent verified server events if a merchant provider is approved; otherwise record manually reconciled cleared bank settlement under a privileged audited admin workflow.
+- Do not choose Stripe, Paddle or Lemon Squeezy by default for the proposed crypto-trading product. Their current public country/product policies create eligibility barriers; see [28 Payment Provider Eligibility Assessment](28-payment-provider-eligibility-assessment.md).
+- Enforce entitlement and tenant authorization server-side, including background jobs, streaming and data access. If Supabase is chosen, validate MFA assurance levels and RLS; authentication alone is not license authorization.
+- A published one-time lifetime price must be backed by cost modeling for hosting, market data, LLMs, support, security and refunds/chargebacks over an explicit assumption horizon. No recurring core subscription or free-trial state is allowed.
