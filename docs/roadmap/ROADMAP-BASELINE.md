@@ -46,4 +46,4 @@ The owner later requested a no-free-tier/no-trial, one-time lifetime-license mod
 - [Commercial access requirements](../phase-1/27-commercial-pricing-access-and-lifetime-license.md)
 - [Payment provider eligibility assessment](../phase-1/28-payment-provider-eligibility-assessment.md)
 
-It does not change the canonical phase order. The proposed per-customer position cap and hosted multi-tenant design must be confirmed before Phase 2 design; online payment-provider eligibility and legal/bank approval remain launch gates.
+It does not change the canonical phase order. The owner has since locked self-hosted, customer-isolated licensed software under [D-025](../phase-1/30-self-hosted-deployment-decision.md): each running instance has one open/unresolved position in its own portfolio and no hosted multi-tenant trading runtime is in V1. Payment-provider eligibility and legal/bank approval remain pre-sale gates.
