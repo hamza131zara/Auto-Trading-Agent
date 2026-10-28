@@ -1,10 +1,13 @@
-# Document Register and Version Integrity
+| `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Closed Phase 2 checklist and carry-forward decisions | `097eae2732e5e8e27841f8fe5b9ae27c7a552c49` | 4762 |
+| `docs/phase-2/07-requirements-traceability-and-acceptance-matrix.md` | Product, quantitative, security and portal acceptance mapping | `46e6685f5ac54b3910912fbc4c9f3b030c7d6527` | 9022 |
+| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 completion, numeric exclusions and Phase 3 objectives | `02dbc1f539a604a7f3f4b653bc34861d4eee073e` | 5346 |
+| `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, visual identity and usage guidance | `50f0ee3d1bb0a56eeaec8a2917b7170bae82a58b` | 2836 |
 
-**Register version:** 1.7  
+**Register version:** 1.8  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `932a7a3f94f1f1115a7aabf03175bd8d27d48315`  
+**Source snapshot before this register refresh:** `dc8a4d6281ca64279c8f9c59e8deaa8ccef6d643`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -101,6 +104,20 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-2/04-installation-onboarding-and-support.md` | Setup guide and Google Meet booking requirements | `dc0cbb1a0d3a29ede4b2e60bb9584ee247300372` | 4371 |
 | `docs/phase-2/05-ui-theme-and-responsive-design-requirements.md` | Dark/light, responsive trader-agent UI requirements | `64ab0aa630d4c431c7686e1024a26335319712b0` | 4933 |
 | `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Decision register and exit checklist | `4305c883fceb0537048f004dab142a7df51b0845` | 3901 |
+
+## Brand assets
+
+| Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
+|---|---|---|---:|
+| `assets/brand/auto-trading-agent-logo-dark.svg` | Dark-theme logo lockup | `e0c904c7615ddc04b0b5f15f5918d161dc1b96d8` | 1646 |
+| `assets/brand/auto-trading-agent-logo-light.svg` | Light-theme logo lockup | `c2e2ced7725f447e82254611029164a2b5456991` | 1647 |
+| `assets/brand/auto-trading-agent-mark.svg` | Compact icon mark | `123919897bdbe2b44d94034e7904d8b06ac389a1` | 1088 |
+
+## Phase 2 completion state
+- Phase 2 is complete for requirements/specification handoff to Phase 3.
+- Requirement-to-acceptance mapping is documented; test IDs are specifications and do not claim implementation tests have run.
+- Numeric execution-affecting TBDs remain excluded from executable trading scope pending explicit owner approval and tests.
+- D-028 adds the initial vector brand identity; D-029 records Phase 2 closure for handoff only.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
