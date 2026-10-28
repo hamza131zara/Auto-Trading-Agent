@@ -9,6 +9,9 @@ Solana-only autonomous DEX trading research and execution system.
 - [Document register with versions and hashes](docs/phase-1/DOCUMENT-REGISTER.md)
 - [Phase 1 status and exit checklist](PHASE1-STATUS.md)
 - [Official provider/source verification report](docs/phase-1/26-official-source-verification-report.md)
+- [Commercial access and lifetime license](docs/phase-1/27-commercial-pricing-access-and-lifetime-license.md)
+- [Payment provider eligibility assessment](docs/phase-1/28-payment-provider-eligibility-assessment.md)
+- [Commercial scope amendment CR-001](docs/phase-1/29-commercial-scope-amendment.md)
 - [Autonomous trading workflow: discovery to next candidate](docs/phase-1/16-autonomous-trading-workflow.md)
 - [Roadmap coverage audit vs approved DOCX/PDF](docs/phase-1/17-roadmap-coverage-audit.md)
 - [Frozen Roadmap v1.0 — canonical phase map](docs/roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
@@ -33,5 +36,12 @@ Solana-only autonomous DEX trading research and execution system.
 ## Canonical phase order
 Use the phase titles/order in [ROADMAP-CANONICAL-PHASE-MAP.md](docs/roadmap/ROADMAP-CANONICAL-PHASE-MAP.md): Phase 0 governance; Phase 1 source/documentation verification; Phase 2 product/quantitative requirements; Phase 3 threat/custody/security architecture; Phase 4 UX/design; Phase 5 repository/CI foundations; Phase 6 data ingestion; Phase 7 token safety; Phase 8 quant/regime research; Phase 9 decision brain/memory; Phase 10 risk/ledger/Kelly; Phase 11 execution/signer; Phase 12 dashboard; Phase 13 backtesting/replay; Phase 14 testing/independent security review; Phase 15 shadow/paper; Phase 16 live canary; Phase 17 post-launch governance.
 
+## Commercial model (CR-001)
+- No free tier or trial.
+- Proposed price: USD $12,000 one-time lifetime license; no recurring core subscription.
+- Quote/invoice → verified cleared settlement → single-use registration invitation → user registration and MFA → owner/admin approval → active license/tenant.
+- No online payment processor is approved yet. The initial candidate is an owner-issued invoice with manually reconciled bank settlement, subject to bank/legal confirmation.
+- A paid hosted multi-tenant model is a scope addendum. Proposed cap is one open/unresolved position per customer workspace, pending owner confirmation before Phase 2 design.
+
 ## Current rule
-The documents and plans do not enable any live transaction. Complete the applicable source-verification and approval gates before entering the next canonical phase.
+Phase 1 documentation/source research is complete for design handoff except the scope confirmation recorded in CR-001. No production wallet, private key, live signing or mainnet trading is authorized. Public sales also remain gated on payment/bank eligibility, explicit license terms and qualified legal/tax review.
