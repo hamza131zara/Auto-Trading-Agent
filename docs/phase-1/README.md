@@ -1,6 +1,6 @@
 # Phase 1 — Documentation and Requirements
 
-**Status:** Phase 1 CLOSED for design handoff on 28 October 2026. Core documentation, roadmap comparison/source verification, commercial requirements (CR-001), self-hosted deployment (D-025), guided onboarding requirement (D-026) and UI direction requirement (D-027) are recorded. Phase 2 — Product Requirements and Quantitative Policy — is COMPLETE; Phase 3 is closed for documentation/design handoff; Phase 4 UX and Visual Design is now ACTIVE. See the [Phase 3 closeout](../phase-3/08-phase-3-closeout-and-phase-4-handoff.md) and [Phase 4 design package](../phase-4/README.md). Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
+**Status:** Phase 1 CLOSED for design handoff on 28 October 2026. Core documentation, roadmap comparison/source verification, commercial requirements (CR-001), self-hosted deployment (D-025), guided onboarding requirement (D-026) and UI direction requirement (D-027) are recorded. Phase 2 — Product Requirements and Quantitative Policy — is COMPLETE; Phase 3 is closed for documentation/design handoff; Phase 4 design is locked for handoff; Phase 5 repository/environment/CI foundation is now ACTIVE. See the [Phase 3 closeout](../phase-3/08-phase-3-closeout-and-phase-4-handoff.md), [Phase 4 closeout](../phase-4/08-phase-4-closeout-and-phase-5-handoff.md) and [Phase 5 package](../phase-5/README.md). Account-specific payment/bank eligibility, legal/tax review and provider-plan verification remain pre-sale/live-launch gates, not claims of current clearance.
 
 **Mode:** Documentation only. No production trading code, wallet connection, private-key handling, automated payment checkout, or live execution is authorized during Phase 1.
 
@@ -61,8 +61,8 @@ The original owner-approved DOCX/PDF remains the frozen baseline. Commercial sco
 - The selected self-hosted model isolates each customer's runtime and data. Each licensed running instance enforces one open/unresolved position in its own portfolio; there is no shared trading runtime or platform-level position lock.
 - No payment or account approval authorizes live trading. Trading release gates remain separate.
 
-## Phase 3 continuation
-Phase 1 and Phase 2 are closed for handoff; Phase 3 security architecture is active. The 3D visual direction D-030 is owner-locked, while detailed placement remains in Phase 4. See the [Phase 3 security architecture package](../phase-3/README.md).
+## Current phase handoff
+Phases 1–4 are closed for their owner-approved handoffs. Phase 5 — Repository, Environments, CI/CD and Engineering Foundation — is active. D-030 selective 3D visual direction is owner-locked and the Phase 4 prototype is the design baseline for implementation. See the [Phase 5 package](../phase-5/README.md).
 
 ## Phase 1 completion and handoff conditions
 
