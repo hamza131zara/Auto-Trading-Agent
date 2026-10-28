@@ -81,3 +81,18 @@ Status values: **Proposed**, **Needs research**, **Accepted**, **Rejected**. Unl
 
 ## Acceptance approach
 Every accepted requirement must have a stable ID, owner, rationale, source when relevant, risk level, measurable acceptance criterion and linked test case in the traceability matrix.
+
+## FR-13 — Autonomous discovery-to-next-candidate loop
+- After all future release gates pass and an owner explicitly enables the approved live mode, the agent may autonomously discover candidates, reject unsafe candidates, select one eligible token/strategy, submit an approved trade intent, monitor the resulting position, exit under its configured policy, reconcile the result and continue to the next candidate.
+- The complete state machine and exceptions are specified in [16-autonomous-trading-workflow.md](16-autonomous-trading-workflow.md); that specification is normative alongside this requirements document.
+- The cycle must check operating mode, kill switch, portfolio/position state, provider health and data freshness before scanning or entering.
+- Candidate selection must be preceded by hard token/pool security checks, market/exitability analysis, outcome/cost estimation and deterministic Risk Governor approval.
+- Only one open or unresolved position is permitted globally. Do not open a new position until the prior position is fully reconciled and closed, including partial fills, residual tokens and unknown transaction states.
+- If no candidate passes, return NO_TRADE, record rejection/abstention reasons, and retry only according to a bounded polling/event schedule. Trading frequency is not a goal.
+- Before an entry, obtain fresh buy and sell/exit estimates and simulate the transaction where supported; re-check all hard rules immediately before signing.
+- During an open position, continuously evaluate configured target, partial-profit, trailing/invalidation, security-emergency and portfolio-risk triggers.
+- A sell submission is not closure. Confirm/reconcile the on-chain state, remaining token balance, proceeds and fees before transitioning the position to Closed.
+- After closure, create the Trade Passport, compare predicted and actual outcomes, update versioned statistics asynchronously, check target/drawdown/pause policies, and then return to discovery only if new entries remain authorized.
+- All model decisions use typed schemas and allowlisted results. Model timeout, malformed output, insufficient confidence or contradictory inputs must abstain; it must not cause a buy.
+- The owner alone authorizes enabling live mode, changing hard risk limits, changing signing permissions, withdrawing funds, or promoting a production model/strategy version.
+- Paper/Shadow mode must exercise the same lifecycle without signing or broadcasting asset-moving transactions.
