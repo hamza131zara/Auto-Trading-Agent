@@ -7,10 +7,11 @@
 The product is initially scoped as a private single-operator tool trading the operator's own capital. That is materially different from custody, exchange, arranging, investment-management, brokerage, transaction execution or a public SaaS service for other people's assets. The actual legal classification depends on the implemented functions, who controls funds/keys, who receives the service, where operators/users are located, fees/business model and applicable law. Do not assume “non-custodial” or “software only” automatically resolves classification.
 
 ## 2. Initial Pakistan research context (revalidate before reliance)
-The official Pakistan Virtual Assets Regulatory Authority (PVARA) site lists the Virtual Assets Act, 2026 and the Pakistan Virtual Asset Services Regulations, 2026 and Activity Specific Regulations, 2026, described as notified on 21 August 2026. PVARA's licensing FAQ says the framework concerns licensing and regulation of virtual-asset services and cautions that the Act/Regulations prevail over the FAQ. See:
-- PVARA regulatory framework and published regulations: https://pvara.gov.pk/regulations
-- PVARA licensing FAQ: https://www.pvara.gov.pk/licensing
-- Virtual Assets Act, 2026 (official copy): https://www.pvara.gov.pk/documents/Virtual%20assets%20Act%202026%20passed%20by%20NA.pdf
+The official PVARA pages reviewed in the 28 October 2026 source-verification pass publish the Virtual Assets Act, 2026, a VASP licensing/NOC framework and related regulatory resources. The pages inspected do not independently establish the exact consolidated text/version of every related regulation or verify the previously stated notification date for particular regulations. Do not rely on that unverified date or assume an online summary is the full legal text. A qualified adviser must inspect the actual applicable Act, gazetted regulations, circulars and current amendments. PVARA's FAQ is guidance, not a substitute for primary legislation. See:
+- PVARA regulatory framework: https://pvara.gov.pk/regulations
+- PVARA licensing page: https://www.pvara.gov.pk/licensing
+- PVARA FAQ: https://www.pvara.gov.pk/faq
+- Virtual Assets Act, 2026 (official copy linked by PVARA): https://www.pvara.gov.pk/documents/Virtual%20assets%20Act%202026%20passed%20by%20NA.pdf
 - State Bank of Pakistan circular concerning accounts for PVARA NOC/licensed VASPs: https://www.sbp.org.pk/circulars/bprd-circular-letter-no-10
 - FBR Income Tax Ordinance index: https://fbr.gov.pk/Categ/Income-Tax--Income-Tax-Ordinance/326
 - FBR Income Tax Rules index: https://www.fbr.gov.pk/categ/income-tax-rules-2002/335
