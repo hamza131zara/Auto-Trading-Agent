@@ -80,15 +80,18 @@ The launch must be reversible and the kill switch must reliably stop new intents
 ## Required evidence for every stage transition
 A stage checklist with requirement IDs, test/report links, known limitations, exact software/config/strategy/model versions, open risks, rollback plan, approver and date. A phase is not complete merely because code exists or a dashboard renders.
 
-## 8. Commercial customer launch gate (CR-001)
-A paid launch is separate from permission to start mainnet trading. Before publicly selling the hosted product:
-- The owner explicitly approves the paid-hosted tenant scope and per-tenant position rule.
+## 8. Commercial software launch gate (CR-001 / D-025)
+A paid software sale is separate from permission to start mainnet trading. Before publicly selling the self-hosted product:
+- The self-hosted/customer-isolated deployment and per-running-instance position rule are recorded as approved under D-025.
 - Lifetime license terms, included services/quotas, support/update scope, refund and dispute terms, privacy notice, and no-trial/one-time payment wording are reviewed.
-- The chosen bank/processor has approved the actual seller country, business model and hosted crypto-trading software/service; no checkout is enabled before written product/category approval.
+- The chosen bank/processor has confirmed the actual seller country, business model and self-hosted crypto-trading software; no checkout is enabled before written product/category approval.
 - The legal/tax/service-boundary review is complete for the actual operator, customer countries and signing/custody model.
 - Payment verification, invite registration, MFA, admin approval, entitlement, suspension/refund/chargeback and audit workflows pass tests.
-- Cross-tenant database/API/cache/job/storage/wallet/signer access tests pass with no known critical/high finding.
+- Central portal customer/license record isolation, signed-license integrity, release artifact signature checks, customer installation security and diagnostic redaction tests pass with no known critical/high finding.
 - A lifetime service-cost model supports the one-time price under base and stress scenarios.
 - No free trial, free-tier operational account or unpaid access override exists.
 
 A paid commercial license does not bypass the trading-engine's separate backtest, security, shadow/paper, live-canary and release approval gates.
+
+
+The central licensing portal must not become a hosted trading backend. Its role is commercial entitlement, registration approval and signed software release access. Every customer runtime maintains its own safety controls and local ledger.
