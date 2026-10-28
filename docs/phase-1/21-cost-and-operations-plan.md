@@ -83,3 +83,15 @@ Recommended alert stages are 50%, 75%, 90% and 100% of a configured budget; thes
 - Budget alerts and safe behavior at quota/budget limit are tested.
 - Required security checks never silently downgrade due to cost.
 - The application can export a monthly cost report separating operating costs, execution costs and trading PnL.
+
+## 8. First public provider pricing snapshot (28 October 2026)
+See [official source verification report](26-official-source-verification-report.md) for source URLs, limits and caveats.
+
+| Provider plan | Publicly listed price | Public included usage/rate summary | Status |
+|---|---:|---|---|
+| Jupiter Developer | $25/month | 25M credits; 10 RPS main API bucket; separate /swap/v2/execute bucket | Public listing verified; actual account quota pending |
+| Helius Developer | $49/month | 10M credits; 50 RPC RPS; 5 sendTransaction RPS | Public listing verified; actual use/stream billing pending |
+| Birdeye Lite | $39/month | 1.5M CUs; 15 RPS; most APIs | Public listing verified; exact endpoint access/usage pending |
+| DEX Screener | Public docs describe free API and refer to paid entitlements at checkout | 300 RPM for pair/search/token endpoints; 60 RPM for profile/boost/ad/order endpoints | Account-tier price not established from public reference; check terms and checkout |
+
+An illustrative sum for Jupiter Developer + Helius Developer + Birdeye Lite is $113/month before other costs. It is not the final plan selection or total-cost forecast. Free plans can support limited early non-signing prototyping, but free access does not prove production suitability. Record plan-specific quotas and billing data from the actual selected accounts before a budget is approved.
