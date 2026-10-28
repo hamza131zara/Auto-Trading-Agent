@@ -25,3 +25,16 @@ For each test execution, store test ID, software/strategy/model versions, datase
 
 ## Promotion traceability
 Every production-approved strategy/model version must link to a research proposal, data/features schema, evaluation protocol, out-of-sample report, paper-trading evidence, risk review, approval record and rollback version.
+
+## End-to-end autonomy tests
+The lifecycle requirements are specified in [16-autonomous-trading-workflow.md](16-autonomous-trading-workflow.md).
+
+| Lifecycle part | Requirement | Planned verification |
+|---|---|---|
+| Discover and screen | FR-03, FR-04, FR-13 | Replay verifies deduplication, freshness checks and rejection reasons. |
+| Select strategy/profile | FR-05, FR-13 | Replay verifies bounded choices, abstention and NO_TRADE. |
+| Risk and order lifecycle | FR-06, FR-07, FR-13 | Tests verify hard limits, idempotency, quote freshness and transaction reconciliation. |
+| Position exit and closure | FR-08, FR-13 | Tests cover full/partial exits, remaining balances and uncertain transaction states. |
+| Advance to next candidate | FR-13 | State-machine test proves no new position until prior position is fully reconciled and closed. |
+| Pause and target gates | FR-02, FR-09, FR-13 | Tests verify new entries stop under configured pause, goal and risk-halt conditions. |
+| Paper-mode boundary | FR-02, FR-13 | Test proves paper mode cannot broadcast asset-moving transactions. |
