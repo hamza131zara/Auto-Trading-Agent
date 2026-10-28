@@ -12,8 +12,8 @@ Build a research-first, auditable Solana spot-DEX trading system that discovers 
 
 ## V1 scope
 - Solana mainnet spot tokens/pools only, with test/dev environments for development and simulation.
-- At most one open position portfolio-wide.
-- One operator/admin role initially; authenticated private dashboard.
+- **Original baseline:** at most one open position in the single operator's portfolio. Under commercial amendment CR-001, the proposed hosted multi-tenant scope applies the cap per customer workspace; this must be confirmed before design.
+- **Original baseline:** one operator/admin role and private dashboard. CR-001 proposes customer accounts with owner/admin approval and tenant-isolated workspaces; see the separate amendment.
 - Market discovery, token/pool validation, holder concentration and wallet-cluster indicators where data is reliable, liquidity and exitability analysis, market-regime features, strategy selection, risk governor, execution adapter, position monitor, ledger/audit, reports and kill switches.
 - Fixed-target, trend-capture and high-upside-runner exit profiles as competing policies to test.
 - Statistical strategy registry and controlled champion/challenger promotion.
@@ -22,7 +22,7 @@ Build a research-first, auditable Solana spot-DEX trading system that discovers 
 
 ## Non-goals for V1
 - No new wallet product or custody service for public customers.
-- No multi-tenant custody, cross-chain execution, leverage, borrowing, perpetuals, lending, market-making, arbitrage, MEV extraction, or unrestricted copy trading.
+- No pooled/multi-tenant custody, cross-chain execution, leverage, borrowing, perpetuals, lending, market-making, arbitrage, MEV extraction, or unrestricted copy trading. Customer-access tenancy requested under CR-001 must not imply custody, pooled funds or shared signing keys.
 - No promise that any trade wins, a strategy is profitable, a token is safe, or a milestone will be reached.
 - No automatic self-modification of production code, hard risk limits, permissions, or signer policy.
 
