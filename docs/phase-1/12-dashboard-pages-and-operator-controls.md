@@ -98,3 +98,36 @@ Controls: View Approved Version, Export Documentation, View Release Gate.
 - Buttons show pending/success/failure based on server response.
 - Dangerous actions require confirmation and are auditable.
 - Unknown/stale critical state disables new entry actions.
+
+
+## Commercial/public pages and admin controls (supplement to canonical 17 dashboard pages)
+These workflows sit outside the 17 authenticated operator dashboard pages; they do not remove or rename the canonical pages.
+
+### Public marketing and pricing
+- **Pages:** Product overview, pricing/license terms, security/risk disclosure, privacy/terms, quote request and quote-request confirmation.
+- **Actions:** Request a Quote, View License Terms, Contact Sales. No Sign Up for free, Start Trial, demo tenant or operational agent access.
+- **Pricing content:** proposed USD $12,000 one-time lifetime license; no recurring core subscription. Final included features, updates/support, usage/fair-use limits, exclusions, refund terms and product-lifetime meaning must be visible before quote acceptance.
+- **Filters/fields:** minimum quote-request contact/entity/country/use-case information; avoid collecting unnecessary sensitive data.
+- **Success state:** request received, not account created and not product access granted.
+
+### Payment/quote status
+- **Page:** secure quote/invoice status reached using authenticated context or non-guessable, scoped token with no sensitive data leakage.
+- **States:** Quote Draft/Issued/Expired; Payment Pending/Verified/Failed/Disputed/Refunded; Registration Invite Pending/Issued.
+- **Actions:** View invoice, download receipt when available, view payment instructions, contact billing. No status page can mark payment verified from client input.
+- **Admin controls:** Issue Quote, Revise Quote (new version), Cancel Quote, Record Settlement Evidence, Mark Payment Verified, Flag Mismatch, Issue/Resend/Revoke Invitation, Initiate Refund workflow.
+- **Required controls:** amount/currency validation, idempotency, approval log, evidence reference and reason code.
+
+### Registration and access approval
+- **Pages:** single-use invite registration, email verification, required MFA enrollment, terms acceptance, registration-pending state, approval/rejection status.
+- **Actions:** Complete Registration, Verify Email, Enroll/Verify MFA, Accept Terms, Submit for Review, Contact Admin.
+- **No access:** before payment verification, completion and admin approval all protected app routes remain inaccessible.
+- **Admin console:** review paid registrations, view quote/settlement/license linkage and eligibility check status, Approve, Reject with reason, Request Additional Information, Suspend or Revoke License. Admin action requires role authorization and audit event.
+- **No bypass:** Owner/admin can resolve an exception only through a documented, permitted, audited refund/compliance workflow; no silent unpaid access.
+
+### Workspace provision
+- **Admin/automation action:** Create Tenant Workspace after all entitlement conditions pass; attach tenant-specific policy, wallet/signer reference and data namespace.
+- **Verification:** cross-tenant access denied, one-time license linked to exact entity, one position cap scope confirmed, audit records separated.
+- **No shared wallet:** UI must not suggest that platform/customer funds are pooled; never display private keys.
+
+### Commercial UI acceptance
+All public pages may be viewed without purchase, but protected agent functionality is never free. There is no customer trial or free tier.
