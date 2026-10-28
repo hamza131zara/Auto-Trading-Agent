@@ -6,9 +6,12 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 4 — UX and Visual Design. Phases 1 and 2 are closed; Phase 3 is closed for documentation/design handoff with security gates carried forward. Live trading is not authorized; do not connect a production wallet or private key.
+> **Current phase:** Phase 5 — Repository, Environments, CI/CD and Engineering Foundation. Phases 1–4 are closed for their approved handoffs; security and numeric-risk gates remain. Live trading is not authorized; do not connect a production wallet or private key.
 
 ## Start here
+- [Active Phase 5 repository and CI foundation](docs/phase-5/README.md)
+- [Locked Phase 4 design handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
+- [Clickable responsive dashboard prototype](docs/phase-4/design-previews/dashboard-prototype.html)
 - [Active Phase 4 UX and visual design](docs/phase-4/README.md)
 - [Dark dashboard design preview](docs/phase-4/design-previews/dashboard-dark-concept.svg)
 - [Light dashboard design preview](docs/phase-4/design-previews/dashboard-light-concept.svg)
