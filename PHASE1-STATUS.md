@@ -1,4 +1,4 @@
-# Phase 1 Status
+# Project Phase Status — Phase 1–4 Handoff
 
 **Repository:** hamza131zara/Auto-Trading-Agent  
 **Phase 1:** CLOSED for design handoff  
@@ -47,7 +47,7 @@
 - No profitability/win-rate guarantee is made.
 
 ## Current phase
-**Phase 1 and Phase 2 are closed for handoff. Phase 3 is closed for documentation/design handoff; Phase 4 UX and visual design is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work includes license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback.
+**Phase 1 and Phase 2 are closed for handoff. Phase 3 is closed for documentation/design handoff; Phase 4 UX and visual design is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work included requirements for license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback. These remain security-design/implementation gates as listed in Phase 3 decisions.
 
 ## Canonical source references
 - [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
