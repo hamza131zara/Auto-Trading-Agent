@@ -63,8 +63,9 @@ For each selected API/package: record exact endpoint/product version, access pla
 Evaluate only if workflows/retries/long-running recovery justify its cost and operational load.
 
 ### Pakistan legal/tax/service boundary review (if applicable to the operator/service)
-- PVARA regulatory framework and published 2026 regulations: https://pvara.gov.pk/regulations
-- PVARA licensing FAQ: https://www.pvara.gov.pk/licensing
+- PVARA regulatory framework page: https://pvara.gov.pk/regulations
+- PVARA VASP licensing page: https://www.pvara.gov.pk/licensing
+- PVARA FAQ: https://www.pvara.gov.pk/faq
 - Virtual Assets Act, 2026 official copy: https://www.pvara.gov.pk/documents/Virtual%20assets%20Act%202026%20passed%20by%20NA.pdf
 - State Bank of Pakistan circular on accounts for PVARA NOC/licensed VASPs: https://www.sbp.org.pk/circulars/bprd-circular-letter-no-10
 - FBR Income Tax Ordinance: https://fbr.gov.pk/Categ/Income-Tax--Income-Tax-Ordinance/326
