@@ -12,6 +12,31 @@ The interface should feel like a serious, modern trader-agent control room: form
 
 Use a restrained base palette (deep navy/graphite, cool slate and neutral surfaces), a complementary soft-neutral light theme, restrained semantic accents for positive/caution/error/info states, strong typography, disciplined spacing, consistent components and tabular numerals for prices, balances, percentages, fees and PnL. Prioritize legibility over decorative cards. Charts require visible labels, units, time windows and provenance. Exact palette/type/spacing tokens are Phase 4 design decisions.
 
+## 3D visual direction — D-030
+
+Use tasteful 3D/isometric visual treatments wherever they improve comprehension or visual hierarchy within a page frame or section. This is a selective design layer, not a rule to turn every component into a 3D object.
+
+### Recommended placement by section
+- **Public landing hero:** use the 3D market-intelligence illustration to create a strong first impression; pair it with a clear product statement and a real CTA. Avoid fake live metrics.
+- **Product/agent architecture:** use isometric nodes, layered modules, or an interactive diagram to explain discovery → analysis → risk veto → constrained execution → reconciliation.
+- **Market intelligence and strategy sections:** use small, restrained dimensional market or data illustrations as supporting visuals; the actual chart and numeric evidence remain flat, precise and data-faithful.
+- **Security and self-hosted sections:** use a dimensional shield, isolated server stack or signer-boundary illustration to explain separation and customer control.
+- **License, setup and onboarding sections:** use small layered step illustrations, 3D icons, or a simple illustrated sequence where it improves scanning.
+- **Empty, loading or completion states:** optional subtle 3D illustration, with clear text and action; never obscure an error or unknown state.
+- **Runtime cockpit:** use slight depth/elevation for selected summary cards and visual grouping. Keep core trading tables, axes, fills, fees, order states, risk thresholds and operational controls direct, legible and non-distorted.
+
+### Visual and interaction rules
+- Prefer a coherent isometric/soft-3D language: cool navy/graphite materials, restrained cyan/blue/teal highlights, measured shadows and glass-like surfaces used sparingly. Retain a calm formal fintech aesthetic, not a game HUD.
+- Use real model data for charts and live status. Do not use 3D bars/perspective that distort comparisons, values, ordering or risk; financial charts should remain easy to read and accurately scaled.
+- Do not imply that decorative graphics are live market data, a security certification, or proof of performance. Label illustrative content when necessary.
+- Keep interactive 3D optional and only use it when users can inspect a meaningful object or architecture. Decorative scenes should be lightweight SVG/CSS or optimized static assets rather than demanding WebGL by default.
+- Respect reduced-motion settings; avoid auto-rotating, parallax-heavy or flashing visuals. Any motion must be subtle, pausable and non-essential.
+- On mobile, simplify/crop or hide decoration before shrinking core content. Maintain no horizontal overflow, touch usability, contrast and text alternatives.
+- In light mode, use a dedicated contrast-safe variant or a themed contained surface; never place a dark-only asset on a light surface without checking legibility.
+- Every section must remain understandable when decorative assets fail to load or are unavailable.
+
+The initial reusable 3D-style asset is [the market-intelligence hero SVG](../../assets/brand/auto-trading-agent-3d-hero.svg). Detailed section placement and responsive compositions are Phase 4 design-system work.
+
 ## Theme requirements
 
 - **UI-001:** Both light and dark modes at first user-facing release.
