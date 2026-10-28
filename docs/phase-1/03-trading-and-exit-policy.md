@@ -2,7 +2,7 @@
 
 ## Governing principles
 - V1 is Solana spot DEX only; no leverage or borrowing.
-- Maximum one open position globally.
+- Original single-operator baseline: maximum one open position in the operator's portfolio. For the paid hosted model, CR-001 proposes one open/unresolved position per customer workspace; explicit owner confirmation is required before design.
 - No trade is an acceptable decision.
 - Security gates precede opportunity scoring; risk controls have final veto authority.
 - The system optimizes for defensible risk-adjusted net performance, not maximum trade count or a promised win rate.
