@@ -1,13 +1,13 @@
 | `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Closed Phase 2 checklist; D-030 owner-locked | `2a5d8b6fe092d730465d3721d1f77e4db815fa1c` | 5145 |
 | `docs/phase-2/07-requirements-traceability-and-acceptance-matrix.md` | Product, quantitative, security and portal acceptance mapping | `46e6685f5ac54b3910912fbc4c9f3b030c7d6527` | 9022 |
-| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 closeout and Phase 3 handoff; D-030 owner-locked | `5cbfc7e19e2542a5794c0dd44ca7e91b2dd69c3d` | 6117 |
+| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 completion, Phase 3 closeout and Phase 4 start | `a8564ff7530ac21634e07198eda7138f14552d59` | 6256 |
 | `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, 3D hero identity and usage guidance | `b576b91323ea547815befa69ce571672dee62c24` | 3057 |
 
-**Register version:** 2.0  
+**Register version:** 2.1  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `d913e942d81f331129408a9149035294697cbea8`  
+**Source snapshot before this register refresh:** `91dedd51f744e16b73e5e0dcf1fefc6415076ac2`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -31,8 +31,8 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | Phase 1/2 closed; Phase 3 active security work | `b3328c8941fe7af8ef4cdd53b0d96f61bb7a0e2a` | 5626 |
-| `README.md` | Root overview, current phase, logo and 3D hero asset | `ca15bde2b0d9a8b8a602189ab0a3165fa6fcccde` | 5717 |
+| `PHASE1-STATUS.md` | Phase 1/2 closed; Phase 3 handoff closed; Phase 4 active | `9df9370c7773f11a8ac422c49be42d877d1cae48` | 6002 |
+| `README.md` | Project overview, active Phase 4 design and SVG previews | `a23328cbbc2876d0c22a9d2f777a0e6c5ff71d76` | 6104 |
 
 ## Phase 1 documents
 
@@ -49,7 +49,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/07-security-privacy-and-operations.md` | Security operations / DOC-07 | `d1f33edd49e23f8cdaa225095cbbd276c3ab01c0` | 3832 |
 | `docs/phase-1/08-data-dictionary-and-audit.md` | Data/audit/license entities | `d974ceb740fd424b414b573ae9f5b37c35513efe` | 7757 |
 | `docs/phase-1/09-test-plan-and-acceptance.md` | Testing / DOC-10 | `af860ec980f34edcc0b5a6df28952aef3d7cd815` | 7661 |
-| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-030 and Phase 3 start | `e57a67b98f9bee6c3f4571aab9f0e35e7c37cc37` | 16283 |
+| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-031 | `8e5536f2404da77a87fcadcd5b309e5289009e13` | 17105 |
 | `docs/phase-1/11-requirements-traceability.md` | Requirements traceability | `8e6d47527829cf34f6ac4e7ab20e5bd82a127abc` | 5656 |
 | `docs/phase-1/12-dashboard-pages-and-operator-controls.md` | Dashboard / commercial portal UX | `f7647db7451d1eef25a717869c1a6d847a275a62` | 13141 |
 | `docs/phase-1/13-tooling-and-technology-decisions.md` | Technology candidates | `9c19e976ab985e32f41dd20ec4c6a96d136ed654` | 5607 |
@@ -71,7 +71,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/29-commercial-scope-amendment.md` | CR-001 | `c1830fd68a7ce55aa41807fc0ea7a6ba4c85fcb8` | 8404 |
 | `docs/phase-1/30-self-hosted-deployment-decision.md` | D-025 locked deployment | `126e4eef541677056909be4ad92d62735287d8f2` | 8485 |
 | `docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md` | Final closeout, D-026/D-027 and Phase 2 handoff | `38dfc598c0a5eb02c551dccfbb70d864e15f888c` | 4632 |
-| `docs/phase-1/README.md` | Phase 1 index and Phase 2/3 handoff | `8676de69726826c0096ed3fe0e98a3118749c48b` | 10132 |
+| `docs/phase-1/README.md` | Phase 1 index and Phase 2–4 handoff | `c32b3318a01978c87227e2227561a3904bcf1989` | 10232 |
 | `docs/phase-1/SOURCES.md` | Official source register | `95dd96929939ff766225fa0cf5eabefb82d842ca` | 9465 |
 
 ## Roadmap companion documents
@@ -87,6 +87,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 - D-026: guided onboarding documentation and real-availability booking flow with Google Meet preferred; calendar/configuration and support terms remain pending.
 - D-027: professional trader-agent UI with light/dark modes, responsive layouts and truthful status/evidence semantics; detailed design remains Phase 4.
 - D-030: selective 3D/isometric visuals are explicitly owner-locked for appropriate sections; Phase 4 determines exact placement and composition.
+- D-031: Phase 3 is closed for documentation/design handoff at owner direction; unresolved security decisions remain implementation/release blockers. Phase 4 is active.
 - Central portal: quotes/invoices, verified settlement records, registration/MFA, owner/admin approval, signed license issuance, authorized software release/download and support/licensing administration only.
 - Customer runtime: runs in the customer's own or customer-dedicated environment and owns local configuration, provider credentials, wallet/signer boundary, ledger, risk policy and strategy memory.
 - Position rule: one open or unresolved position per running licensed instance/portfolio. No shared global position lock or pooled funds.
@@ -98,7 +99,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-2/README.md` | Completed requirements baseline, D-030 lock and Phase 3 handoff | `84299cbc40253eb6cc86b1897b48ee7683ab3d94` | 4093 |
+| `docs/phase-2/README.md` | Phase 2 complete; Phase 4 active; D-030 visual direction locked | `55be57e1b220775f9f1219d5806d94845b3e31cf` | 4243 |
 | `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
 | `docs/phase-2/02-quantitative-policy-and-evaluation-contract.md` | PnL, safety, evaluation and threshold register | `7984c4672717df664a2b48453b4fd560918fe905` | 5784 |
 | `docs/phase-2/03-customer-portal-and-runtime-requirements.md` | Portal/runtime split and payment constraints | `2e8fbdee6916347fef06aea1f4bfc2b373ebc851` | 4098 |
@@ -110,14 +111,30 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-3/README.md` | Active security architecture phase index | `32b4f02b5b32836046676878c445859cc9e15972` | 3941 |
+| `docs/phase-3/README.md` | Phase 3 closed for design handoff; Phase 4 active | `f4019b070a74bbcb74d7c6acbe30afa37f760555` | 4553 |
 | `docs/phase-3/01-threat-model-and-trust-boundaries.md` | Assets, adversaries, trust boundaries and threat register | `f56f73ea94ca7464fc7b9fa176d161b41c0587e6` | 11689 |
 | `docs/phase-3/02-custody-and-transaction-signing-architecture.md` | Customer custody, signer policy and transaction validation design | `2f0c128293d932d96f1070dfb919d6268641671f` | 7917 |
 | `docs/phase-3/03-license-portal-admin-and-release-security.md` | Portal identity, license entitlement and release integrity | `3a8023ceba2f4c9bf5b3f946403db4fa7d77db5b` | 7016 |
 | `docs/phase-3/04-secrets-audit-privacy-and-incident-response.md` | Secret handling, audit, privacy and incident playbooks | `9a874e888d78735848fb692078087db7117f63e2` | 7513 |
-| `docs/phase-3/05-security-verification-and-phase-3-exit-criteria.md` | Security test plan and Phase 3 exit checklist | `1ec0b8c4f1efbe6140bd33e20f0dd1d248afb6f3` | 7193 |
+| `docs/phase-3/05-security-verification-and-phase-3-exit-criteria.md` | Security test plan; verification checklist remains open | `a653ba211510961a669887cec2cb0b3159dd6c59` | 7556 |
 | `docs/phase-3/06-security-reference-register.md` | Official security standards and product references | `1a0d467aec1d9134f67c6c9c30a0fd7d482119b9` | 3686 |
-| `docs/phase-3/07-security-architecture-decisions.md` | Open architecture decisions and dependent release gates | `9a387e5e6c0b4f92c283b5afb25a8d28a51d63b2` | 6363 |
+| `docs/phase-3/07-security-architecture-decisions.md` | Carry-forward security decisions and release gates | `d35848c9c1797fef33848b58f1f153e9cbe7aef2` | 6508 |
+| `docs/phase-3/08-phase-3-closeout-and-phase-4-handoff.md` | Owner-directed Phase 3 design handoff; residual security blockers retained | `b1c434a55145c391891ce3ed76d167473089790d` | 4710 |
+
+## Phase 4 documents
+
+| Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
+|---|---|---|---:|
+| `docs/phase-4/README.md` | Active UX/visual design package and mockup links | `568f1dd2d76e4d15ec4d548dcf58edf9fe8f2393` | 3700 |
+| `docs/phase-4/01-design-system-and-theme-tokens.md` | Proposed light/dark design tokens and component patterns | `7548476708b19bc01a9eecd541a2b89c587800c9` | 6993 |
+| `docs/phase-4/02-information-architecture-and-navigation.md` | Public site, portal and runtime navigation separation | `962e2a91d92dc264303266a4b906e2c279112e4e` | 5557 |
+| `docs/phase-4/03-core-screen-specifications.md` | Core cockpit, market, decisions, positions, risk and portal screens | `15a6cde615d3429753facb2bfad2880e326ed6e1` | 7683 |
+| `docs/phase-4/04-responsive-accessibility-and-motion.md` | Responsive, accessibility, status and reduced-motion rules | `7719122caf42640f94e08dcfdff9fd0c148e42ab` | 4919 |
+| `docs/phase-4/05-3d-visual-placement-and-asset-map.md` | Selective 3D/brand placement and restrictions | `d0fa7176b8e60b7b449f2f8a787799ecddd1c1cd` | 4073 |
+| `docs/phase-4/06-design-acceptance-and-handoff.md` | Design acceptance, traceability and Phase 5 handoff | `20b7e280a489a138ece1133a6aa76e345adc16c3` | 4557 |
+| `docs/phase-4/07-design-decisions-and-open-questions.md` | Design decision register | `182b57ef18f889ec085706692c179b8a9793b87c` | 2627 |
+| `docs/phase-4/design-previews/dashboard-dark-concept.svg` | Static dark dashboard concept; all values are demo-only | `03a8c5e6381a4c8baef7e7719de0ac10e0b9879e` | 21508 |
+| `docs/phase-4/design-previews/dashboard-light-concept.svg` | Static light dashboard concept; all values are demo-only | `5b62fca87c62fe8bca0ab30cca61b607c386a7ba` | 21510 |
 
 ## Brand assets
 
@@ -129,15 +146,19 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `assets/brand/auto-trading-agent-3d-hero.svg` | Reusable isometric market-intelligence visual for selective use in UI sections | `8514dae45d21ada33be9dbee56e33b8fabfc8a39` | 8489 |
 
 ## Phase 2 completion state
-- Phase 2 is complete for requirements/specification handoff; Phase 3 security architecture is now ACTIVE.
+- Phase 2 is complete for requirements/specification handoff. Phase 3 is closed for design handoff; Phase 4 UX/visual design is active.
 - D-030 was explicitly owner-locked by the owner on 28 October 2026; exact visual implementation remains in Phase 4.
 - Requirement-to-acceptance mapping is documented; test IDs are specifications and do not claim implementation tests have run.
 - Numeric execution-affecting TBDs remain excluded from executable trading scope pending explicit owner approval and tests.
 - D-028 adds the initial vector brand identity; D-029 records Phase 2 closure for handoff only.
 
 ## Phase 3 status
-- Phase 3 architecture package is active and includes threat model, signing/custody, licensing/release security, secrets/audit/privacy/incident response, verification and open decisions.
-- Phase 3 requirements and diagrams are design artifacts only; they do not claim implemented controls, independent audit completion or production approval.
+- Phase 3 is closed for documentation/design handoff at owner direction. The threat model, custody/signing, license/release security, secrets/audit/privacy, verification plan and open-decision register are handed off.
+- Open security decisions and unrun verification items remain blockers for dependent implementation/release; no independent audit or production approval is claimed.
+
+## Phase 4 status
+- Phase 4 UX and Visual Design is active, with an initial light/dark token system, information architecture, core-screen specs, responsive/accessibility rules, selective 3D placement guide and two static dashboard concepts.
+- Preview metric/chart content is illustrative DEMO data, not live output. Final screen placement and usability/accessibility review remain open.
 - Live/mainnet remains unauthorized; execution-affecting numerical TBDs remain blockers.
 
 ## Integrity and maintenance
