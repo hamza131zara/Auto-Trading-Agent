@@ -46,3 +46,16 @@ Evaluate data completeness, latency, rate limits, historical coverage, holder/au
 
 ## Initial source register
 See SOURCES.md. Provider selection and current endpoint/product versions remain open until official documentation, pricing, terms and rate limits are rechecked during Phase 1.
+
+
+## Commercial access boundary — CR-001
+The requested paid hosted access model adds a commercial-access component alongside the trading services. Its responsibilities are quote/invoice versioning, payment/settlement verification, single-use registration invitations, registration status, owner/admin approval, lifetime-license entitlement, refund/dispute state and commercial audit events.
+
+The commercial component must be separate from the decision brain, Risk Governor, execution and signer:
+- Payment/registration administration cannot create a trade intent or loosen a risk limit.
+- The trading agent cannot mark invoices paid, approve a customer, issue license entitlements or process refunds.
+- Entitlement evaluation runs server-side and applies to every protected API, stream, background job and workspace route.
+- If a payment provider is added later, its adapter is selected only after written seller-country and product-category approval. Until then, the proposed initial path is manual invoice and verified settlement.
+- Customer data, balances, position state, model history, data-source credentials and signer policies must be tenant-scoped. No customer funds are pooled.
+
+See [27 Commercial Access](27-commercial-pricing-access-and-lifetime-license.md) and [28 Payment Provider Assessment](28-payment-provider-eligibility-assessment.md).
