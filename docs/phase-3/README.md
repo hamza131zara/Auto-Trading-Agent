@@ -30,7 +30,7 @@ Phase 3 is CLOSED for documentation/design handoff by owner direction. Phase 4 â
 - The central portal handles licensing, registration, verified payment records, authorized releases, setup documentation, booking and bounded support. It must not obtain customer wallet secrets or arbitrary transaction-signing authority.
 - AI/LLM output is advisory and schema-validated; deterministic token/security/risk controls and the signer policy have final veto.
 - One open or unresolved position per individual running instance/portfolio. Unknown transaction state blocks new entry until reconciled.
-- Production signing keys, wallet secrets or live order flow are not authorized during Phase 3 documentation. Do not connect a production wallet.
+- Production signing keys, customer wallet secrets or live order flow are not authorized by this phase handoff or during Phase 4 design. Do not connect a production wallet.
 - Numerical thresholds still marked TBD remain executable blockers. No component may invent them.
 - D-030 visual requirements are explicitly owner-locked, including selective 3D/isometric assets; they do not alter security boundaries or trading behavior. Final placement is Phase 4 work.
 
