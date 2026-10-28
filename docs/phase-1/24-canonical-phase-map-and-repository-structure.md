@@ -88,3 +88,17 @@ The package layout defines logical boundaries, not a requirement to run every mo
 
 ## Commercial scope amendment cross-reference
 The source roadmap remains the frozen canonical baseline. The owner subsequently requested a paid customer-access model; see [CR-001](29-commercial-scope-amendment.md). It adds quote/payment/registration/license and tenant isolation requirements without changing Phase 0–17 order. The proposed position cap is per customer workspace and requires owner confirmation before design.
+
+## Commercial access module extension (CR-001)
+For the separately requested paid multi-customer model, the proposed later code layout also needs a commercial boundary (it remains a design item, not code created in Phase 1):
+
+```text
+services/
+  commercial-access/    quotes, invoices, verified settlement, invitations and entitlements
+  admin-approvals/      owner review, approval/rejection, refund/dispute workflows
+packages/
+  commercial-contracts/ quote/payment/invitation/license schemas and state machines
+  tenant-authz/         server-side entitlement and tenant-scope authorization helpers
+```
+
+This should initially be a logical module, not automatically another deployed microservice. It must not be able to sign transactions or modify Risk Governor limits. A provider adapter stays disabled until the seller country and exact product category are approved by the provider; no free-trial entitlement is permitted.
