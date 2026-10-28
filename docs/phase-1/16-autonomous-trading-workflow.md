@@ -118,7 +118,7 @@ The loop repeats only while the operating mode allows it and all system/risk con
 
 ### Restricted Live Mode (future, explicitly gated)
 - Routine candidate selection and trade execution may run automatically only after owner-approved release gates, policy configuration and signer enablement.
-- One open position globally; no overlapping token positions or untracked duplicate entry orders.
+- Original single-operator baseline: one open position in that operator's portfolio. Under proposed commercial CR-001, enforce one open/unresolved position per customer workspace; no overlapping positions within a workspace or untracked duplicate entry orders. Confirm the scope before design.
 - Enforce preapproved caps on position size, fees, slippage/price impact, daily drawdown, losses, transaction failures, per-token re-entry and total trading budget.
 - Any hard rule failure, stale/contradictory critical data or unsafe system state blocks new entries.
 - The owner retains control over enabling/disabling live mode, changing hard limits, changing signer permissions, withdrawing funds and approving a new production strategy/model version.
@@ -158,7 +158,7 @@ The execution service and signer revalidate the intent. Model-generated free tex
 
 ## 6. Buy and position creation rules
 
-- Check the global one-position invariant under a concurrency-safe lock/state transition.
+- Check the approved portfolio-scope one-position invariant under a concurrency-safe lock/state transition; the commercial tenant scope proposes one lock/position cap per tenant.
 - Require current, compatible buy and sell route/quote information according to approved policy.
 - Simulate where supported; reject if the payload or outputs violate limits.
 - Perform final fresh security/risk checks immediately before signing.
@@ -245,7 +245,7 @@ Each event must include a correlation ID, event time, relevant snapshot IDs, pol
 - An end-to-end deterministic replay can trace every candidate from discovery to rejection/closure.
 - No candidate can reach execution without every required hard gate passing.
 - A high score/upside assessment cannot override a security or Risk Governor rejection.
-- Global one-position invariant survives concurrent discovery events, retries and process restart.
+- The approved one-position invariant survives concurrent discovery events, retries and process restart; if CR-001's hosted tenant model is approved, this is tested per tenant and cross-tenant independence is also tested.
 - No next-token entry occurs until the existing position is fully reconciled and closed.
 - Unknown transaction state blocks blind retries and overlapping entries.
 - TP, stop, trailing, partial-fill and emergency paths are simulated and auditable.
