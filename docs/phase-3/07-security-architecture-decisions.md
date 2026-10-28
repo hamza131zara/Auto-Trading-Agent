@@ -1,6 +1,6 @@
 # Phase 3.7 — Security Architecture Decisions and Open Questions
 
-**Status:** Active decision register. Nothing marked “proposed” is an approved production control until the owner explicitly accepts it and a verification plan is assigned.
+**Status:** Carry-forward decision register after Phase 3 design handoff. Nothing marked “proposed” is an approved production control until the owner explicitly accepts it and a verification plan is assigned.
 
 ## Decision-status meaning
 
@@ -54,4 +54,4 @@ Each resolved decision must include:
 
 ## Phase 3 review rule
 
-Do not mark a proposed architecture choice as approved simply because this document recommends it. The owner and reviewer must resolve the necessary choices before Phase 3 exit. High-risk open decisions block the dependent capability but do not require unrelated low-risk documentation work to stop. Phase 3 completion itself is not authorization to trade live.
+Do not mark a proposed architecture choice as approved simply because this document recommends it. The owner and reviewer must resolve the necessary choices before Phase 3 exit. High-risk open decisions block the dependent capability but do not require unrelated low-risk documentation work to stop. Phase 3 is closed for documentation/design handoff by owner direction; this does not resolve open decisions. Phase 3 completion itself is not authorization to trade live.
