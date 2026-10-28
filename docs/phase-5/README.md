@@ -1,6 +1,6 @@
 # Phase 5 — Repository, Environments, CI/CD and Engineering Foundation
 
-**Status:** ACTIVE — foundation setup started.  
+**Status:** ACTIVE — initial scaffold committed; main push CI passed; PR verification and owner-side repository settings remain pending.  
 **Started:** 28 October 2026.  
 **Previous phase:** Phase 4 design baseline is locked for handoff.  
 **Canonical roadmap:** Roadmap v1.0 order remains frozen.
@@ -30,7 +30,7 @@ The first TypeScript pin is an engineering bootstrap, not a final architecture c
 
 ## Initial CI status
 
-The first push workflow run completed successfully for install, repository validation, typecheck, build/tests, npm audit and the Gitleaks scan. A separate pull-request Gitleaks run initially failed because checkout was shallow; the workflow was updated to fetch full history. The Dependency Review Action was removed after GitHub reported that the repository dependency graph is not enabled; npm audit remains active. Recheck workflow results after the latest commit before treating the updated PR scan as passed.
+The main push workflow completed successfully at commit `3869809946c9f8845546ed0b5e70c35119e63c74` for install, repository validation, typecheck, build/tests, npm audit and the Gitleaks scan: [workflow run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40738716550). A pull-request Gitleaks run initially failed because checkout was shallow; the workflow now fetches full history, but a subsequent PR-specific pass has not yet been confirmed. The Dependency Review Action was removed after GitHub reported that the repository dependency graph is not enabled; npm audit remains active.
 
 ## Security invariants
 
