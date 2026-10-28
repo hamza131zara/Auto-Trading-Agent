@@ -1,9 +1,9 @@
-| `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Closed Phase 2 checklist and carry-forward decisions | `097eae2732e5e8e27841f8fe5b9ae27c7a552c49` | 4762 |
+| `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Closed Phase 2 checklist and D-030 visual decision | `755044f2efc08fcf1769057dfb17271cff0f5e10` | 5104 |
 | `docs/phase-2/07-requirements-traceability-and-acceptance-matrix.md` | Product, quantitative, security and portal acceptance mapping | `46e6685f5ac54b3910912fbc4c9f3b030c7d6527` | 9022 |
-| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 completion, numeric exclusions and Phase 3 objectives | `02dbc1f539a604a7f3f4b653bc34861d4eee073e` | 5346 |
-| `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, visual identity and usage guidance | `50f0ee3d1bb0a56eeaec8a2917b7170bae82a58b` | 2836 |
+| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 completion, numeric exclusions, Phase 3 and 3D design handoff | `b233e988ed444e7eb0c98baf8d2e79ae7e349225` | 5916 |
+| `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, 3D hero identity and usage guidance | `b576b91323ea547815befa69ce571672dee62c24` | 3057 |
 
-**Register version:** 1.8  
+**Register version:** 1.9  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
@@ -32,7 +32,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
 | `PHASE1-STATUS.md` | Phase 1/2 closeout; Phase 3 active | `37e8033cc9fac842fcb748fb3f261e07f4e25878` | 5400 |
-| `README.md` | Root overview, current phase and brand logo | `7e65172cd18ac0d413702bd20a3075453d64fce2` | 5462 |
+| `README.md` | Root overview, current phase, logo and 3D hero asset | `d435224d4ff44e2af6da21d124e280aee25ee769` | 5642 |
 
 ## Phase 1 documents
 
@@ -49,7 +49,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/07-security-privacy-and-operations.md` | Security operations / DOC-07 | `d1f33edd49e23f8cdaa225095cbbd276c3ab01c0` | 3832 |
 | `docs/phase-1/08-data-dictionary-and-audit.md` | Data/audit/license entities | `d974ceb740fd424b414b573ae9f5b37c35513efe` | 7757 |
 | `docs/phase-1/09-test-plan-and-acceptance.md` | Testing / DOC-10 | `af860ec980f34edcc0b5a6df28952aef3d7cd815` | 7661 |
-| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-029 | `37676df13c23a74400d11d3feab171e3e17c9cd8` | 15110 |
+| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-030 | `41d6c82f741a9b48380c5a4a3ed071ccf2738576` | 15572 |
 | `docs/phase-1/11-requirements-traceability.md` | Requirements traceability | `8e6d47527829cf34f6ac4e7ab20e5bd82a127abc` | 5656 |
 | `docs/phase-1/12-dashboard-pages-and-operator-controls.md` | Dashboard / commercial portal UX | `f7647db7451d1eef25a717869c1a6d847a275a62` | 13141 |
 | `docs/phase-1/13-tooling-and-technology-decisions.md` | Technology candidates | `9c19e976ab985e32f41dd20ec4c6a96d136ed654` | 5607 |
@@ -97,12 +97,12 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-2/README.md` | Completed requirements baseline and Phase 3 handoff | `191ed564a8f41f10059d19b31962730fe5ec0701` | 3667 |
+| `docs/phase-2/README.md` | Completed requirements baseline and Phase 3 handoff | `81b911009d3e4009f5d0b8502a689d4e42220b50` | 4061 |
 | `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
 | `docs/phase-2/02-quantitative-policy-and-evaluation-contract.md` | PnL, safety, evaluation and threshold register | `7984c4672717df664a2b48453b4fd560918fe905` | 5784 |
 | `docs/phase-2/03-customer-portal-and-runtime-requirements.md` | Portal/runtime split and payment constraints | `2e8fbdee6916347fef06aea1f4bfc2b373ebc851` | 4098 |
 | `docs/phase-2/04-installation-onboarding-and-support.md` | Setup guide and Google Meet booking requirements | `dc0cbb1a0d3a29ede4b2e60bb9584ee247300372` | 4371 |
-| `docs/phase-2/05-ui-theme-and-responsive-design-requirements.md` | Light/dark, responsive UI requirements and brand assets | `2243266642d77deaa2d882dba676e7d5d4f94a39` | 5354 |
+| `docs/phase-2/05-ui-theme-and-responsive-design-requirements.md` | Light/dark, responsive UI and selective 3D visual requirements | `15e0b67711203ff9eb08cb19533e4555d9e400c1` | 8561 |
 | `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Decision register and exit checklist | `4305c883fceb0537048f004dab142a7df51b0845` | 3901 |
 
 ## Brand assets
@@ -112,6 +112,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `assets/brand/auto-trading-agent-logo-dark.svg` | Dark-theme logo lockup | `e0c904c7615ddc04b0b5f15f5918d161dc1b96d8` | 1646 |
 | `assets/brand/auto-trading-agent-logo-light.svg` | Light-theme logo lockup | `c2e2ced7725f447e82254611029164a2b5456991` | 1647 |
 | `assets/brand/auto-trading-agent-mark.svg` | Compact icon mark | `123919897bdbe2b44d94034e7904d8b06ac389a1` | 1088 |
+| `assets/brand/auto-trading-agent-3d-hero.svg` | Reusable isometric market-intelligence visual for selective use in UI sections | `8514dae45d21ada33be9dbee56e33b8fabfc8a39` | 8489 |
 
 ## Phase 2 completion state
 - Phase 2 is complete for requirements/specification handoff to Phase 3.
