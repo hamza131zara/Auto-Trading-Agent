@@ -39,3 +39,11 @@ The phase-map/summary updates correct repository cross-references to match the f
 
 ## Invariants
 Solana-only V1; one open position portfolio-wide; deterministic security/risk veto; LLM cannot access signing secrets or bypass controls; isolated policy-enforcing signer; auditable decisions and actual execution reconciliation; no guaranteed profitability; out-of-sample testing and paper/shadow evidence before mainnet consideration.
+
+## Subsequent commercial requirement (separate amendment)
+The owner later requested a no-free-tier/no-trial, one-time lifetime-license model with a proposed USD $12,000 standard price, quote/invoice → verified payment → invitation → registration → owner/admin approval. This is documented as a separate addendum, not as an edit to the frozen source baseline:
+- [Commercial scope amendment CR-001](../phase-1/29-commercial-scope-amendment.md)
+- [Commercial access requirements](../phase-1/27-commercial-pricing-access-and-lifetime-license.md)
+- [Payment provider eligibility assessment](../phase-1/28-payment-provider-eligibility-assessment.md)
+
+It does not change the canonical phase order. The proposed per-customer position cap and hosted multi-tenant design must be confirmed before Phase 2 design; online payment-provider eligibility and legal/bank approval remain launch gates.
