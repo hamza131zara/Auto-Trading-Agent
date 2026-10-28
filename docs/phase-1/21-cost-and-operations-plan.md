@@ -95,3 +95,17 @@ See [official source verification report](26-official-source-verification-report
 | DEX Screener | Public docs describe free API and refer to paid entitlements at checkout | 300 RPM for pair/search/token endpoints; 60 RPM for profile/boost/ad/order endpoints | Account-tier price not established from public reference; check terms and checkout |
 
 An illustrative sum for Jupiter Developer + Helius Developer + Birdeye Lite is $113/month before other costs. It is not the final plan selection or total-cost forecast. Free plans can support limited early non-signing prototyping, but free access does not prove production suitability. Record plan-specific quotas and billing data from the actual selected accounts before a budget is approved.
+
+## 9. Lifetime-license unit economics (CR-001)
+The proposed USD $12,000 one-time license cannot be treated as pure margin: it may fund hosting, RPC/data plans, LLM inference, security operations, support, payment fees, refunds/chargebacks and lifetime service obligations.
+
+Model per acquired license:
+- Net one-time revenue = settled license amount - payment/bank fees - applicable taxes - refunds/chargebacks expected under the documented terms.
+- Lifetime service cost = expected retained service years × annual tenant-specific hosting, data, LLM, storage/backup, monitoring, support and security cost, adjusted for variable usage and provider price increases.
+- Contribution margin = net one-time revenue - expected lifetime service cost - acquisition/implementation/support allocation.
+- Stress-case cost uses high but plausible usage, provider plan upgrades, price increases, outage/recovery and longer service lifespan. Model low/base/high cases and a sensitivity curve, not a single guessed lifetime.
+
+No recurring core subscription is permitted by the current owner-requested model. Service usage limits/fair-use terms must be transparent and agreed before payment; no hidden recurring or surprise mandatory charge. A one-time optional capacity upgrade may be quoted separately if the owner later approves it.
+
+## 10. Provider allowance freshness note
+The Birdeye public page's indexed content and rendered snapshot returned different compute-unit allowance/overage figures during the 28 October 2026 review. Plan prices appeared consistent, but included compute units and overage rates are **not considered verified** until confirmed in the provider portal or in writing. Do not purchase a plan or build a cost model from one cached quota value.
