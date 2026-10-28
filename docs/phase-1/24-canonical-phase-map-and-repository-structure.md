@@ -84,3 +84,7 @@ The package layout defines logical boundaries, not a requirement to run every mo
 - CI for lint/typecheck/tests, secret scanning, dependency/SBOM checks, static analysis, container scanning and build provenance.
 - Structured logs/metrics/traces with sensitive-field redaction.
 - Clean checkout reproduces build/tests; development and CI cannot access live credentials.
+
+
+## Commercial scope amendment cross-reference
+The source roadmap remains the frozen canonical baseline. The owner subsequently requested a paid customer-access model; see [CR-001](29-commercial-scope-amendment.md). It adds quote/payment/registration/license and tenant isolation requirements without changing Phase 0–17 order. The proposed position cap is per customer workspace and requires owner confirmation before design.
