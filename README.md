@@ -1,11 +1,15 @@
 # Auto-Trading-Agent
 
+![Auto-Trading-Agent brand logo](assets/brand/auto-trading-agent-logo-light.svg)
+
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 2 — Product Requirements and Quantitative Policy. Phase 1 is closed for design handoff. Live trading is not authorized; do not connect a production wallet or private key.
+> **Current phase:** Phase 3 — Threat Model, Custody Model and Security Architecture. Phase 1 and Phase 2 are closed for design/specification handoff. Live trading is not authorized; do not connect a production wallet or private key.
 
 ## Start here
+- [Phase 3 handoff from completed Phase 2](docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md)
 - [Phase 2 requirements and quantitative policy](docs/phase-2/README.md)
+- [Brand assets and logo usage](docs/phase-2/09-brand-identity-and-logo-usage.md)
 - [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
 - [Phase 1 document index](docs/phase-1/README.md)
 - [Document register with versions and hashes](docs/phase-1/DOCUMENT-REGISTER.md)
@@ -49,4 +53,4 @@ Use the phase titles/order in [ROADMAP-CANONICAL-PHASE-MAP.md](docs/roadmap/ROAD
 - Proposed standard price remains USD $12,000 one-time lifetime license, with no free tier/trial and no recurring core subscription. Payment/bank eligibility and legal review remain pre-sale gates.
 
 ## Current rule
-Phase 1 is formally closed for design handoff and Phase 2 requirements/quantitative-policy work is active. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
+Phase 1 and Phase 2 are formally closed for documentation/requirements handoff; Phase 3 security architecture is next. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
