@@ -90,13 +90,13 @@ Use the free plan only for early development/adapter evaluation. Load-test actua
 | Plan | Listed monthly price | Included compute units | Listed rate limit | Access summary |
 |---|---:|---:|---:|---|
 | Standard | $0 | 30,000 | 1 RPS | Limited |
-| Lite | $39 | 1.5M | 15 RPS | Most APIs |
-| Starter | $99 | 5M | 15 RPS | Most APIs |
-| Premium | $199 | 15M | 50 RPS | Most APIs + WebSockets |
-| Business | $499 | 60M | 100 RPS | All APIs + WebSockets |
-| Business B-15 | $899 | 150M | 150 RPS | All APIs + WebSockets |
+| Lite | $39 | Quota/overage needs portal confirmation | 15 RPS listed | Most APIs |
+| Starter | $99 | Quota/overage needs portal confirmation | 15 RPS listed | Most APIs |
+| Premium | $199 | Quota/overage needs portal confirmation | 50 RPS listed | Most APIs + WebSockets |
+| Business | $499 | Quota/overage needs portal confirmation | 100 RPS listed | All APIs + WebSockets |
+| Business B-15 | $899 | Quota/overage needs portal confirmation | 150 RPS listed | All APIs + WebSockets |
 
-The public pricing page lists separate overage rates by plan; review that page at purchase time.
+**Quota freshness discrepancy:** on this review, the rendered public page and its more recently indexed result showed different included-CU/overage values for Lite/Starter/Premium. Plan base prices appeared consistent, but included CU amounts and overage rates are not verified. Confirm them in the actual provider portal or in writing before selecting a plan.
 
 **Verified Token - Holder endpoint behavior**
 - Endpoint: GET https://public-api.birdeye.so/defi/v3/token/holder.
@@ -184,3 +184,36 @@ Sources:
 ## 5. Release boundary
 
 This is a source-verification snapshot only. It does not select a final trading strategy, approve numeric thresholds, authorize a production wallet, permit mainnet signing, or declare the system profitable or legally cleared.
+
+## 6. Commercial payment provider and access-gate review — 28 October 2026
+
+The owner has now specified a **no-free-tier/no-trial, one-time lifetime license** model at a proposed USD $12,000 standard price. The customer requests an owner/admin-issued quote, pays first, receives a single-use registration invitation after settlement verification, completes registration, and remains blocked until the owner/admin approves the account.
+
+Official policy sources checked:
+- Stripe global supported-country list: https://stripe.com/global
+- Stripe restricted business list: https://stripe.com/legal/restricted-businesses
+- Stripe restricted-business FAQ: https://support.stripe.com/questions/prohibited-and-restricted-business-list-faqs
+- Paddle AUP: https://www.paddle.com/help/start/intro-to-paddle/what-am-i-not-allowed-to-sell-on-paddle
+- Lemon Squeezy prohibited products: https://docs.lemonsqueezy.com/help/getting-started/prohibited-products
+- Lemon Squeezy supported countries: https://docs.lemonsqueezy.com/help/getting-started/supported-countries
+- Stripe webhook fulfillment guidance: https://docs.stripe.com/payments/existing-customers?platform=web&ui=stripe-hosted
+
+**Findings**
+- Stripe's public supported-country list reviewed does not list Pakistan. Stripe's documentation says opening an account in another country requires a real eligible legal entity, tax ID, physical location, phone, government ID and physical bank account, and crypto/financial categories can require restricted-business approval. Stripe is not selected for this Pakistan-based seller without eligible-country status and written product approval.
+- Paddle's published AUP prohibits certain crypto exchanges/trading platforms enabling cryptocurrency transactions and investment/financial advice including trading signals and strategies. The proposed autonomous DEX trading service is close enough to the described restricted categories that Paddle must not be used without written confirmation for the exact product.
+- Lemon Squeezy explicitly lists NFT and crypto-related products as prohibited. Supported-country availability does not override product-category policy.
+- Technical availability of one-time checkout or license-key features does not override the vendor's product policy or seller-country underwriting.
+
+**Design decision**
+No online payment processor is approved at this stage. The proposed initial path is an owner-issued quote/invoice and manually verified cleared bank settlement through a bank/payment institution that confirms it accepts this exact business activity and seller jurisdiction. This still requires bank and qualified legal/tax confirmation before public sales. Do not misdescribe the product, use another person's merchant account, or use unsupported-country workarounds.
+
+**Entitlement invariant**
+`paymentVerified AND registrationComplete AND emailVerified AND adminApproved AND MFARequiredAndSatisfied AND termsAccepted AND licenseActive AND tenantEnabled` must all be true before any protected service is accessible. No trial or unpaid operational entitlement exists. Use provider-signed, idempotent server webhooks if an approved provider is added later; never fulfill from a browser redirect alone.
+
+See [27 Commercial Access](27-commercial-pricing-access-and-lifetime-license.md), [28 Payment Provider Assessment](28-payment-provider-eligibility-assessment.md) and [29 Commercial Scope Amendment](29-commercial-scope-amendment.md).
+
+## 7. Scope consequence / Phase 1 close-out
+
+The commercial model extends the earlier private single-operator concept to paid customer access. The one-position invariant is now a design decision: the proposed hosted multi-tenant default is one open/unresolved position per customer workspace, not one shared position globally. This must be explicitly confirmed before Phase 2 design.
+
+The source/documentation work is complete enough to produce design inputs, but this does not constitute merchant account approval, legal clearance, provider account verification, or authority to launch publicly or trade live.
