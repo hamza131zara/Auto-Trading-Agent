@@ -1,6 +1,6 @@
 # Phase 3 — Threat Model, Custody Model and Security Architecture
 
-**Status:** ACTIVE — architecture and threat-model work begun.  
+**Status:** CLOSED FOR DOCUMENTATION/DESIGN HANDOFF by owner direction on 28 October 2026. Residual high-risk decisions remain implementation/release blockers.  
 **Started:** 28 October 2026.  
 **Previous phase:** Phase 2 requirements/specification is complete for handoff.  
 **Frozen roadmap:** Roadmap v1.0 order is unchanged. Phase 4 visual design follows Phase 3.
@@ -18,6 +18,7 @@ Define how the self-hosted trading runtime, customer-controlled signing boundary
 5. [Security verification plan and Phase 3 exit criteria](05-security-verification-and-phase-3-exit-criteria.md)
 6. [External security reference register](06-security-reference-register.md)
 7. [Security architecture decisions and open questions](07-security-architecture-decisions.md)
+8. [Phase 3 closeout and Phase 4 handoff](08-phase-3-closeout-and-phase-4-handoff.md)
 
 ## Locked baseline constraints
 
@@ -39,6 +40,6 @@ Define how the self-hosted trading runtime, customer-controlled signing boundary
 5. Release integrity, dependency/supply-chain controls, backup/recovery, secret-safe logs and incident response.
 6. Security acceptance matrix, verification evidence requirements, unresolved decisions and independent-review criteria.
 
-## Phase 3 exit rule
+## Phase 3 closeout rule
 
-Phase 3 remains active until the threat model, trust boundaries, custody/signing design, portal/release security, operational security, mitigation traceability and security verification plan are reviewed and approved. Any unsupported signer backend, missing execution limit, unresolved critical threat or untested security-critical control must remain a blocker. Phase 3 completion does not authorize mainnet trading; later test, paper/shadow, independent review and canary gates still apply.
+Phase 3 is closed only as a documentation/design handoff at owner direction; it is not a certification that all open decisions are resolved or controls implemented. See [the closeout and Phase 4 handoff](08-phase-3-closeout-and-phase-4-handoff.md). The open-decision register remains binding. Any unsupported signer backend, missing execution limit, unresolved critical threat or untested security-critical control blocks the dependent implementation/release. Phase 4 visual design may proceed without enabling production signing or mainnet trading.
