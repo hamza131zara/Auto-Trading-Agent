@@ -21,7 +21,7 @@ Define how the self-hosted trading runtime, customer-controlled signing boundary
 8. [Phase 3 closeout and Phase 4 handoff](08-phase-3-closeout-and-phase-4-handoff.md)
 
 ## Current status
-Phase 3 is CLOSED for documentation/design handoff by owner direction. Phase 4 — UX and Visual Design — is now active. Unresolved security decisions remain blockers for the affected implementation/release capabilities; this handoff does not certify that controls are implemented or audited. See the [Phase 4 design package](../phase-4/README.md).
+Phase 3 is CLOSED for documentation/design handoff by owner direction. Phase 4 design is locked for handoff and Phase 5 engineering foundation is now active. Unresolved security decisions remain blockers for the affected implementation/release capabilities; this handoff does not certify that controls are implemented or audited. See the [Phase 3 closeout](08-phase-3-closeout-and-phase-4-handoff.md) and [active Phase 5 package](../phase-5/README.md).
 
 ## Locked baseline constraints
 
