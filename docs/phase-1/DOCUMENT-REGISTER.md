@@ -1,13 +1,13 @@
-| `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Closed Phase 2 checklist; D-030 owner-locked | `2a5d8b6fe092d730465d3721d1f77e4db815fa1c` | 5145 |
-| `docs/phase-2/07-requirements-traceability-and-acceptance-matrix.md` | Product, quantitative, security and portal acceptance mapping | `46e6685f5ac54b3910912fbc4c9f3b030c7d6527` | 9022 |
-| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 completion, Phase 3 closeout and Phase 4 start | `a8564ff7530ac21634e07198eda7138f14552d59` | 6256 |
-| `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, 3D hero identity and usage guidance | `b576b91323ea547815befa69ce571672dee62c24` | 3057 |
+# Document Register — Auto-Trading-Agent
 
-**Register version:** 2.2  
+Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
+
+
+**Register version:** 2.3  
 **Last refreshed:** 28 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `0c2fd1f6adbbcfda2d1f75ef0396012d0963c960`  
+**Source snapshot before this register refresh:** `3869809946c9f8845546ed0b5e70c35119e63c74`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -31,8 +31,8 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | Phases 1–3 handoff closed; Phase 4 active; external gates retained | `ea7fc79428e07a722654e3ba3a63a3fbc371c097` | 6049 |
-| `README.md` | Project overview, active Phase 4 design and SVG previews | `a23328cbbc2876d0c22a9d2f777a0e6c5ff71d76` | 6104 |
+| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 active; CI/security gates documented | `908e685d42cbe8f237e58ecd2239533597094239` | 6442 |
+| `README.md` | Project overview, Phase 5 active status and Phase 4 mockups/prototype | `5c7bf598a9d5bdba876f0d347897c3868d4fcfbb` | 6383 |
 
 ## Phase 1 documents
 
@@ -49,7 +49,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/07-security-privacy-and-operations.md` | Security operations / DOC-07 | `d1f33edd49e23f8cdaa225095cbbd276c3ab01c0` | 3832 |
 | `docs/phase-1/08-data-dictionary-and-audit.md` | Data/audit/license entities | `d974ceb740fd424b414b573ae9f5b37c35513efe` | 7757 |
 | `docs/phase-1/09-test-plan-and-acceptance.md` | Testing / DOC-10 | `af860ec980f34edcc0b5a6df28952aef3d7cd815` | 7661 |
-| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-031 | `8e5536f2404da77a87fcadcd5b309e5289009e13` | 17105 |
+| `docs/phase-1/10-decision-log.md` | Decision log incl. D-025–D-034 and Phase 4/5 handoffs | `a0a65f846b78111228f9b44def5430ca58662cac` | 18807 |
 | `docs/phase-1/11-requirements-traceability.md` | Requirements traceability | `8e6d47527829cf34f6ac4e7ab20e5bd82a127abc` | 5656 |
 | `docs/phase-1/12-dashboard-pages-and-operator-controls.md` | Dashboard / commercial portal UX | `f7647db7451d1eef25a717869c1a6d847a275a62` | 13141 |
 | `docs/phase-1/13-tooling-and-technology-decisions.md` | Technology candidates | `9c19e976ab985e32f41dd20ec4c6a96d136ed654` | 5607 |
@@ -71,7 +71,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-1/29-commercial-scope-amendment.md` | CR-001 | `c1830fd68a7ce55aa41807fc0ea7a6ba4c85fcb8` | 8404 |
 | `docs/phase-1/30-self-hosted-deployment-decision.md` | D-025 locked deployment | `126e4eef541677056909be4ad92d62735287d8f2` | 8485 |
 | `docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md` | Final closeout, D-026/D-027 and Phase 2 handoff | `38dfc598c0a5eb02c551dccfbb70d864e15f888c` | 4632 |
-| `docs/phase-1/README.md` | Phase 1 index and Phase 2–4 handoff | `c32b3318a01978c87227e2227561a3904bcf1989` | 10232 |
+| `docs/phase-1/README.md` | Phase 1 index and Phase 2–5 handoff links | `c32b3318a01978c87227e2227561a3904bcf1989` | 10232 |
 | `docs/phase-1/SOURCES.md` | Official source register | `95dd96929939ff766225fa0cf5eabefb82d842ca` | 9465 |
 
 ## Roadmap companion documents
@@ -99,13 +99,17 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-2/README.md` | Phase 2 complete; Phase 4 active; D-030 visual direction locked | `55be57e1b220775f9f1219d5806d94845b3e31cf` | 4243 |
-| `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
+| `docs/phase-2/README.md` | Phase 2 complete; Phase 4 design handoff closed; Phase 5 active | `55be57e1b220775f9f1219d5806d94845b3e31cf` | 4243 |
+| `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements and system boundaries | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
 | `docs/phase-2/02-quantitative-policy-and-evaluation-contract.md` | PnL, safety, evaluation and threshold register | `7984c4672717df664a2b48453b4fd560918fe905` | 5784 |
 | `docs/phase-2/03-customer-portal-and-runtime-requirements.md` | Portal/runtime split and payment constraints | `2e8fbdee6916347fef06aea1f4bfc2b373ebc851` | 4098 |
-| `docs/phase-2/04-installation-onboarding-and-support.md` | Setup guide and Google Meet booking requirements | `dc0cbb1a0d3a29ede4b2e60bb9584ee247300372` | 4371 |
+| `docs/phase-2/04-installation-onboarding-and-support.md` | Setup guides, calendar booking and support boundaries | `dc0cbb1a0d3a29ede4b2e60bb9584ee247300372` | 4371 |
 | `docs/phase-2/05-ui-theme-and-responsive-design-requirements.md` | Light/dark, responsive UI and selective 3D visual requirements | `15e0b67711203ff9eb08cb19533e4555d9e400c1` | 8561 |
 | `docs/phase-2/06-open-decisions-and-phase-2-exit-criteria.md` | Closed Phase 2 checklist; D-030 owner-locked | `2a5d8b6fe092d730465d3721d1f77e4db815fa1c` | 5145 |
+| `docs/phase-2/07-requirements-traceability-and-acceptance-matrix.md` | Product/quantitative/security/portal acceptance mapping | `46e6685f5ac54b3910912fbc4c9f3b030c7d6527` | 9022 |
+| `docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md` | Phase 2 closeout, Phase 3 handoff and current phase links | `a8564ff7530ac21634e07198eda7138f14552d59` | 6256 |
+| `docs/phase-2/09-brand-identity-and-logo-usage.md` | Logo, 3D hero identity and usage guidance | `b576b91323ea547815befa69ce571672dee62c24` | 3057 |
+
 
 ## Phase 3 documents
 
@@ -125,16 +129,57 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-4/README.md` | Active UX/visual design package and mockup links | `568f1dd2d76e4d15ec4d548dcf58edf9fe8f2393` | 3700 |
+| `docs/phase-4/README.md` | Phase 4 design handoff closed; concept SVGs and clickable prototype | `71d04ca9801b313bfaceaddb099ea359f3ff1b06` | 4321 |
 | `docs/phase-4/01-design-system-and-theme-tokens.md` | Proposed light/dark design tokens and component patterns | `7548476708b19bc01a9eecd541a2b89c587800c9` | 6993 |
 | `docs/phase-4/02-information-architecture-and-navigation.md` | Public site, portal and runtime navigation separation | `962e2a91d92dc264303266a4b906e2c279112e4e` | 5557 |
-| `docs/phase-4/03-core-screen-specifications.md` | Core cockpit, market, decisions, positions, risk and portal screens | `15a6cde615d3429753facb2bfad2880e326ed6e1` | 7683 |
-| `docs/phase-4/04-responsive-accessibility-and-motion.md` | Responsive, accessibility, status and reduced-motion rules | `7719122caf42640f94e08dcfdff9fd0c148e42ab` | 4919 |
-| `docs/phase-4/05-3d-visual-placement-and-asset-map.md` | Selective 3D/brand placement and restrictions | `d0fa7176b8e60b7b449f2f8a787799ecddd1c1cd` | 4073 |
-| `docs/phase-4/06-design-acceptance-and-handoff.md` | Design acceptance, traceability and Phase 5 handoff | `20b7e280a489a138ece1133a6aa76e345adc16c3` | 4557 |
+| `docs/phase-4/03-core-screen-specifications.md` | Core cockpit, market, decision, position, risk and portal screens | `15a6cde615d3429753facb2bfad2880e326ed6e1` | 7683 |
+| `docs/phase-4/04-responsive-accessibility-and-motion.md` | Responsive, accessibility, state and reduced-motion rules | `7719122caf42640f94e08dcfdff9fd0c148e42ab` | 4919 |
+| `docs/phase-4/05-3d-visual-placement-and-asset-map.md` | Selective 3D visual placement and brand asset rules | `d0fa7176b8e60b7b449f2f8a787799ecddd1c1cd` | 4073 |
+| `docs/phase-4/06-design-acceptance-and-handoff.md` | Locked design acceptance baseline; validation to follow during implementation | `48c873a7629d483f9c5319596facad8e97f00c47` | 4882 |
 | `docs/phase-4/07-design-decisions-and-open-questions.md` | Design decision register | `182b57ef18f889ec085706692c179b8a9793b87c` | 2627 |
-| `docs/phase-4/design-previews/dashboard-dark-concept.svg` | Static dark dashboard concept; all values are demo-only | `03a8c5e6381a4c8baef7e7719de0ac10e0b9879e` | 21508 |
-| `docs/phase-4/design-previews/dashboard-light-concept.svg` | Static light dashboard concept; all values are demo-only | `5b62fca87c62fe8bca0ab30cca61b607c386a7ba` | 21510 |
+| `docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md` | Owner-directed Phase 4 closeout and Phase 5 handoff | `178d904690e40336300c023bd9890e1b2f5e1dcf` | 3189 |
+| `docs/phase-4/design-previews/dashboard-dark-concept.svg` | Static dark dashboard concept; values are illustrative | `03a8c5e6381a4c8baef7e7719de0ac10e0b9879e` | 21508 |
+| `docs/phase-4/design-previews/dashboard-light-concept.svg` | Static light dashboard concept; values are illustrative | `5b62fca87c62fe8bca0ab30cca61b607c386a7ba` | 21510 |
+| `docs/phase-4/design-previews/dashboard-prototype.html` | Clickable local responsive prototype; no backend/data/order endpoints | `bb61bf30e2293ad58c3f4bce6ea8fcdeafe3dc70` | 17896 |
+
+
+## Phase 5 documents
+
+| Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
+|---|---|---|---:|
+| `docs/phase-5/README.md` | Active repository, environments, CI/CD and engineering foundation | `1a99d71c5a131434fc8b02aef695973b5adbf5aa` | 3484 |
+| `docs/phase-5/01-repository-structure-and-conventions.md` | Monorepo structure, workspace boundaries and conventions | `5668e0b8b3bcc3e1524aedf639630401f3b71e1c` | 3521 |
+| `docs/phase-5/02-environments-and-configuration.md` | Environment isolation and safe configuration policy | `883a4c9137504975a0fa2a0b217673c22f1da473` | 3496 |
+| `docs/phase-5/03-ci-cd-and-security-checks.md` | CI, npm audit, Gitleaks and dependency-graph gate | `e2628ec0d80d956037ab6db073c9f0d73a06fdad` | 2893 |
+| `docs/phase-5/04-development-release-and-rollback-runbook.md` | Developer, dependency update, recovery and rollback runbook | `7a616ee2fe36be77cc066e54aecb7598449c1ae2` | 2886 |
+| `docs/phase-5/05-phase-5-acceptance-and-open-decisions.md` | Phase 5 acceptance gates and unresolved owner-side settings | `2a3472ac009e9749e6781917dff693e93a52bf13` | 3057 |
+
+## Phase 5 foundation files
+
+| Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
+|---|---|---|---:|
+| `.nvmrc` | Node 24 development/CI major pin | `a45fd52cc5891570d6299fab38643103c3955474` | 3 |
+| `.node-version` | Node 24 runtime declaration | `a45fd52cc5891570d6299fab38643103c3955474` | 3 |
+| `.npmrc` | Strict engine handling and exact dependency save policy | `c20257b54d3568173ae7978f5d8215274cbd9c6b` | 57 |
+| `.editorconfig` | Consistent text editing conventions | `192c070cf03df5d7af0521a1073c0919cb46f742` | 156 |
+| `.gitignore` | Local secrets and generated output exclusions | `ec2ae517f6fd44da1ad3cc8506cd11f7721fdfab` | 137 |
+| `.env.example` | Non-secret safe environment defaults; live trading false | `e3da7cd111de243720b72e2982f1146651416937` | 85 |
+| `package.json` | Private npm workspace root and quality scripts | `b1c1fbee8017705a723df2b6de5b36235630a1ae` | 772 |
+| `package-lock.json` | Lockfile v3 for exact TypeScript 7.0.2 dependency tree | `14e3b3070d3615458ab18a7e973c8c1e19bec5cf` | 13612 |
+| `tsconfig.base.json` | Strict shared TypeScript compiler options | `86b52b09aede81156dd12770bb317442712e5085` | 497 |
+| `apps/portal/package.json` | Reserved commercial portal workspace manifest | `9994efe44e192d18af67c245d0c3f6294669a416` | 89 |
+| `apps/runtime-dashboard/package.json` | Reserved runtime dashboard workspace manifest | `0da91d4fd93322cb51863a5754362e113ce3a0cf` | 100 |
+| `services/agent/package.json` | Reserved local agent workspace manifest | `fc7eab1b3d505157ba7f99f312ea70c704a91992` | 88 |
+| `packages/contracts/package.json` | Typed contract workspace manifest | `1ded068a0928ce0208cef6d1268cd4500f8e0e9a` | 305 |
+| `packages/contracts/tsconfig.json` | Contract workspace compiler settings | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
+| `packages/contracts/src/index.ts` | Shared status and decision outcome unions | `44fff01e2fc2faf186295be2b910e24f405b743e` | 383 |
+| `packages/config/package.json` | Configuration workspace manifest | `c9f982e5d4b63e225907c3753f7ce3ecc83c7d0c` | 302 |
+| `packages/config/tsconfig.json` | Configuration workspace compiler settings | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
+| `packages/config/src/index.ts` | Safe typed config parser; refuses live trading | `e087b80daa74ea5a344ac40470a61bb7e80872d1` | 1859 |
+| `scripts/validate-repository.mjs` | Workspace, env-default and common secret-pattern checks | `fea8112f8f8a1812922658911f97f73300c96fc8` | 4684 |
+| `test/config.test.mjs` | Node tests for config defaults and live-mode rejection | `0d07e08858de739bd92fb485675d3e5773e891c1` | 1662 |
+| `.github/workflows/ci.yml` | Push/PR quality pipeline with install, typecheck, build/test, npm audit and Gitleaks | `34f66bdab2c22afe130872ae738ab594bd5d4171` | 1521 |
+| `.github/dependabot.yml` | Weekly reviewable npm and GitHub Actions dependency updates | `3ce148c6e0fb80e493a1af84ffb920d9bdc7743f` | 358 |
 
 ## Brand assets
 
@@ -146,8 +191,8 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `assets/brand/auto-trading-agent-3d-hero.svg` | Reusable isometric market-intelligence visual for selective use in UI sections | `8514dae45d21ada33be9dbee56e33b8fabfc8a39` | 8489 |
 
 ## Phase 2 completion state
-- Phase 2 is complete for requirements/specification handoff. Phase 3 is closed for design handoff; Phase 4 UX/visual design is active.
-- D-030 was explicitly owner-locked by the owner on 28 October 2026; exact visual implementation remains in Phase 4.
+- Phase 2 requirements/specification is complete. Phase 3 is closed for documentation/design handoff. Phase 4 design baseline is locked for handoff; Phase 5 engineering foundation is active.
+- D-030 selective 3D visuals are owner-locked; exact section placement was documented in Phase 4.
 - Requirement-to-acceptance mapping is documented; test IDs are specifications and do not claim implementation tests have run.
 - Numeric execution-affecting TBDs remain excluded from executable trading scope pending explicit owner approval and tests.
 - D-028 adds the initial vector brand identity; D-029 records Phase 2 closure for handoff only.
@@ -157,13 +202,19 @@ Git blob SHA values below were refreshed from the main branch immediately before
 - Open security decisions and unrun verification items remain blockers for dependent implementation/release; no independent audit or production approval is claimed.
 
 ## Phase 4 status
-- Phase 4 UX and Visual Design is active, with an initial light/dark token system, information architecture, core-screen specs, responsive/accessibility rules, selective 3D placement guide and two static dashboard concepts.
-- Preview metric/chart content is illustrative DEMO data, not live output. Final screen placement and usability/accessibility review remain open.
-- Live/mainnet remains unauthorized; execution-affecting numerical TBDs remain blockers.
+- Phase 4 is closed for owner-approved design handoff; the package contains design tokens, portal/runtime IA, core-screen specifications, responsive/accessibility requirements, D-030 selective 3D guide, dark/light SVG concepts and a clickable local HTML prototype.
+- The prototype uses illustrative data and has no backend, live data, wallet, payment or order endpoints. Browser/device and automated accessibility verification remain for implementation and QA.
+
+## Phase 5 status
+- Phase 5 is active; npm workspace foundation, Node 24 baseline, TypeScript 7.0.2 lockfile, typed contracts/config parsing, safe defaults, tests, CI, npm audit, Gitleaks and Dependabot configuration are committed.
+- Main push CI run at commit `3869809946c9f8845546ed0b5e70c35119e63c74` passed install, repository validation, typecheck, build/tests, dependency audit and Gitleaks: https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40738716550
+- The separate Dependency Review Action is deferred because GitHub reported that the dependency graph is disabled for this repository. An authorized owner must enable it in Settings → Security before that gate is reintroduced; npm audit remains active.
+- GitHub branch protection/required checks remain owner-side settings and are not claimed enabled.
+- No trading, signing, provider, customer portal or payment implementation is part of this foundation. Mainnet remains unauthorized; numeric-risk and security blockers remain.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. Refresh this register after a controlled documentation update.
+- Every document edit changes its Git blob SHA. This register was refreshed against source tree `3869809946c9f8845546ed0b5e70c35119e63c74`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
