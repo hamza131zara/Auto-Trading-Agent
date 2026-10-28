@@ -94,3 +94,17 @@ For every selected integration, add a review record containing exact product/API
 - PVARA FAQ (VASP licensing and NOC information): https://www.pvara.gov.pk/faq
 
 **Observed freshness limitation:** the FBR Income Tax Ordinance page opened during the review showed an edition amended through 30 June 2024; the Income Tax Rules page showed an edition amended through 24 November 2023. See DOC-12 and the source-verification report. These landing pages alone do not verify current consolidated tax rules through 2026.
+
+
+## Payment provider eligibility and one-time purchase fulfillment
+- Stripe global country availability: https://stripe.com/global
+- Stripe restricted businesses: https://stripe.com/legal/restricted-businesses
+- Stripe restricted business FAQ: https://support.stripe.com/questions/prohibited-and-restricted-business-list-faqs
+- Stripe payment fulfillment / webhook events: https://docs.stripe.com/payments/existing-customers?platform=web&ui=stripe-hosted
+- Paddle prohibited products / Acceptable Use Policy: https://www.paddle.com/help/start/intro-to-paddle/what-am-i-not-allowed-to-sell-on-paddle
+- Paddle one-time digital product and transaction fulfillment (technical capability only; policy eligibility still applies): https://developer.paddle.com/get-started/how-paddle-works/digital-products/
+- Lemon Squeezy prohibited products: https://docs.lemonsqueezy.com/help/getting-started/prohibited-products
+- Lemon Squeezy supported countries: https://docs.lemonsqueezy.com/help/getting-started/supported-countries
+- Lemon Squeezy license keys: https://docs.lemonsqueezy.com/help/licensing/generating-license-keys
+
+**Finding from 28 October 2026 review:** no listed online checkout provider is approved for this product. Stripe's public country list does not list Pakistan and its crypto/financial restrictions require review; Paddle's published AUP covers crypto trading platforms/trading strategies; Lemon Squeezy's prohibited-product page explicitly includes crypto-related products. The initial model is an owner-issued invoice and manually reconciled cleared bank transfer through an eligible business banking path, subject to bank and legal confirmation. Do not misrepresent the product category or seller jurisdiction to a provider.
