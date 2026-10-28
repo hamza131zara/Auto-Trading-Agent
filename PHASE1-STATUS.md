@@ -12,7 +12,7 @@
 **Roadmap comparison/source verification:** Completed and committed.  
 **Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
 **Deployment model:** **LOCKED — self-hosted, customer-isolated licensed software**, per owner decision D-025 on 28 October 2026.  
-**Current disposition:** Phases 1 and 2 are closed for their documented handoffs; Phase 3 is closed for design handoff at owner direction; Phase 4 UX/visual design is active. Bank/payment eligibility, qualified legal/tax review, provider verification and unresolved signer/security/risk decisions remain implementation or launch gates.
+**Current disposition:** Phases 1–4 are closed for their approved handoffs; Phase 5 repository/environment/CI foundation is active. Main push CI has passed for install, repository validation, typecheck, build/tests, npm audit and Gitleaks. Bank/payment eligibility, qualified legal/tax review, provider verification and unresolved signer/security/risk decisions remain implementation or launch gates.
 
 ## Phase 1 deliverables completed
 - Product, functional, trading/exit, security, quantitative, architecture, data, audit and testing requirements.
