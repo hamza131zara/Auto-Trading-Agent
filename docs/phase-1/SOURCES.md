@@ -74,3 +74,10 @@ These are research sources, not legal/tax conclusions. Record the jurisdiction, 
 
 ## Provider and policy review metadata
 For every selected integration, add a review record containing exact product/API/SDK version, endpoint names, auth method, applicable plan, rate/quota units, current pricing, terms/licensing, data retention/redistribution rights, latency/failure behavior, tested fallback and date reviewed. Links alone do not constitute an approved integration decision.
+
+## Dated source-verification record
+- **Pass 1 reviewed:** 28 October 2026.
+- **Report:** [26-official-source-verification-report.md](26-official-source-verification-report.md).
+- Provider pricing/rate limits verified from current public Jupiter, Helius and Birdeye pages. DEX Screener API limits/terms and the current Solana Kit/RPC/fee guidance were also reviewed.
+- **Caution:** this verifies public documentation at the review date, not an account-specific entitlement, production SLA, live route behavior or final integration choice. Re-check official sources before implementing adapters and record actual account/plan evidence.
+- The official FBR landing pages opened during this pass showed older consolidated tax documents (Income Tax Ordinance amended through 30 June 2024; Income Tax Rules amended through 24 November 2023). Do not rely on the landing pages alone as current consolidated tax texts; qualified review of the current amendments is an open DOC-12 item.
