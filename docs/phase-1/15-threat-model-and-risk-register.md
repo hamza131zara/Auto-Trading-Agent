@@ -43,7 +43,7 @@ Detect → stop new entries → preserve evidence → classify impact → follow
 ## Required security reviews
 Threat-model review before design approval; architecture/signing review before any live-capable execution code; independent authorization and signer-bypass tests before restricted mainnet pilot.
 
-## Commercial and tenant-isolation threats (CR-001)
+## Commercial portal and customer-installation isolation threats (CR-001/D-025)
 | Threat | Impact | Mitigation / required test |
 |---|---|---|
 | Forged payment success page/client request | Unpaid user obtains agent access | Fulfill only from verified provider event or reconciled bank settlement; server-side entitlement predicate |
