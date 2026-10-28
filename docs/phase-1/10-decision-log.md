@@ -116,3 +116,13 @@ See [CR-001 — Commercial Scope Amendment](29-commercial-scope-amendment.md). T
 - Signed license token design, instance binding, online/offline validation/grace behavior, update signing, license transfer/reinstall, customer support boundary and install requirements remain Phase 2 design work.
 - Customer-specific infrastructure, RPC/market-data/LLM services, trading capital and execution/network fees are customer-paid unless the quote explicitly includes a separately reviewed item.
 - The frozen Roadmap v1.0 phase order does not change. Online payment processor, bank eligibility and legal/tax review remain external pre-sale gates.
+
+
+## Owner-approved decisions — 28 October 2026
+
+| ID | Decision | Status |
+|---|---|---|
+| D-026 | Customer setup documentation and guided onboarding are required. Provide a booking flow based on real available calendar slots with clear timezone and confirmed Google Meet details. The actual booking URL, availability, included session count/duration and additional-support terms must be configured/defined before public sales. | **LOCKED requirement** |
+| D-027 | Product UI direction is formal, professional trader-agent dashboard with both light and dark themes, responsive desktop/tablet/mobile layouts, accessibility, financial-data legibility and truthful status/evidence display. Phase 2 defines acceptance requirements; detailed visual design belongs to canonical Phase 4. | **LOCKED requirement** |
+
+These decisions do not alter the frozen Roadmap v1.0 phase order. D-026 does not imply that a calendar is already configured or that support is unlimited. D-027 does not mean visual design or production UI code is complete.
