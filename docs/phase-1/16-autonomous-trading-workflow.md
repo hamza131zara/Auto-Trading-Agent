@@ -253,3 +253,7 @@ Each event must include a correlation ID, event time, relevant snapshot IDs, pol
 - LLM failure/abstention cannot cause an automatic buy.
 - Paper mode can exercise the entire loop without signing/broadcasting transactions.
 - Live automation remains disabled unless all later release gates pass and owner enablement is explicitly recorded.
+
+
+## Commercial tenant isolation addendum — CR-001
+For the owner-requested paid customer model, the autonomous discovery-to-next-candidate cycle runs within a tenant-isolated portfolio. The proposed cap is one open/unresolved position per customer workspace, not one position shared by all customers on the platform. Every scan, selected candidate, quote, wallet/signer policy, position monitor, ledger and post-trade learning record must carry tenant context and pass server-side authorization. No customer can read another customer's data or funds; no tenant queue or failed trade can alter another tenant's state. This changes the single-operator baseline and must be explicitly confirmed before design.
