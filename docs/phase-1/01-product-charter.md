@@ -12,7 +12,7 @@ Build a research-first, auditable Solana spot-DEX trading system that discovers 
 
 ## V1 scope
 - Solana mainnet spot tokens/pools only, with test/dev environments for development and simulation.
-- **Original baseline:** at most one open position in the single operator's portfolio. Under commercial amendment CR-001, the proposed hosted multi-tenant scope applies the cap per customer workspace; this must be confirmed before design.
+- **Locked commercial deployment:** self-hosted, customer-isolated licensed software. Each customer's licensed running instance enforces at most one open or unresolved position in its own portfolio; no shared platform-level position lock.
 - **Original baseline:** one operator/admin role and private dashboard. CR-001 proposes customer accounts with owner/admin approval and tenant-isolated workspaces; see the separate amendment.
 - Market discovery, token/pool validation, holder concentration and wallet-cluster indicators where data is reliable, liquidity and exitability analysis, market-regime features, strategy selection, risk governor, execution adapter, position monitor, ledger/audit, reports and kill switches.
 - Fixed-target, trend-capture and high-upside-runner exit profiles as competing policies to test.
@@ -48,15 +48,19 @@ Success is judged by data quality, safety-gate coverage, execution reliability, 
 All statements are proposed until accepted in the Phase 1 decision log.
 
 ## Commercial scope addendum — CR-001 (28 October 2026)
-The owner requested a paid customer access model. This is a scope amendment to the original private single-operator description; the canonical Roadmap v1.0 phase order remains unchanged.
+The owner requested a paid customer access model and then explicitly locked self-hosted, customer-isolated deployment under D-025. The canonical Roadmap v1.0 phase order remains unchanged.
 
 - No free tier, free trial, trial extension or complimentary operational access.
 - Proposed standard price: USD $12,000 one-time lifetime license; final price/definition/inclusions must be published in reviewed quote/license terms.
 - Customer requests a quote, receives a formal owner/admin-issued quote/invoice, pays, and only after settlement verification receives a single-use registration invitation.
 - Customer completes registration and is approved by owner/admin. Agent/dashboard/service access is allowed only after payment verified + registration complete + email verified + admin approval + required MFA + terms accepted + active license.
 - No recurring core subscription. Public marketing pages and documentation may be visible, but no free operational agent access is available.
-- Multi-customer hosting requires tenant isolation and individual customer wallet/signer boundaries. Proposed default is one open/unresolved position per customer workspace; this changes the earlier global portfolio-wide rule and must be confirmed before design.
+- The chosen distribution model is self-hosted, customer-isolated software, not hosted multi-tenant trading SaaS. Central portal handles license administration only. Each customer controls their runtime, infrastructure, data/API credentials, wallet/signer, risk policy and trade ledger. Each licensed running instance permits at most one open/unresolved position.
 - Payment-provider eligibility and seller-country/legal/tax review are release prerequisites. The initial proposed collection method is admin-issued invoice plus manually verified cleared bank settlement; no automated checkout provider is approved yet.
 - “Lifetime” must be contractually defined as product/service lifetime, including exact updates/support/hosting/data allowance/fair-use terms. It is not a promise that a company/service will operate forever and cannot be advertised as guaranteed uninterrupted service.
 
 See [CR-001](29-commercial-scope-amendment.md), [commercial license and access requirements](27-commercial-pricing-access-and-lifetime-license.md), and [payment-provider assessment](28-payment-provider-eligibility-assessment.md). These additions do not authorize production trading, custody, or public sales before applicable gates are passed.
+
+
+## Locked deployment decision
+See [D-025 — Self-Hosted Deployment Decision](30-self-hosted-deployment-decision.md). This is the selected V1 commercial deployment model. The central licensing portal cannot sign transactions, host the trading loop or access customer private keys. The customer runs the agent in their own/customer-dedicated environment. Hosted multi-tenant trading SaaS is out of V1 scope and requires a separate owner-approved change request.
