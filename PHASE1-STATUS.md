@@ -3,8 +3,9 @@
 **Repository:** hamza131zara/Auto-Trading-Agent  
 **Phase 1:** CLOSED for design handoff  
 **Phase 2:** CLOSED for requirements handoff
-**Active phase:** Phase 3 — Threat Model, Custody Model and Security Architecture  
-**Phase 3 status:** Initial threat-model, signer, license/release and operational-security design package committed; review and open decisions remain.
+**Phase 3:** CLOSED for documentation/design handoff by owner direction
+**Active phase:** Phase 4 — UX and Visual Design  
+**Phase 3 status:** Security design package handed off; unresolved signing, key, license and numeric-risk decisions remain implementation/release blockers.
 **Core documentation:** Owner-approved in conversation.  
 **Roadmap comparison/source verification:** Completed and committed.  
 **Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
@@ -46,13 +47,15 @@
 - No profitability/win-rate guarantee is made.
 
 ## Current phase
-**Phase 1 and Phase 2 are closed for documentation/requirements handoff. Phase 3 is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work includes license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback.
+**Phase 1 and Phase 2 are closed for handoff. Phase 3 is closed for documentation/design handoff; Phase 4 UX and visual design is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work includes license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback.
 
 ## Canonical source references
 - [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
 - [Phase 2 requirements and quantitative policy](docs/phase-2/README.md)
 - [Phase 2 completion and Phase 3 handoff](docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md)
-- [Active Phase 3 security architecture package](docs/phase-3/README.md)
+- [Phase 3 security architecture closeout](docs/phase-3/08-phase-3-closeout-and-phase-4-handoff.md)
+- [Phase 3 security architecture package](docs/phase-3/README.md)
+- [Active Phase 4 UX and visual design](docs/phase-4/README.md)
 - [Phase 1 document index](docs/phase-1/README.md)
 - [D-025 self-hosted deployment decision](docs/phase-1/30-self-hosted-deployment-decision.md)
 - [CR-001 commercial scope amendment](docs/phase-1/29-commercial-scope-amendment.md)
