@@ -1,0 +1,25 @@
+{
+  "name": "auto-trading-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted Solana spot DEX trading agent — engineering foundation only",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "validate:repo": "node scripts/validate-repository.mjs",
+    "typecheck": "tsc --noEmit -p packages/contracts/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json",
+    "build": "tsc -p packages/contracts/tsconfig.json && tsc -p packages/config/tsconfig.json",
+    "test": "npm run build && node --test",
+    "check": "npm run validate:repo && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}
