@@ -40,3 +40,6 @@ The original DOCX/PDF roadmap was provided separately in the conversation. The r
 
 ## Current gate
 **NOT APPROVED TO START DESIGN OR BUILD.** All Phase 1 documents are drafts until owner approval is recorded.
+
+## Autonomous decision workflow
+Added [16-autonomous-trading-workflow.md](docs/phase-1/16-autonomous-trading-workflow.md) defining discovery → deduplication → token security → market/exitability analysis → strategy/profile selection → expected-net-outcome evaluation → deterministic risk approval → quote/simulation → isolated execution → position monitoring → profit/exit → reconciliation → memory update → next-candidate loop. The document defines fail-safe states and does not authorize live trading.
