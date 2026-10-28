@@ -37,7 +37,7 @@ Status values: **Proposed**, **Needs research**, **Accepted**, **Rejected**. Unl
 
 ## FR-06 — Risk and sizing
 - Apply a deterministic Risk Governor before order creation and immediately before signing.
-- Enforce one open position globally, wallet/balance limits, token and pool eligibility, liquidity/price-impact limits, configured loss budgets, daily drawdown, failure circuit breakers and system-health gates.
+- Enforce the one-position invariant at the approved portfolio scope, plus wallet/balance limits, token and pool eligibility, liquidity/price-impact limits, configured loss budgets, daily drawdown, failure circuit breakers and system-health gates. The original single-operator baseline used one global position; CR-001 proposes one open/unresolved position per isolated customer workspace for a hosted multi-customer product. The scope amendment must be confirmed before design/implementation; never share positions or funds between tenants.
 - Kelly estimates are constrained by policy and are not allowed to enlarge exposure beyond the independent risk cap.
 - If edge is non-positive, inputs are stale, or uncertainty exceeds the accepted threshold, do not trade.
 
