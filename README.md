@@ -2,6 +2,8 @@
 
 ![Auto-Trading-Agent brand logo](assets/brand/auto-trading-agent-logo-light.svg)
 
+[View the reusable 3D market-intelligence hero illustration](assets/brand/auto-trading-agent-3d-hero.svg). Use selectively in appropriate hero, architecture and product sections.
+
 Solana-only autonomous DEX trading research and execution system.
 
 > **Current phase:** Phase 3 — Threat Model, Custody Model and Security Architecture. Phase 1 and Phase 2 are closed for design/specification handoff. Live trading is not authorized; do not connect a production wallet or private key.
