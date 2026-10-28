@@ -82,3 +82,15 @@ For every selected integration, add a review record containing exact product/API
 - Provider pricing/rate limits verified from current public Jupiter, Helius and Birdeye pages. DEX Screener API limits/terms and the current Solana Kit/RPC/fee guidance were also reviewed.
 - **Caution:** this verifies public documentation at the review date, not an account-specific entitlement, production SLA, live route behavior or final integration choice. Re-check official sources before implementing adapters and record actual account/plan evidence.
 - The official FBR landing pages opened during this pass showed older consolidated tax documents (Income Tax Ordinance amended through 30 June 2024; Income Tax Rules amended through 24 November 2023). Do not rely on the landing pages alone as current consolidated tax texts; qualified review of the current amendments is an open DOC-12 item.
+
+## Provider plan, rate-limit and legal pages reviewed in source pass 1 (28 October 2026)
+- Jupiter public pricing: https://developers.jup.ag/pricing
+- Jupiter API rate limits and independent execute bucket: https://developers.jup.ag/docs/portal/rate-limits
+- Jupiter order/execute integration semantics: https://developers.jup.ag/docs/api-reference/swap/order
+- Helius public plan/credit pricing: https://www.helius.dev/pricing
+- Birdeye public compute-unit pricing: https://docs.birdeye.so/docs/pricing
+- Birdeye Solana token-holder endpoint (wallet vs token-account modes): https://docs.birdeye.so/reference/get-defi-v3-token-holder
+- DEX Screener API terms: https://docs.dexscreener.com/api/api-terms-and-conditions
+- PVARA FAQ (VASP licensing and NOC information): https://www.pvara.gov.pk/faq
+
+**Observed freshness limitation:** the FBR Income Tax Ordinance page opened during the review showed an edition amended through 30 June 2024; the Income Tax Rules page showed an edition amended through 24 November 2023. See DOC-12 and the source-verification report. These landing pages alone do not verify current consolidated tax rules through 2026.
