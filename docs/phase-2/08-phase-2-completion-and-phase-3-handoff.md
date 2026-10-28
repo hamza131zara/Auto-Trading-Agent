@@ -20,7 +20,7 @@ This is completion of the **requirements/specification phase only**. It does not
 - Bank invoice/settlement is only a candidate payment route pending written bank/legal/tax confirmation. Online card and crypto receipt remain disabled until exact-route eligibility is verified.
 - A guided setup documentation center and booking from real calendar availability are required; Google Meet is preferred. No calendar URL or business availability is claimed live until configured.
 - The runtime UI must support light/dark themes, responsive desktop/tablet/mobile behavior, semantic risk states, truthful actual-vs-estimated and gross-vs-net values, and auditability.
-- **D-030:** Use tasteful, selective 3D/isometric visuals in appropriate page frames/sections (landing hero, architecture, security/self-hosting, guided steps and selected empty states). Keep financial charts, tables, risk values and operational controls flat, precise and data-first. Respect reduced motion, accessibility, responsive simplification and performance.
+- **D-030 — OWNER-LOCKED by explicit approval on 28 October 2026:** Use tasteful, selective 3D/isometric visuals in appropriate page frames/sections (landing hero, architecture, security/self-hosting, guided steps and selected empty states). Keep financial charts, tables, risk values and operational controls flat, precise and data-first. Respect reduced motion, accessibility, responsive simplification and performance.
 - Security/risk veto is deterministic. AI/LLM is advisory and never receives signing secrets or arbitrary signing/withdrawal authority.
 - One open/unresolved position per independent running instance/portfolio. Reconcile the prior position before another entry.
 - The +6% net profile and named strategy styles are hypotheses to test, not promises.
@@ -59,4 +59,4 @@ Phase 3 must threat-model and design:
 
 ## Handoff acceptance
 
-Phase 3 may begin from this specification package. It must not interpret Phase 2 completion as permission for live trading, payment collection or public sales. Security architecture must trace each threat/mitigation to tests and must preserve the frozen product scope and phase sequence.
+Phase 3 has now been opened, and its initial threat-model/security-architecture package is available at [docs/phase-3](../phase-3/README.md). Phase 3 may proceed from this specification package. It must not interpret Phase 2 completion as permission for live trading, payment collection or public sales. Security architecture must trace each threat/mitigation to tests and must preserve the frozen product scope and phase sequence.
