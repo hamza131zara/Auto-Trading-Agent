@@ -20,17 +20,23 @@
 - Security, authentication, signer isolation and operational response.
 - Data dictionary and audit-event catalog.
 - Test plan and acceptance gates.
-- Decision log, traceability matrix and official source register.
-- Frozen roadmap baseline.
+- Decision log and requirements traceability.
+- Dashboard page inventory, controls, filters, indicators and calculators.
+- Candidate technology decisions, provider/integration matrix and threat model.
+- Official documentation/source register.
+- Frozen roadmap baseline in Markdown at docs/roadmap/ROADMAP-BASELINE.md and docs/roadmap/Solana_Dex_Agent_Roadmap_v1.md.
+
+## Roadmap asset note
+The original DOCX/PDF roadmap was provided separately in the conversation. The repository currently contains the versioned Markdown roadmap baseline; the binary DOCX/PDF files have not been committed to the repository.
 
 ## Remaining Phase 1 work
-1. Review all draft documents with the owner.
-2. Revalidate current provider/API documentation, pricing, rate limits and terms.
+1. Review and approve draft documents with the owner.
+2. Revalidate current provider/API documentation, exact endpoints, pricing, rate limits and terms.
 3. Decide measurable hard thresholds and data-quality rules.
-4. Resolve open security, signing and operating-mode decisions.
+4. Resolve open security, signing, target-milestone and operating-mode decisions.
 5. Define quantified research/paper-trading evaluation gates before observing results.
-6. Record decisions and owner approvals.
+6. Record decisions and owner approvals in the decision log.
 7. Obtain explicit Phase 1 approval before moving to UX/system design.
 
 ## Current gate
-**NOT APPROVED TO START DESIGN OR BUILD.** Approval must be explicit and recorded after review.
+**NOT APPROVED TO START DESIGN OR BUILD.** All Phase 1 documents are drafts until owner approval is recorded.
