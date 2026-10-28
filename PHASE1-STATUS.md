@@ -4,34 +4,37 @@
 **Canonical phase:** Phase 1 — Documentation research and source verification  
 **Core documentation:** Owner-approved in conversation.  
 **Roadmap comparison/source verification:** Completed and committed.  
-**Commercial amendment:** CR-001 documented following the owner's 28 October 2026 instruction for no-free-trial, one-time lifetime license and pay-first/admin-approved access.  
-**Current disposition:** Phase 1 deliverables are complete for design handoff, but Phase 2 design is blocked on explicit confirmation of the hosted multi-tenant model and per-customer position cap recorded in CR-001.
+**Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
+**Deployment model:** **LOCKED — self-hosted, customer-isolated licensed software**, per owner decision D-025 on 28 October 2026.  
+**Current disposition:** Phase 1 is complete for Phase 2 design handoff. External payment/bank eligibility, qualified legal/tax review and account-specific provider verification remain pre-sale/live-launch gates.
 
-## Deliverables completed
-- Core product, functional, trading, security, quantitative, architecture, data, audit, testing, provider, threat-model and autonomous workflow documents.
-- Roadmap comparison audit and canonical phase/dashboard crosswalk.
-- Formula/indicator units, agent brain/memory authority boundaries and execution/signer contract.
+## Phase 1 deliverables completed
+- Product, functional, trading/exit, security, quantitative, architecture, data, audit and testing requirements.
+- Autonomous discovery-to-next-candidate workflow.
+- Roadmap coverage audit and canonical Phase 0–17/dashboard crosswalk.
+- Formula/indicator units, agent brain/memory authority and execution/signer contract.
 - Cost/operations plan and legal/tax/service-boundary review register.
 - Official source-verification report and updated provider/source/cost registers.
-- Commercial pricing/access/lifetime-license specification, payment-provider eligibility assessment and scope amendment CR-001.
-- Document register with source artifact hashes and Git object hashes.
-- Canonical roadmap phase order remains unchanged.
+- Commercial pricing/access/lifetime-license workflow and payment-provider eligibility assessment.
+- Locked self-hosted deployment decision, license portal boundary and self-hosted runtime requirements.
+- Document register with source artifact and repository hash references.
 
-## Commercial model currently documented
+## Locked commercial/deployment model
 - No free tier, no free trial and no unpaid operational access.
-- Proposed standard price: USD $12,000 one-time lifetime license; no recurring core subscription.
-- Owner/admin issues quote/invoice; payment is verified as settled; then single-use registration invitation is sent.
-- User completes registration, email verification, MFA and terms; owner/admin approval is required before any protected agent/dashboard/service access.
-- No online checkout provider is approved. The proposed initial collection method is manual invoice plus verified cleared bank settlement, subject to bank and legal/tax confirmation.
-- Proposed hosted multi-tenant architecture uses one isolated customer workspace/portfolio and one open/unresolved position per workspace. This changes the earlier private single-operator/global-position assumption and requires owner confirmation before Phase 2 design.
+- Proposed standard price: USD $12,000 one-time lifetime software license; no recurring core subscription.
+- Owner/admin issues the quote/invoice; settlement is verified; a single-use registration invitation is sent; the customer completes registration, email verification, required MFA and terms; owner/admin approval is mandatory before signed license activation.
+- No online checkout provider is approved. Initial proposed collection is a manual invoice plus verified cleared bank settlement, subject to confirmation from the actual bank/payment institution and qualified legal/tax advice.
+- **Self-hosted, customer-isolated software:** each customer runs their own instance in their own/customer-dedicated infrastructure. The central portal manages licensing, payment/registration approval and authorized downloads/updates; it does not host trading jobs or hold wallet keys.
+- Each running licensed instance enforces at most one open/unresolved position in its own portfolio. No hosted multi-tenant trading SaaS, shared trading runtime, shared position lock or pooled funds in V1.
+- Customer-provided infrastructure, RPC/data/LLM services, trading capital and network/DEX fees are excluded unless a quote explicitly states otherwise.
+- License activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback are Phase 2 design items.
 
-## Outstanding gates (not evidence of completed external approval)
-1. **Owner scope confirmation:** confirm hosted multi-tenant customer service and one open/unresolved position per customer workspace, or choose self-hosted single-operator licensing instead.
-2. **Payment collection eligibility:** obtain written confirmation from the actual bank/payment institution for seller jurisdiction and this exact crypto-trading software/service.
-3. **Legal/tax/service review:** qualified review of the actual signing/control model, customer countries, lifetime license, refund/dispute policy and applicable obligations before public sales.
-4. **Lifetime unit economics:** validate lifetime costs, included data/compute/support limits and fair-use terms against the USD $12,000 one-time price.
-5. **Provider plan selection:** confirm account-level pricing, quotas, terms and endpoint access; Birdeye public quota values conflicted across page snapshots during review.
-6. **Trading thresholds:** define and pre-register risk/strategy thresholds and backtest/shadow acceptance criteria before relevant evaluation runs.
+## Remaining external gates (not blockers to UX/system design)
+1. Confirm payment collection eligibility with the actual bank/payment institution and qualified counsel before public sales.
+2. Obtain qualified legal/tax/service-boundary advice for the actual software/license and wallet-control model before applicable launch.
+3. Verify account-specific provider plans, quotas, terms and endpoint access before selecting production integrations.
+4. Finalize cost-supported license terms: product lifetime, update/support scope, inclusions, customer-paid infrastructure, fair-use boundaries and refunds/disputes.
+5. Define/pre-register numeric trading thresholds and backtest/shadow/paper acceptance criteria before those evaluations begin.
 
 ## Safety status
 - No production trading code is authorized by this documentation status.
@@ -40,5 +43,11 @@
 - Mainnet execution is not authorized.
 - No profitability/win-rate guarantee is made.
 
-## Entry to Phase 2
-**Ready after owner confirms CR-001's deployment/position-cap choice.** Phase 2 is UX/system design only; it does not authorize live trading. Public sales require separate bank/payment and legal/tax gates.
+## Phase 2 entry
+**Phase 1 is complete for design handoff.** Begin Phase 2 with the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed.
+
+## Canonical source references
+- [Phase 1 document index](docs/phase-1/README.md)
+- [D-025 self-hosted deployment decision](docs/phase-1/30-self-hosted-deployment-decision.md)
+- [CR-001 commercial scope amendment](docs/phase-1/29-commercial-scope-amendment.md)
+- [Frozen canonical phase map](docs/roadmap/ROADMAP-CANONICAL-PHASE-MAP.md)
