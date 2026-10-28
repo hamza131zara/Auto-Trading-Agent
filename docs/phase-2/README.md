@@ -1,6 +1,6 @@
 # Phase 2 — Product Requirements and Quantitative Policy
 
-**Status:** ACTIVE — requirements/design baseline in progress.  
+**Status:** COMPLETE for requirements handoff. Open-decision register remains active for future implementation/release gates.  
 **Started:** 28 October 2026.  
 **Phase 1:** Closed for design handoff; see [Phase 1 closeout](../phase-1/31-phase-1-closeout-and-phase-2-handoff.md).  
 **Sequence:** Frozen Roadmap v1.0 remains unchanged.
@@ -17,6 +17,9 @@ Turn the approved product/commercial baseline into testable product requirements
 4. [Installation, onboarding, booking and support](04-installation-onboarding-and-support.md)
 5. [UI theme, information architecture and responsive design](05-ui-theme-and-responsive-design-requirements.md)
 6. [Open decisions and Phase 2 exit criteria](06-open-decisions-and-phase-2-exit-criteria.md)
+7. [Requirements traceability and acceptance matrix](07-requirements-traceability-and-acceptance-matrix.md)
+8. [Phase 2 completion and Phase 3 handoff](08-phase-2-completion-and-phase-3-handoff.md)
+9. [Brand identity and logo usage](09-brand-identity-and-logo-usage.md)
 
 ## Invariants
 
@@ -30,6 +33,10 @@ Turn the approved product/commercial baseline into testable product requirements
 - Bank invoice/settlement remains a candidate pending legal/bank confirmation. Online card and crypto payments are not approved/enabled.
 - Setup documentation and bookable guided onboarding are required. Real calendar availability and Meet links must be configured before booking is advertised.
 - Both light/dark themes, accessibility, responsive layouts and truthful data/status rendering are required. Detailed visual design remains Phase 4.
+
+## Phase 2 disposition
+
+Phase 2 requirements are complete for design/security handoff. All requirements have planned acceptance IDs. Numerical trading limits and quantitative release thresholds that remain TBD are explicitly excluded from executable scope and must be owner-approved before any live-capable release. No implementation tests are claimed as run by these documents. The next canonical phase is Phase 3 — Threat Model, Custody Model and Security Architecture.
 
 ## Phase 2 workflow
 
