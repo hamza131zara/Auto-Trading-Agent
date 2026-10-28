@@ -55,3 +55,22 @@ The uploaded Word/PDF roadmap remains the frozen baseline. The repository Markdo
 
 ## Current gate
 **Phase 1 source verification is still open.** The core repository documents remain owner-approved. The newly added gap-closure documents are available for review and do not alter the frozen roadmap. Do not skip the canonical phase gates; no production wallet, private key, live signing or mainnet trading is authorized by this status file.
+
+## Official source verification — Pass 1
+Reviewed current public official documentation on 28 October 2026 and added [26-official-source-verification-report.md](docs/phase-1/26-official-source-verification-report.md).
+
+Verified in public documentation:
+- Solana currently recommends Kit for new TypeScript integrations; public mainnet RPC is not the production choice.
+- Jupiter Swap API V2 has distinct Meta-Aggregator (/order + /execute) and Router (/build) paths with different routing/control trade-offs and separate rate limits for execute.
+- Public Helius and Birdeye plans/rates are now recorded, including the Birdeye wallet-level token-holder endpoint and its per-request compute-unit cost.
+- DEX Screener endpoint rate limits and published API terms are recorded; it remains a discovery/market snapshot source, not the security source of truth.
+- Supabase MFA docs, OWASP 2026 agentic risk guidance and current public provider plan pages were reviewed.
+- FBR tax index pages currently expose older consolidated texts than previously implied; the source register was corrected so no unsupported 2026 consolidation claim remains.
+
+## Source verification still open
+- Confirm provider plans, credentials, actual endpoint access, quotas and legal/redistribution terms from the intended accounts.
+- Run measured latency/freshness/failover and execution-route tests before choosing providers/routes.
+- Select numeric risk thresholds and research gates based on explicit research and owner decisions, not vendor docs.
+- Obtain qualified legal/tax advice for the exact operating model before the applicable live/service gate.
+
+The report is a research snapshot, not a final provider commitment, legal clearance, trading approval or evidence of profitability.
