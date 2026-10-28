@@ -97,7 +97,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-2/README.md` | Completed requirements baseline and Phase 3 handoff | `3f69f19261fa25b968ddb45f8989e1cdd6b25d57` | 4034 |
+| `docs/phase-2/README.md` | Completed requirements baseline and Phase 3 handoff | `58c12b45cf491712267a7c6038a1437a46dcff0c` | 4037 |
 | `docs/phase-2/01-product-requirements-and-system-boundaries.md` | Functional/non-functional requirements | `a74efb7f0e2a065d489c56e121edc4a5fe94a8a2` | 4894 |
 | `docs/phase-2/02-quantitative-policy-and-evaluation-contract.md` | PnL, safety, evaluation and threshold register | `7984c4672717df664a2b48453b4fd560918fe905` | 5784 |
 | `docs/phase-2/03-customer-portal-and-runtime-requirements.md` | Portal/runtime split and payment constraints | `2e8fbdee6916347fef06aea1f4bfc2b373ebc851` | 4098 |
