@@ -35,6 +35,9 @@
 - Canonical 17-page dashboard crosswalk.
 - Official source register additions for Supabase Auth/MFA/RLS, OWASP agent/API risks, NIST AI RMF, Temporal (optional) and Pakistan legal/tax sources where applicable.
 
+## Document identity
+See [DOCUMENT-REGISTER.md](docs/phase-1/DOCUMENT-REGISTER.md) for version/date and source/Git hash records.
+
 ## Roadmap source alignment
 The uploaded Word/PDF roadmap remains the frozen baseline. The repository Markdown companion has been corrected to use its exact Phase 0–17 order; this is a documentation alignment, not a scope revision. See:
 - [Coverage audit](docs/phase-1/17-roadmap-coverage-audit.md)
