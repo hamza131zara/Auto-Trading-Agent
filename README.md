@@ -6,9 +6,13 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 3 — Threat Model, Custody Model and Security Architecture. Phase 1 and Phase 2 are closed for design/specification handoff. Live trading is not authorized; do not connect a production wallet or private key.
+> **Current phase:** Phase 4 — UX and Visual Design. Phases 1 and 2 are closed; Phase 3 is closed for documentation/design handoff with security gates carried forward. Live trading is not authorized; do not connect a production wallet or private key.
 
 ## Start here
+- [Active Phase 4 UX and visual design](docs/phase-4/README.md)
+- [Dark dashboard design preview](docs/phase-4/design-previews/dashboard-dark-concept.svg)
+- [Light dashboard design preview](docs/phase-4/design-previews/dashboard-light-concept.svg)
+- [Phase 3 security architecture closeout](docs/phase-3/08-phase-3-closeout-and-phase-4-handoff.md)
 - [Phase 3 threat model and security architecture](docs/phase-3/README.md)
 - [Phase 3 handoff from completed Phase 2](docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md)
 - [Phase 2 requirements and quantitative policy](docs/phase-2/README.md)
@@ -56,4 +60,4 @@ Use the phase titles/order in [ROADMAP-CANONICAL-PHASE-MAP.md](docs/roadmap/ROAD
 - Proposed standard price remains USD $12,000 one-time lifetime license, with no free tier/trial and no recurring core subscription. Payment/bank eligibility and legal review remain pre-sale gates.
 
 ## Current rule
-Phase 1 and Phase 2 are formally closed for documentation/requirements handoff; Phase 3 security architecture is next. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
+Phases 1 and 2 are closed; Phase 3 is closed for design handoff with unresolved security blockers retained; Phase 4 visual design is active. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
