@@ -19,6 +19,13 @@ Turn the locked Phase 2 requirements, Phase 3 trust/security boundaries, brand a
 6. [Design acceptance and implementation handoff](06-design-acceptance-and-handoff.md)
 7. [Design decisions and unresolved choices](07-design-decisions-and-open-questions.md)
 
+## Initial dashboard previews
+
+- [Dark dashboard concept (SVG)](design-previews/dashboard-dark-concept.svg)
+- [Light dashboard concept (SVG)](design-previews/dashboard-light-concept.svg)
+
+These are static review mockups with clearly labelled illustrative demo data, not a live dashboard or implemented product.
+
 ## Existing design assets
 
 - [Dark logo](../../assets/brand/auto-trading-agent-logo-dark.svg)
