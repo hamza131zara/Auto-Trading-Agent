@@ -101,7 +101,7 @@ The proposed USD $12,000 one-time license cannot be treated as pure margin: it m
 
 Model per acquired license:
 - Net one-time revenue = settled license amount - payment/bank fees - applicable taxes - refunds/chargebacks expected under the documented terms.
-- Lifetime service cost = expected retained service years × annual tenant-specific hosting, data, LLM, storage/backup, monitoring, support and security cost, adjusted for variable usage and provider price increases.
+- Lifetime vendor cost = expected retained support years × annual licensing-portal hosting, license/download security, release signing, software maintenance/security updates, support, incident handling and any provider/data/LLM usage explicitly included in the license. Customer self-hosting, customer RPC/market-data/LLM accounts, local storage and network/DEX fees are customer costs unless the quote explicitly includes them.
 - Contribution margin = net one-time revenue - expected lifetime service cost - acquisition/implementation/support allocation.
 - Stress-case cost uses high but plausible usage, provider plan upgrades, price increases, outage/recovery and longer service lifespan. Model low/base/high cases and a sensitivity curve, not a single guessed lifetime.
 
@@ -109,3 +109,7 @@ No recurring core subscription is permitted by the current owner-requested model
 
 ## 10. Provider allowance freshness note
 The Birdeye public page's indexed content and rendered snapshot returned different compute-unit allowance/overage figures during the 28 October 2026 review. Plan prices appeared consistent, but included compute units and overage rates are **not considered verified** until confirmed in the provider portal or in writing. Do not purchase a plan or build a cost model from one cached quota value.
+
+
+## 11. Self-hosted lifetime economics note (D-025)
+The $12,000 one-time fee funds the promised software license, included update/support window and central licensing/download portal, not an unlimited vendor-hosted trading runtime. Separate vendor cost lines from customer-paid infrastructure/API/LLM costs. Model the likely maintenance/support lifetime, security-response obligations, release signing, license portal uptime, customer installation support, refunds and provider price changes. Publish no included hosting/data/LLM allowance unless the quote and cost model expressly include it.
