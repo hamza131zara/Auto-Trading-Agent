@@ -12,10 +12,12 @@ The official Pakistan Virtual Assets Regulatory Authority (PVARA) site lists the
 - PVARA licensing FAQ: https://www.pvara.gov.pk/licensing
 - Virtual Assets Act, 2026 (official copy): https://www.pvara.gov.pk/documents/Virtual%20assets%20Act%202026%20passed%20by%20NA.pdf
 - State Bank of Pakistan circular concerning accounts for PVARA NOC/licensed VASPs: https://www.sbp.org.pk/circulars/bprd-circular-letter-no-10
-- FBR Income Tax Ordinance downloads, including amendments through 30 June 2026: https://fbr.gov.pk/Categ/Income-Tax--Income-Tax-Ordinance/326
-- FBR Income Tax Rules, including amendments through 15 September 2026: https://www.fbr.gov.pk/categ/income-tax-rules-2002/335
+- FBR Income Tax Ordinance index: https://fbr.gov.pk/Categ/Income-Tax--Income-Tax-Ordinance/326
+- FBR Income Tax Rules index: https://www.fbr.gov.pk/categ/income-tax-rules-2002/335
 
-These references indicate that Pakistan's regulatory framework is active and recent. They do not establish by themselves whether this exact self-trading software setup is a regulated service or what tax treatment applies to a specific user. Qualified Pakistani counsel/tax adviser must assess the facts and the current consolidated primary legislation, regulations and guidance.
+**Source-freshness correction from the 28 October 2026 verification pass:** the FBR Ordinance index page inspected during review displayed a consolidated version amended through 30 June 2024, and the Income Tax Rules page displayed a version amended through 24 November 2023. These landing pages do not prove the currently consolidated tax text or amendments through 2026. This register must not be treated as evidence that those older page snapshots are current. Obtain the current Finance Act/amendments and applicable primary tax provisions, then get a qualified Pakistani tax adviser to document the actual position.
+
+The PVARA page publishes a Virtual Assets Act, 2026 and regulatory documents, but neither that page nor the cited FAQs decides whether this exact private own-capital software setup is a regulated service or what tax treatment applies to a specific user. Qualified Pakistani counsel/tax adviser must assess the facts, actual activity model and current primary legislation/regulations. See [the dated source verification report](26-official-source-verification-report.md).
 
 ## 3. Activity classification questions for counsel
 Document a written answer for each relevant scenario:
