@@ -16,6 +16,48 @@ const SCHEMA_VERSION = "ata.market-data.v1" as const;
 const API_BASE_URL = "https://api.geckoterminal.com";
 const API_VERSION = "20230203";
 const MAX_RESPONSE_BYTES = 1_000_000;
+// The official docs and support article conflict on the public API limit.
+// A 7-second minimum spacing stays conservatively below the lower ~10/min figure.
+export const GECKOTERMINAL_MIN_REQUEST_INTERVAL_MS = 7_000;
+
+export interface GeckoTerminalRequestPacingAssessment {
+  readonly canStartRequest: boolean;
+  readonly nextAllowedAtMs: number;
+  readonly reasonCode: "REQUEST_INTERVAL_ELAPSED" | "REQUEST_INTERVAL_ACTIVE" | "INVALID_PACING_INPUT";
+}
+
+/** Pure policy helper so pacing boundaries remain covered by deterministic tests. */
+export function assessGeckoTerminalRequestPacing(
+  nowMs: number,
+  nextAllowedAtMs: number,
+  minimumIntervalMs = GECKOTERMINAL_MIN_REQUEST_INTERVAL_MS
+): GeckoTerminalRequestPacingAssessment {
+  const invalid = !Number.isSafeInteger(nowMs) || nowMs < 0 ||
+    !Number.isSafeInteger(nextAllowedAtMs) || nextAllowedAtMs < 0 ||
+    !Number.isSafeInteger(minimumIntervalMs) || minimumIntervalMs < 1;
+  if (invalid) {
+    return {
+      canStartRequest: false,
+      nextAllowedAtMs: Number.MAX_SAFE_INTEGER,
+      reasonCode: "INVALID_PACING_INPUT"
+    };
+  }
+  if (nowMs < nextAllowedAtMs) {
+    return {
+      canStartRequest: false,
+      nextAllowedAtMs,
+      reasonCode: "REQUEST_INTERVAL_ACTIVE"
+    };
+  }
+  return {
+    canStartRequest: true,
+    nextAllowedAtMs: nowMs + minimumIntervalMs,
+    reasonCode: "REQUEST_INTERVAL_ELAPSED"
+  };
+}
+
+let nextLiveRequestAllowedAtMs = 0;
+
 const DECIMAL_PATTERN = /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/;
 
@@ -190,6 +232,13 @@ export class GeckoTerminalPoolAdapter implements MarketDataAdapter {
 
   async fetchRaw(request: MarketDataRequest, signal: AbortSignal): Promise<unknown> {
     validateRequest(request);
+    if (!this.synthetic) {
+      const pacing = assessGeckoTerminalRequestPacing(Date.now(), nextLiveRequestAllowedAtMs);
+      if (!pacing.canStartRequest) {
+        throw new GeckoTerminalAdapterError("RATE_LIMIT", true);
+      }
+      nextLiveRequestAllowedAtMs = pacing.nextAllowedAtMs;
+    }
     const url = new URL(
       "/api/v2/networks/solana/pools/" + encodeURIComponent(request.poolAddress!),
       API_BASE_URL
