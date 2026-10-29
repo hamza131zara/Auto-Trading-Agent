@@ -1,6 +1,6 @@
 # Phase 5.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active. The core CI pipeline and pull-request verification have passed; owner-side repository settings remain open and Phase 5 is not yet closed.
+**Status:** CLOSED for engineering-foundation handoff on 29 October 2026. The owner confirmed repository security settings are complete; latest main-push CI and the recorded PR checks passed. The classic branch-protection endpoint was not readable by the connected GitHub integration, so its setting is recorded as owner-confirmed.
 
 ## 1. Acceptance checklist
 
@@ -15,8 +15,8 @@
 - [x] No production credentials are needed for install/build/typecheck/test/CI.
 - [x] Development/staging/production boundaries and secret handling are documented.
 - [x] Rollback/recovery instructions and dependency-update workflow are documented; custom Dependabot labels that did not exist in the repository were removed.
-- [ ] An authorized owner configures branch protection/rulesets, required reviews and required status checks, then verifies the checks are actually enforced and fail-closed on pull requests.
-- [ ] An authorized owner enables the GitHub dependency graph in repository Settings → Security before the separate Dependency Review Action is reintroduced. Until then, `npm audit` is the active dependency gate.
+- [x] Owner confirmed branch protection/rulesets, required reviews and required status checks are configured on 29 October 2026. The connected GitHub integration could not independently read the classic branch-protection endpoint (403); retain the settings page as the owner-side source of truth.
+- [x] Owner confirmed the GitHub dependency graph and associated repository security settings are enabled on 29 October 2026. The Dependency Review Action is reintroduced in `.github/workflows/dependency-review.yml`; its new PR run must confirm GitHub accepts the graph configuration. `npm audit` remains active in parallel.
 
 ## 2. Carry-forward decisions
 
@@ -32,4 +32,4 @@
 
 ## 3. Phase 5 exit rule
 
-Close Phase 5 only after clean install/build/typecheck/test/repository validation are reproducible, environment and secret boundaries are explicit, CI passes on pushes and pull requests, dependency/secret checks are automated, rollback/runbooks are reviewed, and owner-controlled repository protections/settings have been verified or explicitly dispositioned. A scaffold commit or workflow definition by itself is not a successful build. The Phase 5 starter does not implement market-data ingestion, token-risk calculations, strategy decisions, signing, live orders, the commercial portal or the finished dashboard. The next canonical phase is Phase 6 — Market-Data Ingestion and Canonical Data Layer.
+Phase 5 is closed for the engineering-foundation handoff based on reproducible CI, pull-request checks, documented environments/secrets/rollback, the current automated dependency/secret checks, and the owner's confirmation that repository protections/settings are configured. The final Phase 6 pull request must validate the reintroduced Dependency Review workflow; if the GitHub dependency graph is still unavailable to Actions, fix that setting before merging. A scaffold commit or workflow definition by itself is not a successful build. The Phase 5 starter does not implement market-data ingestion, token-risk calculations, strategy decisions, signing, live orders, the commercial portal or the finished dashboard. The next canonical phase is Phase 6 — Market-Data Ingestion and Canonical Data Layer.
