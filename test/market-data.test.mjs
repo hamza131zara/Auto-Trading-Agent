@@ -301,12 +301,12 @@ test("independent reserve-price agreement uses exact decimals and requires both 
 
 test("independent base/USD and quote/USD feeds must be timestamp-aligned within the explicit policy", () => {
   const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
-    quoteUsd: { publishedAt: "2026-10-29T12:45:01.000Z", retrievedAt: "2026-10-29T12:44:55.000Z" },
+    quoteUsd: { publishedAt: "2026-10-29T12:44:59.000Z", retrievedAt: "2026-10-29T12:44:55.000Z" },
     policy: { maxReferenceTimestampSkewMs: 5_000 }
   }));
   assert.equal(result.status, "INSUFFICIENT_EVIDENCE");
   assert.equal(result.reserveComparison.status, "INSUFFICIENT_EVIDENCE");
-  assert.equal(result.referenceTimestampSkewMs, 11_000);
+  assert.equal(result.referenceTimestampSkewMs, 9_000);
   assert.ok(result.reasonCodes.includes("REFERENCE_SOURCE_TIMES_UNALIGNED"));
   assert.equal(result.comparisonEvidenceComplete, false);
   assert.equal(result.tradingAuthorized, false);
