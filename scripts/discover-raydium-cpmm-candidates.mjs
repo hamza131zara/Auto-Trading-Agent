@@ -255,7 +255,7 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId) {
   };
 }
 
-function checkRpcAccounts(payload, requestId, expectedAddresses) {
+function checkRpcAccounts(payload, requestId, expectedAddresses, expectedProgramIds = new Map()) {
   if (!isRecord(payload) || payload.jsonrpc !== "2.0" || payload.id !== requestId ||
       !isRecord(payload.result) || !isRecord(payload.result.context) ||
       !Number.isSafeInteger(payload.result.context.slot) || payload.result.context.slot < 0 ||
@@ -300,18 +300,22 @@ function checkRpcAccounts(payload, requestId, expectedAddresses) {
       new Set(decodedTokenMints).size === 2 &&
       decodedTokenMints.includes(SOL_MINT) &&
       decodedTokenMints.includes(USDC_MINT);
-    const classification = account.owner === RAYDIUM_CPMM_PROGRAM_ID
-      ? decodedPool.status !== "DECODED"
-        ? "RAYDIUM_CPMM_DECODE_FAILED"
-        : hasExactOnChainMints ? "RAYDIUM_CPMM" : "RAYDIUM_CPMM_MINT_IDENTITY_MISMATCH"
-      : account.owner === "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-        ? "RAYDIUM_AMM_V4"
-        : account.owner === "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
-          ? "RAYDIUM_CLMM"
-          : "OTHER_PROGRAM";
+    const expectedProgramId = expectedProgramIds.get(expectedAddresses[index]) ?? null;
+    const classification = expectedProgramId !== null && account.owner !== expectedProgramId
+      ? "RAYDIUM_API_PROGRAM_ID_MISMATCH"
+      : account.owner === RAYDIUM_CPMM_PROGRAM_ID
+        ? decodedPool.status !== "DECODED"
+          ? "RAYDIUM_CPMM_DECODE_FAILED"
+          : hasExactOnChainMints ? "RAYDIUM_CPMM" : "RAYDIUM_CPMM_MINT_IDENTITY_MISMATCH"
+        : account.owner === "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+          ? "RAYDIUM_AMM_V4"
+          : account.owner === "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+            ? "RAYDIUM_CLMM"
+            : "OTHER_PROGRAM";
     classified.push({
       poolAddress: expectedAddresses[index],
       ownerProgramId: account.owner,
+      raydiumApiProgramId: expectedProgramId,
       classification,
       executable: account.executable,
       space: account.space,
@@ -386,7 +390,8 @@ export async function discoverRaydiumCpmmCandidates({
     const checked = checkRpcAccounts(
       rpc.payload,
       rpcRequestId,
-      selected.map((candidate) => candidate.poolAddress)
+      selected.map((candidate) => candidate.poolAddress),
+      new Map(selected.map((candidate) => [candidate.poolAddress, candidate.raydiumProgramId]))
     );
     classifications = checked.classified;
     rpcEvidence = {
