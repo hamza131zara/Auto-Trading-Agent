@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   SPL_TOKEN_2022_PROGRAM_ID,
+  TOKEN2022_EXTENSION_SEMANTICS,
+  assessToken2022ExtensionPolicy,
   inspectToken2022ExtensionLayout
 } from "../packages/market-data/dist/index.js";
 
@@ -50,9 +52,13 @@ test("exact Token-2022 base mint/account layouts are reported as no extensions",
     "TOKEN_ACCOUNT"
   );
   assert.equal(mint.status, "NO_EXTENSIONS");
-  assert.equal(mint.baseStateEligibleForIdentityEvidence, true);
+  assert.equal(mint.baseStateEligibleForIdentityEvidence, false);
   assert.equal(account.status, "NO_EXTENSIONS");
-  assert.equal(account.baseStateEligibleForIdentityEvidence, true);
+  assert.equal(account.baseStateEligibleForIdentityEvidence, false);
+  const policy = assessToken2022ExtensionPolicy(mint);
+  assert.equal(policy.status, "NO_EXTENSIONS");
+  assert.equal(policy.extensionPolicySatisfied, true);
+  assert.equal(policy.identityEvidenceEligible, false);
 });
 
 test("parses a MintCloseAuthority-style TLV header but does not inspect the extension payload", () => {
@@ -168,4 +174,64 @@ test("structural inspection never authorizes identity evidence or trading", () =
   assert.equal(result.baseStateEligibleForIdentityEvidence, false);
   // This function only reports TLV framing; it does not expose any trading authorization.
   assert.equal("tradingAuthorized" in result, false);
+});
+
+
+test("known Token-2022 extension types are classified but fail closed pending Phase 7 review", () => {
+  assert.equal(TOKEN2022_EXTENSION_SEMANTICS.length, 28);
+  assert.deepEqual(
+    TOKEN2022_EXTENSION_SEMANTICS.map((item) => item.typeCode),
+    Array.from({ length: 28 }, (_unused, index) => index + 1)
+  );
+
+  const bytes = mintExtended(36);
+  putTlv(bytes, 166, 3, new Uint8Array(32));
+  const layout = inspectToken2022ExtensionLayout(rpcAccount(bytes), "MINT");
+  const policy = assessToken2022ExtensionPolicy(layout);
+  assert.equal(policy.status, "BLOCKED");
+  assert.equal(policy.extensionPolicySatisfied, false);
+  assert.equal(policy.identityEvidenceEligible, false);
+  assert.deepEqual(policy.entries, [{
+    typeCode: 3,
+    name: "MintCloseAuthority",
+    disposition: "KNOWN_REQUIRES_PHASE_7_REVIEW",
+    impact: "MINT_LIFECYCLE_AUTHORITY"
+  }]);
+});
+
+test("unknown/future extension IDs remain blocked and unrecognized", () => {
+  const bytes = mintExtended(4);
+  putTlv(bytes, 166, 65535, new Uint8Array(0));
+  const policy = assessToken2022ExtensionPolicy(
+    inspectToken2022ExtensionLayout(rpcAccount(bytes), "MINT")
+  );
+  assert.equal(policy.status, "BLOCKED");
+  assert.equal(policy.identityEvidenceEligible, false);
+  assert.deepEqual(policy.entries, [{
+    typeCode: 65535,
+    name: null,
+    disposition: "UNKNOWN_EXTENSION_BLOCKED",
+    impact: "UNKNOWN"
+  }]);
+  assert.ok(policy.reasonCodes.includes("UNKNOWN_OR_SCOPE_INVALID_EXTENSION"));
+});
+
+test("known extension attached to the wrong account kind is blocked", () => {
+  const bytes = accountExtended(4);
+  putTlv(bytes, 166, 3, new Uint8Array(0)); // MintCloseAuthority belongs to mint state.
+  const policy = assessToken2022ExtensionPolicy(
+    inspectToken2022ExtensionLayout(rpcAccount(bytes), "TOKEN_ACCOUNT")
+  );
+  assert.equal(policy.status, "BLOCKED");
+  assert.equal(policy.entries[0].disposition, "INVALID_ACCOUNT_KIND");
+  assert.equal(policy.identityEvidenceEligible, false);
+});
+
+test("malformed or error layouts cannot pass the Token-2022 extension policy", () => {
+  const malformed = inspectToken2022ExtensionLayout(rpcAccount(mintExtended()), "MINT");
+  const policy = assessToken2022ExtensionPolicy(malformed);
+  assert.equal(malformed.status, "ERROR");
+  assert.equal(policy.status, "INVALID_INPUT");
+  assert.equal(policy.extensionPolicySatisfied, false);
+  assert.equal(policy.identityEvidenceEligible, false);
 });
