@@ -93,7 +93,7 @@ function pairResponse(pairs) {
 }
 
 function poolApiUrl(url) {
-  return url.startsWith("https://api-v3.raydium.io/pools/info/mint?");
+  return url.startsWith("https://api-v3.raydium.io/pools/info/list-v2?");
 }
 
 function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) {

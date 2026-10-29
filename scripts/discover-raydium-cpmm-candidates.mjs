@@ -11,7 +11,7 @@ import {
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const RAYDIUM_POOL_QUERY_URL =
-  "https://api-v3.raydium.io/pools/info/mint?size=100&mint1=" + USDC_MINT +
+  "https://api-v3.raydium.io/pools/info/list-v2?size=100&mint1=" + USDC_MINT +
   "&mint2=" + SOL_MINT + "&poolType=Standard&sortField=liquidity&sortType=desc";
 const DEX_SCREENER_PAIR_URL_BASE = "https://api.dexscreener.com/latest/dex/pairs/solana/";
 const RAYDIUM_API_PROVIDER_ID = "raydium-api-v3";
@@ -60,7 +60,7 @@ function readThreshold(env, name, fallback) {
 async function readBoundedText(response, errorPrefix) {
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined);
-    throw codedError(errorPrefix + "_HTTP_ERROR");
+    throw codedError(errorPrefix + "_HTTP_" + String(response.status));
   }
   const contentLength = response.headers.get("content-length");
   if (contentLength !== null && /^\d+$/.test(contentLength) &&
