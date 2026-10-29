@@ -7,7 +7,7 @@ Canonical source artifacts, phase documents, design assets and engineering found
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `53e3f8063e9446589c84a15978d79f8a9725773e`  
+**Source snapshot before this register refresh:** `7be63d31647639b711223b8ca278691a23295e72`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -181,7 +181,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `packages/config/tsconfig.json` | Configuration workspace compiler settings | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
 | `packages/config/src/index.ts` | Safe typed config parser; refuses live trading | `e087b80daa74ea5a344ac40470a61bb7e80872d1` | 1859 |
 | `scripts/validate-repository.mjs` | Workspace, env-default and common secret-pattern checks | `adff68d5d400717ae39eb4184f8648ac2a12d207` | 4760 |
-| `scripts/validate-raydium-live-source.mjs` | Read-only live-source runner: fetches exact DEX Screener pair or validates supplied snapshot, enforces provenance/approvals and emits redacted evidence | `1e18f34679bbbeab84e46e9939f508400c627836` | 15458 |
+| `scripts/validate-raydium-live-source.mjs` | Read-only live-source runner: fetches exact DEX Screener pair or validates supplied snapshot, enforces provenance/approvals and emits redacted evidence | `ce47399b24d75f53cbe3e0ecfa76039d51ee2127` | 15459 |
 | `test/config.test.mjs` | Runtime config tests: defaults, strict booleans, immutability, no live trading and safe errors | `1c58d60e9a94dd6729d45c85c3fe63a0188ff16f` | 2383 |
 | `.github/workflows/ci.yml` | Push/PR CI with reviewed checkout/setup-node/Gitleaks full-SHA pins and full-history scan | `078cc62af33a1ab87a723086e828ee91e1dcc128` | 1521 |
 | `.github/dependabot.yml` | Weekly npm and GitHub Actions updates without undefined custom labels | `788d8cfa2830a8dbd2d8e3529f3a755dbd8a9f09` | 258 |
@@ -270,7 +270,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `53e3f8063e9446589c84a15978d79f8a9725773e`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `7be63d31647639b711223b8ca278691a23295e72`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
