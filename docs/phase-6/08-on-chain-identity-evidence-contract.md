@@ -17,7 +17,7 @@ The check requires:
 - **Explicit scope:** target must be a canonical Solana `mainnet-beta` observation with a non-null pool address.
 - **Read provenance:** safe RPC provider ID, UTC retrieval time, context slot, requested `minContextSlot`, commitment, request ID and SHA-256 of raw response bytes. Non-synthetic evidence without request ID or digest is insufficient.
 - **Slot and commitment gates:** evidence commitment must equal the caller's explicit required commitment; the response context slot and requested minimum slot must meet an explicit minimum context slot; retrieval age is checked with an injected clock and explicit maximum age.
-- **Approved protocol decoder:** the pool's account owner must match an explicitly allowlisted DEX program ID, and decoder ID/version must match the exact allowlist entry. Empty or duplicate program/token/loader allowlists are invalid.
+- **Approved protocol decoder:** the pool's account owner must match an explicitly allowlisted DEX program ID, and decoder ID/version must match the exact allowlist entry. Empty or duplicate program/token/loader allowlists are invalid, and a DEX program, token program and loader address cannot be reused across roles.
 - **Program account:** the program account address must equal the pool owner program ID, the account must be executable, and its account owner must be in the explicitly allowlisted loader program IDs.
 - **Mint identity:** base and quote mint account addresses must match the target, each mint must exist and be initialized, and each account's program owner must be in the approved token-program IDs.
 - **Pool/vault identity:** decoded pool address, base/quote mints, base/quote vault addresses and vault authorities must match the account evidence. Each vault must exist, be initialized, use the correct token-program owner, and report the expected mint and decoded authority.
@@ -37,7 +37,7 @@ Every return includes `tradingAuthorized: false`. `MATCH` is not token-safety ap
 
 ## Tests
 
-`test/on-chain-identity.test.mjs` exercises the evidence-checker branches using constructed fixtures only: matching identity bundle, synthetic-only match, owner/program mismatch, non-executable DEX program, vault/decoder mismatch, missing account/decode, lower commitment, insufficient context slot, stale retrieval, missing digest, unsupported target cluster, unapproved decoder version, malformed policy and unconditional denial of trading authorization.
+`test/on-chain-identity.test.mjs` exercises the evidence-checker branches using constructed fixtures only: matching identity bundle, synthetic-only match, owner/program mismatch, non-executable DEX program, vault/decoder mismatch, missing account/decode, lower commitment, insufficient context slot, stale retrieval, missing digest, unsupported target cluster, unapproved decoder version, malformed policy, overlapping program-role allowlists and unconditional denial of trading authorization.
 
 These tests do not connect to a Solana RPC endpoint, decode live protocol data, or prove that any allowlisted DEX address is authentic.
 
