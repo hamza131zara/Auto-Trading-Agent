@@ -1,6 +1,6 @@
 # Phase 6.7 — Provider Agreement and Fail-Closed Fallback Policy
 
-**Status:** The provider attempt gate is now wired into reusable read-only adapter orchestration, and the Phase 6.13 live identity diagnostic uses that path for its currently approved single indexed provider. CI [run #213](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40907483897) passed 169/169 tests, typecheck, build, dependency audit, and Gitleaks. Tests cover primary timeout, two independent fallbacks, insufficient lone fallback, conflicts, invalid normalization/identity, circuit cooldown and recovery probe, and per-process single-flight blocking. Live multi-provider fallback remains unverified because no second indexed production provider is approved and no pool meets the existing thresholds. Pyth's live reserve comparison remains DISAGREEMENT; production approval and trading authorization remain false.
+**Status:** The read-only provider orchestration is integrated and the fixture-tested GeckoTerminal adapter candidate has passed CI [#219](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40923071801) with 179/179 tests, typecheck, build, dependency audit and Gitleaks. The new adapter is disabled by default and is not registered in the live runner. Official docs describe beta status, one-minute caching and an approximate 10-calls/minute limit, while a support article says 30/minute; the adapter conservatively enforces a seven-second process-local request interval. API use rights/attribution, current quota, commercial/distribution suitability, and current-observation timestamp remain open. Pyth still returns a 63-bps reserve/reference DISAGREEMENT; production approval and trading authorization remain false.
 
 ## Purpose
 
@@ -19,6 +19,10 @@ Every candidate contains:
 The policy requires an injected UTC evaluation time and separate explicit maximum ages for market observations and the provider-health snapshot. Both freshness values are recomputed with the canonical freshness function; a caller-supplied `FRESH` label or old `HEALTHY` state is not accepted as proof. The health snapshot is structurally checked for state-consistent timestamps/counters as well. A candidate is eligible only when its canonical snapshot validates, provenance provider ID matches the candidate ID, the pool identity exists, provider health is `HEALTHY`, and recomputed freshness is `FRESH`.
 
 Synthetic observations are rejected by default. Tests may pass `allowSyntheticFixtures: true` to exercise the comparison algorithm, but an agreement made with any synthetic observation cannot advance to on-chain validation. Unknown, stale, invalid, missing-timestamp and unhealthy observations remain rejected with stable reason codes.
+
+## Phase 6.16 — GeckoTerminal candidate adapter
+
+The provider review in [Phase 6.16](16-geckoterminal-provider-review-and-adapter.md) records the official schema, terms, rate-limit discrepancy and timestamp limitations. A fixture-tested exact-pool adapter is available as @ata/market-data/providers/geckoterminal, with a seven-second process-local request pacing guard, fixed API version, size/timeout bounds, identity verification, raw-payload digest and synthetic provenance. It is not registered in the live runner. The public documentation and a support article conflict on rate limit (approximately 10 vs 30 calls/minute), so the stricter figure is assumed. Because the schema's pool-creation time is not a current snapshot time, source freshness remains UNKNOWN and the adapter cannot satisfy the agreement/evidence gate yet. No API terms approval, paid plan, or live call is assumed.
 
 ## Read-only provider orchestration
 
