@@ -174,7 +174,7 @@ test("rejects unsupported chain, invalid measures, and unsafe counts instead of 
     errors: ["UNSUPPORTED_CHAIN"]
   });
 
-  const invalidPrice = fixtureText.replace('"priceUsd": "0.123456789012345678"', '"priceUsd": "1e-8"');
+  const invalidPrice = fixtureText.replace('"priceUsd": "0.123456789012345678"', '"priceUsd": "-1"');
   assert.deepEqual(adapter.normalize(envelope(invalidPrice), context), {
     observations: [],
     errors: ["INVALID_MARKET_MEASURE"]
