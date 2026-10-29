@@ -541,6 +541,8 @@ export function replayMarketDataCases(cases: readonly MarketDataReplayCase[]): r
  */
 export interface ProviderEvidenceCandidate {
   readonly providerId: string;
+  /** Upstream vendor/source family; aliases of the same upstream must share a group. */
+  readonly independenceGroupId: string;
   readonly priority: number;
   readonly health: ProviderHealthSnapshot;
   readonly snapshot: unknown | null;
@@ -586,7 +588,7 @@ interface EvaluatedProviderEvidence {
   readonly providerId: string;
   readonly priority: number;
   readonly snapshot: CanonicalMarketSnapshot;
-  readonly sourceTimestamp: string;
+  readonly sourceTimestampMs: number;
 }
 
 const PROVIDER_HEALTH_STATES = new Set<ProviderHealthState>([
@@ -662,11 +664,14 @@ export function assessProviderAgreement(
   }
 
   const providerIds = new Set<string>();
+  const independenceGroups = new Set<string>();
   const priorities = new Set<number>();
   for (const candidate of candidates as readonly unknown[]) {
     if (!isRecord(candidate) ||
         typeof candidate.providerId !== "string" ||
         !isSafeSlug(candidate.providerId) ||
+        typeof candidate.independenceGroupId !== "string" ||
+        !isSafeSlug(candidate.independenceGroupId) ||
         !Number.isSafeInteger(candidate.priority) ||
         (candidate.priority as number) < 0 ||
         !isRecord(candidate.health) ||
@@ -680,6 +685,9 @@ export function assessProviderAgreement(
     if (providerIds.has(candidate.providerId)) {
       return result("INVALID_INPUT", [], [], [], ["DUPLICATE_PROVIDER_ID"]);
     }
+    if (independenceGroups.has(candidate.independenceGroupId)) {
+      return result("INVALID_INPUT", [], [], [], ["DUPLICATE_INDEPENDENCE_GROUP"]);
+    }
     if (priorities.has(candidate.priority as number)) {
       return result("INVALID_INPUT", [], [], [], ["DUPLICATE_PROVIDER_PRIORITY"]);
     }
@@ -687,6 +695,7 @@ export function assessProviderAgreement(
       return result("INVALID_INPUT", [], [], [], ["HEALTH_PROVIDER_ID_MISMATCH"]);
     }
     providerIds.add(candidate.providerId);
+    independenceGroups.add(candidate.independenceGroupId);
     priorities.add(candidate.priority as number);
   }
 
@@ -733,7 +742,7 @@ export function assessProviderAgreement(
             providerId: candidate.providerId,
             priority: candidate.priority,
             snapshot,
-            sourceTimestamp: sourceTimestamp!
+            sourceTimestampMs: timestampMs(sourceTimestamp!)
           });
         }
       }
@@ -780,7 +789,7 @@ export function assessProviderAgreement(
     );
   }
 
-  if (eligible.some((candidate) => candidate.sourceTimestamp !== reference.sourceTimestamp)) {
+  if (eligible.some((candidate) => candidate.sourceTimestampMs !== reference.sourceTimestampMs)) {
     return result(
       "INSUFFICIENT_EVIDENCE",
       eligibleIds,
