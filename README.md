@@ -6,7 +6,7 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Phases 1–5 are closed for their approved handoffs. Read-only live identity validation and the initial SOL/USDC discovery workflow have run successfully, but no pool met the current qualification filters. Discovery is being expanded to canonical SOL/USDC and SOL/USDT pairs; provider selection and critical-data validation remain open. Live trading is not authorized. Do not connect a production wallet or private key.
+> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Phases 1–5 are closed for their approved handoffs. Read-only live identity validation and the initial SOL/USDC discovery workflow have run successfully, but no pool met the current qualification filters. Discovery now covers canonical SOL/USDC and SOL/USDT in the read-only code, and the expanded implementation passed [CI run #181](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40872597792). A new manual live run is still needed to verify the broader universe; provider selection and critical-data validation remain open. Live trading is not authorized. Do not connect a production wallet or private key.
 
 ## Start here
 - [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)

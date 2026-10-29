@@ -1,6 +1,6 @@
 # Phase 6.14 — Read-only Raydium CPMM candidate discovery
 
-**Status:** The initial SOL/USDC live discovery completed successfully in [run #9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606), but none of its 14 verified CPMM pools met the configured $100,000 liquidity and $10,000 24-hour volume thresholds. The next implementation step now expands the discovery-only quote allowlist to canonical SOL/USDC and SOL/USDT, retains both thresholds unchanged, pages each pair query with a hard cap, and verifies each returned account against the expected quote mint. The broadened implementation is committed, with CI verification pending; a new manual live run is required before claiming whether SOL/USDT produces any qualifying pool. This is discovery-only: no token-safety approval or trading authorization is implied.
+**Status:** The initial SOL/USDC live discovery completed successfully in [run #9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606), but none of its 14 verified CPMM pools met the configured $100,000 liquidity and $10,000 24-hour volume thresholds. Discovery has now been expanded to the canonical SOL/USDC and SOL/USDT quote pairs, with those thresholds unchanged, bounded pagination, and exact quote-mint checks across Raydium, finalized RPC, and DEX Screener. The code and regression tests are committed in [`c929b85`](https://github.com/hamza131zara/Auto-Trading-Agent/commit/c929b85fcab508a060b7f5f2214ee30e51a73b7f); [CI run #181](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40872597792) passed all 135 tests, typechecking, build, dependency audit, and Gitleaks. A new manual live run is still required before claiming whether SOL/USDT has a qualifying pool. This is discovery-only: no token-safety approval or trading authorization is implied.
 
 ## Why this exists
 
@@ -29,7 +29,7 @@ The allowlist is limited to these canonical mainnet mint addresses:
 
 Mint identifiers are sourced from [Solana's mainnet stablecoin reference](https://solana.com/docs/payments/how-payments-work). This is a discovery-only allowlist, not approval to use either quote asset in production. Unknown quote mints, wrong-pair DEX Screener responses, on-chain mint mismatches, malformed responses and incomplete scans cannot qualify a candidate.
 
-The $100,000 liquidity and $10,000 24-hour volume minimums are unchanged. The broadened workflow must be manually run to validate live SOL/USDT coverage; CI uses mocks only and never contacts live provider APIs. The top candidate, if any, remains a follow-up candidate rather than a trading recommendation.
+The $100,000 liquidity and $10,000 24-hour volume minimums are unchanged. Open the [Phase 6 SOL stablecoin CPMM discovery workflow](https://github.com/hamza131zara/Auto-Trading-Agent/actions/workflows/phase6-cpmm-candidate-discovery.yml) on `main` and manually run it to validate live SOL/USDT coverage. Review all three acknowledgements and keep the $100,000 liquidity and $10,000 24-hour volume minimums unchanged. CI uses mocks only and never contacts live provider APIs. The top candidate, if any, remains a follow-up candidate rather than a trading recommendation.
 
 ## Default triage thresholds
 
