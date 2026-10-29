@@ -202,7 +202,11 @@ function checkRpcAccounts(payload, requestId, expectedAddresses) {
       poolAddress: expectedAddresses[index],
       ownerProgramId: account.owner,
       classification: account.owner === RAYDIUM_CPMM_PROGRAM_ID
-        ? "RAYDIUM_CPMM"
+        ? (!account.executable &&
+            account.space === 637 &&
+            account.data[0].length === Math.ceil(account.space / 3) * 4
+              ? "RAYDIUM_CPMM"
+              : "RAYDIUM_CPMM_ACCOUNT_SHAPE_MISMATCH")
         : account.owner === "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
           ? "RAYDIUM_AMM_V4"
           : account.owner === "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
