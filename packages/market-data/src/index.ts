@@ -1379,21 +1379,117 @@ export function assessCriticalMarketDataEvidenceGate(input: {
   const comparisonStatuses: readonly string[] = [
     "AGREED", "DISAGREEMENT", "INSUFFICIENT_EVIDENCE", "INVALID_INPUT", "NOT_ASSESSED"
   ];
-  if (!providerStatuses.includes(String(provider.status)) ||
-      !comparisonStatuses.includes(String(independent.status)) ||
-      typeof provider.canProceedToOnChainValidation !== "boolean" ||
-      provider.tradingAuthorized !== false ||
-      typeof independent.comparisonEvidenceComplete !== "boolean" ||
-      independent.tradingAuthorized !== false ||
-      !Array.isArray(provider.reasonCodes) ||
-      !provider.reasonCodes.every((code) => typeof code === "string") ||
-      !Array.isArray(independent.reasonCodes) ||
-      !independent.reasonCodes.every((code) => typeof code === "string")) {
+  const isStringArray = (value: unknown): value is string[] =>
+    Array.isArray(value) && value.every((item) => typeof item === "string");
+  const validProviderIds =
+    Array.isArray(provider.eligibleProviderIds) &&
+    provider.eligibleProviderIds.every(isSafeSlug) &&
+    new Set(provider.eligibleProviderIds as string[]).size === provider.eligibleProviderIds.length;
+  const validRejectedProviders =
+    Array.isArray(provider.rejectedProviders) &&
+    provider.rejectedProviders.every((item) =>
+      isRecord(item) && isSafeSlug(item.providerId) && isStringArray(item.reasonCodes)
+    );
+  const validDisagreementFields = isStringArray(provider.disagreementFields);
+  const validProviderShape =
+    providerStatuses.includes(String(provider.status)) &&
+    validProviderIds &&
+    validRejectedProviders &&
+    validDisagreementFields &&
+    typeof provider.fallbackUsed === "boolean" &&
+    typeof provider.canProceedToOnChainValidation === "boolean" &&
+    isStringArray(provider.reasonCodes) &&
+    provider.tradingAuthorized === false;
+  const reserve = independent.reserveComparison;
+  const indexed = independent.indexedPriceComparison;
+  const nestedComparisonStatuses = [
+    "AGREED", "DISAGREEMENT", "INSUFFICIENT_EVIDENCE", "INVALID_INPUT", "NOT_ASSESSED"
+  ];
+  const validDeviation = (value: unknown): boolean =>
+    value === null || (typeof value === "string" && /^(?:0|[1-9][0-9]*)$/.test(value));
+  const validTolerance = (value: unknown): boolean =>
+    Number.isSafeInteger(value) && (value as number) >= 0 && (value as number) <= 10_000;
+  const validNestedComparison = (value: unknown): boolean =>
+    isRecord(value) &&
+    nestedComparisonStatuses.includes(String(value.status)) &&
+    validDeviation(value.deviationBpsRounded) &&
+    validTolerance(value.toleranceBps);
+  const validComparisonShape =
+    comparisonStatuses.includes(String(independent.status)) &&
+    validNestedComparison(reserve) &&
+    validNestedComparison(indexed) &&
+    isSafeSlug(independent.referenceProviderId) &&
+    isSafeSlug(independent.referenceIndependenceGroupId) &&
+    typeof independent.baseFeedId === "string" &&
+    REQUEST_ID_PATTERN.test(independent.baseFeedId) &&
+    typeof independent.quoteFeedId === "string" &&
+    REQUEST_ID_PATTERN.test(independent.quoteFeedId) &&
+    ["FRESH", "STALE", "UNKNOWN", "INVALID"].includes(String(independent.sourceFreshness)) &&
+    Number.isSafeInteger(independent.maxReferenceTimestampSkewMs) &&
+    (independent.maxReferenceTimestampSkewMs as number) >= 0 &&
+    (independent.maxReferenceTimestampSkewMs as number) <= 300_000 &&
+    (independent.referenceTimestampSkewMs === null ||
+      (Number.isSafeInteger(independent.referenceTimestampSkewMs) &&
+       (independent.referenceTimestampSkewMs as number) >= 0 &&
+       (independent.referenceTimestampSkewMs as number) <= (independent.maxReferenceTimestampSkewMs as number))) &&
+    typeof independent.comparisonEvidenceComplete === "boolean" &&
+    isStringArray(independent.reasonCodes) &&
+    independent.tradingAuthorized === false;
+  if (!validProviderShape || !validComparisonShape) {
     return blocked("INVALID_INPUT", ["CRITICAL_EVIDENCE_GATE_INPUT_INVALID"]);
   }
 
   const providerStatus = provider.status as ProviderAgreementStatus;
   const comparisonStatus = independent.status as IndependentPriceComparisonStatus;
+  const providerReasons = provider.reasonCodes as string[];
+  const comparisonReasons = independent.reasonCodes as string[];
+  const eligibleProviderIds = provider.eligibleProviderIds as string[];
+  const disagreementFields = provider.disagreementFields as string[];
+
+  // Defend against internally inconsistent or forged "AGREED" assessments.
+  if (providerStatus === "AGREED") {
+    const structurallyAgreed = eligibleProviderIds.length >= 2 && disagreementFields.length === 0;
+    const approvedNonSyntheticAgreement =
+      provider.canProceedToOnChainValidation === true &&
+      providerReasons.includes("PROVIDERS_AGREE_EXACTLY") &&
+      !providerReasons.includes("SYNTHETIC_AGREEMENT_ONLY");
+    const syntheticAgreement =
+      provider.canProceedToOnChainValidation === false &&
+      providerReasons.includes("SYNTHETIC_AGREEMENT_ONLY");
+    if (!structurallyAgreed || (!approvedNonSyntheticAgreement && !syntheticAgreement)) {
+      return blocked("INVALID_INPUT", ["PROVIDER_AGREEMENT_ASSESSMENT_INCONSISTENT"], providerStatus, comparisonStatus);
+    }
+  } else if (provider.canProceedToOnChainValidation !== false) {
+    return blocked("INVALID_INPUT", ["PROVIDER_AGREEMENT_ASSESSMENT_INCONSISTENT"], providerStatus, comparisonStatus);
+  }
+
+  const comparisonInternallyConsistent =
+    comparisonStatus !== "AGREED" ||
+    (isRecord(reserve) &&
+      isRecord(indexed) &&
+      reserve.status === "AGREED" &&
+      indexed.status === "AGREED" &&
+      independent.comparisonEvidenceComplete === true &&
+      independent.sourceFreshness === "FRESH" &&
+      typeof independent.referenceTimestampSkewMs === "number" &&
+      reserve.deviationBpsRounded !== null &&
+      indexed.deviationBpsRounded !== null &&
+      comparisonReasons.length === 0);
+  const disagreementInternallyConsistent =
+    comparisonStatus !== "DISAGREEMENT" ||
+    (isRecord(reserve) &&
+      isRecord(indexed) &&
+      (reserve.status === "DISAGREEMENT" || indexed.status === "DISAGREEMENT") &&
+      independent.comparisonEvidenceComplete === false);
+  const incompleteInternallyConsistent =
+    comparisonStatus !== "INSUFFICIENT_EVIDENCE" &&
+    comparisonStatus !== "NOT_ASSESSED" ||
+    independent.comparisonEvidenceComplete === false;
+  if (!comparisonInternallyConsistent ||
+      !disagreementInternallyConsistent ||
+      !incompleteInternallyConsistent) {
+    return blocked("INVALID_INPUT", ["INDEPENDENT_COMPARISON_ASSESSMENT_INCONSISTENT"], providerStatus, comparisonStatus);
+  }
   const reasons: string[] = [];
   if (providerStatus !== "AGREED") {
     reasons.push("PROVIDER_AGREEMENT_" + providerStatus);

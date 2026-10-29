@@ -388,6 +388,26 @@ test("critical evidence gate rejects malformed or forged authorization-shaped in
   assert.equal(forged.status, "INVALID_INPUT");
   assert.equal(forged.canProceedToOnChainValidation, false);
   assert.equal(forged.tradingAuthorized, false);
+
+  const validProviderAgreement = assessProviderAgreement(twoLiveAgreeingCandidates(), {
+    nowAt: policy.nowAt,
+    maxAgeMs: policy.maxAgeMs,
+    maxHealthAgeMs: policy.maxHealthAgeMs
+  });
+  const validComparison = assessIndependentReservePriceAgreement(independentPriceInput());
+  const forgedComparison = {
+    ...validComparison,
+    status: "AGREED",
+    reserveComparison: { ...validComparison.reserveComparison, status: "DISAGREEMENT" }
+  };
+  const inconsistent = assessCriticalMarketDataEvidenceGate({
+    providerAgreement: validProviderAgreement,
+    independentComparison: forgedComparison
+  });
+  assert.equal(inconsistent.status, "INVALID_INPUT");
+  assert.equal(inconsistent.canProceedToOnChainValidation, false);
+  assert.ok(inconsistent.reasonCodes.includes("INDEPENDENT_COMPARISON_ASSESSMENT_INCONSISTENT"));
+  assert.equal(inconsistent.tradingAuthorized, false);
 });
 
 test("invalid policy fails closed", () => {
