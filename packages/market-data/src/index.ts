@@ -83,10 +83,7 @@ export interface FreshnessInput {
   readonly observedAt: string | null;
   readonly sourceEventAt: string | null;
   readonly nowAt: string;
-  /** Maximum age for canonical source observations. */
   readonly maxAgeMs: number;
-  /** Separate explicit bound for the provider-health snapshot itself. */
-  readonly maxHealthAgeMs: number;
   readonly maxFutureSkewMs?: number;
 }
 
@@ -554,7 +551,10 @@ export interface ProviderEvidenceCandidate {
 export interface ProviderAgreementPolicy {
   /** Injected evaluation clock; this function never reads the system clock. */
   readonly nowAt: string;
+  /** Maximum age for canonical source observations. */
   readonly maxAgeMs: number;
+  /** Separate explicit bound for the provider-health snapshot itself. */
+  readonly maxHealthAgeMs: number;
   readonly maxFutureSkewMs?: number;
   /** Explicitly enables synthetic fixtures for tests; it never enables downstream use. */
   readonly allowSyntheticFixtures?: boolean;
