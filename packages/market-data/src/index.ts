@@ -20,13 +20,13 @@ export type ProviderHealthState =
   | "UNAVAILABLE"
   | "CIRCUIT_OPEN";
 
-export type MeasureUnit = "TOKEN" | "USD" | "QUOTE_PER_BASE";
+export type MeasureUnit = "TOKEN" | "USD" | "USD_PER_BASE" | "QUOTE_PER_BASE";
 
 export interface DecimalMeasure {
   /** Exact non-negative decimal string; exponent notation is deliberately disallowed. */
   readonly value: string;
   readonly unit: MeasureUnit;
-  /** A Solana mint for TOKEN / QUOTE_PER_BASE, or null for USD. */
+  /** A Solana mint for TOKEN / QUOTE_PER_BASE; null for USD-denominated measures. */
   readonly assetId: string | null;
 }
 
@@ -54,7 +54,7 @@ export interface CanonicalMarketSnapshot {
   readonly poolAddress: string | null;
   readonly dexProgramAddress: string | null;
   readonly tokenProgramAddress: string | null;
-  /** Price is quote-token units per one base-token unit. */
+  /** Unit price per one base-token unit; unit explicitly distinguishes quote-token and USD prices. */
   readonly price: DecimalMeasure | null;
   /** Liquidity may be reported in token units or USD; no implicit conversion occurs. */
   readonly liquidity: DecimalMeasure | null;
@@ -187,7 +187,7 @@ const SOURCE_KINDS = new Set<MarketDataSourceKind>([
   "STREAM",
   "REPLAY_FIXTURE"
 ]);
-const MEASURE_UNITS = new Set<MeasureUnit>(["TOKEN", "USD", "QUOTE_PER_BASE"]);
+const MEASURE_UNITS = new Set<MeasureUnit>(["TOKEN", "USD", "USD_PER_BASE", "QUOTE_PER_BASE"]);
 const PROVIDER_ERRORS = new Set<ProviderErrorClass>([
   "TIMEOUT",
   "RATE_LIMIT",
@@ -283,7 +283,7 @@ function validateMeasure(
     errors.push(path + ".unit: unsupported unit for this measure");
     return;
   }
-  if (value.unit === "USD") {
+  if (value.unit === "USD" || value.unit === "USD_PER_BASE") {
     if (value.assetId !== null) errors.push(path + ".assetId: USD measures must use null assetId");
     return;
   }
@@ -318,7 +318,7 @@ export function validateCanonicalMarketSnapshot(input: unknown): ValidationResul
   validateAddress(input.dexProgramAddress, "dexProgramAddress", true, errors);
   validateAddress(input.tokenProgramAddress, "tokenProgramAddress", true, errors);
 
-  validateMeasure(input.price, "price", ["QUOTE_PER_BASE"], typeof input.quoteMint === "string" ? input.quoteMint : "", errors);
+  validateMeasure(input.price, "price", ["QUOTE_PER_BASE", "USD_PER_BASE"], typeof input.quoteMint === "string" ? input.quoteMint : "", errors);
   validateMeasure(input.liquidity, "liquidity", ["TOKEN", "USD"], typeof input.quoteMint === "string" ? input.quoteMint : "", errors);
   validateMeasure(input.volume24h, "volume24h", ["TOKEN", "USD"], typeof input.quoteMint === "string" ? input.quoteMint : "", errors);
 
