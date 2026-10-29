@@ -333,9 +333,10 @@ test("accepts success envelope with a direct pool array but marks it incomplete 
   const { fetchImpl } = mockFetchFactory();
   const directArrayFetch = async (input, init = {}) => {
     if (poolApiUrl(String(input))) {
-      return new Response(JSON.stringify(raydiumResponse([
-        makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)
-      ], { wrapped: "success_array", includeHasNextPage: false })), {
+      return new Response(JSON.stringify(raydiumResponse(
+        Array.from({ length: 100 }, () => makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)),
+        { wrapped: "success_array", includeHasNextPage: false, count: 100 }
+      )), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
