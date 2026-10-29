@@ -12,7 +12,7 @@ const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const RAYDIUM_POOL_QUERY_URL =
   "https://api-v3.raydium.io/pools/info/list-v2?size=100&mint1=" + USDC_MINT +
-  "&mint2=" + SOL_MINT + "&poolType=Standard&sortField=liquidity&sortType=desc";
+  "&mint2=" + SOL_MINT + "&poolType=standard&poolSortField=liquidity&sortType=desc";
 const DEX_SCREENER_PAIR_URL_BASE = "https://api.dexscreener.com/latest/dex/pairs/solana/";
 const RAYDIUM_API_PROVIDER_ID = "raydium-api-v3";
 const RPC_URL = "https://api.mainnet.solana.com";
@@ -227,15 +227,22 @@ function normalizeRaydiumPage(payload) {
     throw codedError("RAYDIUM_API_REPORTED_FAILURE");
   }
 
-  // The SDK PoolsApiReturn is { count, hasNextPage, data: Pool[] }.
-  // The deployed HTTP endpoint may also wrap that page as { data: page }
-  // without a "success" key, or as { success: true, data: page }.
-  // Detect the nested page by its array field, not by an optional wrapper flag.
+  // Raydium API v3 documents an outer { id, success, data } envelope while
+  // the SDK models the inner pool page as { count, hasNextPage, data: Pool[] }.
+  // The list-v2 API documentation also describes cursor pagination by nextPageId.
   let page = payload;
   let wrapper = "none";
   if (isRecord(payload.data) && Array.isArray(payload.data.data)) {
     page = payload.data;
     wrapper = payload.success === true ? "success_data" : "data";
+  } else if (Array.isArray(payload.data) && payload.success === true) {
+    page = {
+      data: payload.data,
+      count: payload.count,
+      hasNextPage: payload.hasNextPage,
+      nextPageId: payload.nextPageId
+    };
+    wrapper = "success_array";
   }
 
   if (!Array.isArray(page.data)) {
@@ -243,23 +250,55 @@ function normalizeRaydiumPage(payload) {
       ? "RAYDIUM_API_PAGE_DATA_NOT_ARRAY"
       : "RAYDIUM_API_NESTED_PAGE_DATA_NOT_ARRAY");
   }
-  if (typeof page.hasNextPage !== "boolean") {
-    throw codedError("RAYDIUM_API_PAGE_HAS_NEXT_PAGE_INVALID");
+
+  const hasNextPageFieldIsBoolean = typeof page.hasNextPage === "boolean";
+  const hasNextCursorField = Object.prototype.hasOwnProperty.call(page, "nextPageId");
+  const hasNextCursor = typeof page.nextPageId === "string" && page.nextPageId.trim().length > 0;
+  const cursorFieldIsTerminal = hasNextCursorField &&
+    (page.nextPageId === null || page.nextPageId === "" ||
+      (typeof page.nextPageId === "string" && page.nextPageId.trim().length === 0));
+
+  let hasNextPage = null;
+  let paginationSignal = "UNKNOWN";
+  if (hasNextPageFieldIsBoolean) {
+    hasNextPage = page.hasNextPage || hasNextCursor;
+    paginationSignal = hasNextPage ? "NEXT_PAGE_PRESENT" : "HAS_NEXT_PAGE_FALSE";
+  } else if (hasNextCursor) {
+    hasNextPage = true;
+    paginationSignal = "NEXT_PAGE_CURSOR_PRESENT";
+  } else if (cursorFieldIsTerminal) {
+    hasNextPage = false;
+    paginationSignal = "TERMINAL_CURSOR";
   }
-  const count = typeof page.count === "number"
+
+  const parsedCount = typeof page.count === "number"
     ? page.count
     : typeof page.count === "string" && /^(?:0|[1-9][0-9]*)$/.test(page.count)
       ? Number(page.count)
-      : Number.NaN;
-  if (!Number.isSafeInteger(count) || count < 0) {
-    throw codedError("RAYDIUM_API_PAGE_COUNT_INVALID");
-  }
+      : null;
+  const count = Number.isSafeInteger(parsedCount) && parsedCount >= 0 ? parsedCount : null;
+  const diagnosticKeys = (value) => isRecord(value)
+    ? Object.keys(value).filter((key) => /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(key)).sort().slice(0, 24)
+    : [];
 
   return {
     count,
-    hasNextPage: page.hasNextPage,
+    hasNextPage,
     pools: page.data,
-    responseShape: wrapper
+    responseShape: wrapper,
+    paginationKnown: hasNextPage !== null,
+    paginationSignal,
+    responseDiagnostics: {
+      rootKeys: diagnosticKeys(payload),
+      rootSuccessType: typeof payload.success,
+      rootDataType: Array.isArray(payload.data) ? "array" : payload.data === null ? "null" : typeof payload.data,
+      nestedDataKeys: diagnosticKeys(payload.data),
+      pageKeys: diagnosticKeys(page),
+      pageCountType: typeof page.count,
+      pageHasNextPageType: typeof page.hasNextPage,
+      pageNextPageIdType: page.nextPageId === null ? "null" : typeof page.nextPageId,
+      poolArrayLength: page.data.length
+    }
   };
 }
 
@@ -502,8 +541,9 @@ export async function discoverRaydiumCpmmCandidates({
   const qualifying = enrichedCandidates.filter((candidate) =>
     candidate.meetsLiquidityAndVolumeThresholds && candidate.dexScreenerPairFound);
   const scanIncomplete =
-    raydiumPage.hasNextPage ||
-    raydiumPage.count > raydiumPage.pools.length ||
+    !raydiumPage.paginationKnown ||
+    raydiumPage.hasNextPage === true ||
+    (raydiumPage.count !== null && raydiumPage.count > raydiumPage.pools.length) ||
     selected.length < exactPairs.length ||
     candidatesToCrossCheck.length < cpmmCandidates.length;
   const displayCandidates = enrichedCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
@@ -521,13 +561,16 @@ export async function discoverRaydiumCpmmCandidates({
       raydiumApi: {
         providerId: RAYDIUM_API_PROVIDER_ID,
         responseShape: raydiumPage.responseShape,
-        endpointClass: "pools/info/mint",
+        endpointClass: "pools/info/list-v2",
         clientRequestId,
         rawPayloadSha256: sha256(raydium.rawText),
         retrievedAt: fetchedAt,
         freshness: "UNKNOWN",
         resultCount: raydiumPage.count,
-        hasNextPage: raydiumPage.hasNextPage
+        hasNextPage: raydiumPage.hasNextPage,
+        paginationKnown: raydiumPage.paginationKnown,
+        paginationSignal: raydiumPage.paginationSignal,
+        responseDiagnostics: raydiumPage.responseDiagnostics
       },
       dexScreener: {
         providerId: "dex-screener",
@@ -550,6 +593,8 @@ export async function discoverRaydiumCpmmCandidates({
       exactRaydiumPoolCount: exactPairs.length,
       truncatedByRpcAccountCap: selected.length < exactPairs.length,
       raydiumApiHasNextPage: raydiumPage.hasNextPage,
+      raydiumPaginationKnown: raydiumPage.paginationKnown,
+      raydiumPaginationSignal: raydiumPage.paginationSignal,
       scanIncomplete,
       candidateCount: cpmmCandidates.length,
       dexScreenerCrossCheckCap: MAX_DISPLAY_CANDIDATES,
