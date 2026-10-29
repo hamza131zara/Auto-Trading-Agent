@@ -132,15 +132,15 @@ function canonicalDecimal(value: unknown): string | null {
   // Expand a valid exponent-form numeric lexeme exactly; never route through Number.
   const match = value.match(/^(0|[1-9][0-9]*)(?:\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
   if (match === null) return null;
-  const integerPart = match[1];
+  const sourceIntegerPart = match[1];
   const exponentText = match[3];
-  if (integerPart === undefined || exponentText === undefined) return null;
+  if (sourceIntegerPart === undefined || exponentText === undefined) return null;
   const exponent = Number(exponentText);
   if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 64) return null;
 
   const fraction = match[2] ?? "";
-  const digits = integerPart + fraction;
-  const decimalPosition = integerPart.length + exponent;
+  const digits = sourceIntegerPart + fraction;
+  const decimalPosition = sourceIntegerPart.length + exponent;
   let expanded: string;
 
   if (decimalPosition <= 0) {
