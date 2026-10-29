@@ -53,11 +53,11 @@ on:
         type: string
         default: "300000"
       max_reference_source_age_ms:
-        description: Owner-reviewed maximum age for Pyth published prices; no default is supplied
+        description: Owner-reviewed maximum age for Pyth published prices and the selected indexed-price observation; no default is supplied
         required: true
         type: string
       max_reference_retrieval_age_ms:
-        description: Owner-reviewed maximum age since Pyth prices were retrieved; no default is supplied
+        description: Owner-reviewed maximum age since Pyth and the selected indexed price source were retrieved; no default is supplied
         required: true
         type: string
       max_reference_timestamp_skew_ms:
@@ -105,7 +105,7 @@ on:
           - "yes"
         default: "no"
       confirm_comparison_policy_review:
-        description: I approved all five freshness/time-alignment/deviation values entered above for this diagnostic run only
+        description: I approved all five freshness, time-alignment and deviation values for this run, including freshness checks for the selected indexed-price source
         required: true
         type: choice
         options:
