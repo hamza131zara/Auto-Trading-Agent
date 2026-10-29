@@ -9,6 +9,7 @@ const AMM_V4 = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 const CLMM = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK";
 const SOL = "So11111111111111111111111111111111111111112";
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const USDT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const BASE58_INDEX = new Map(Array.from(BASE58_ALPHABET, (character, index) => [character, BigInt(index)]));
 
@@ -31,15 +32,21 @@ function writeKey(buffer, offset, address) {
   key.copy(buffer, offset);
 }
 
-const POOL_STATE_BYTES = Buffer.alloc(637);
-POOL_STATE_BYTES.set([0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46], 0);
-const sortedMints = [SOL, USDC].sort((left, right) => Buffer.compare(decode58(left), decode58(right)));
-writeKey(POOL_STATE_BYTES, 168, sortedMints[0]);
-writeKey(POOL_STATE_BYTES, 200, sortedMints[1]);
-const POOL_DATA_BASE64 = POOL_STATE_BYTES.toString("base64");
+function poolDataBase64ForQuote(quoteMint) {
+  const bytes = Buffer.alloc(637);
+  bytes.set([0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46], 0);
+  const sortedMints = [SOL, quoteMint].sort((left, right) =>
+    Buffer.compare(decode58(left), decode58(right)));
+  writeKey(bytes, 168, sortedMints[0]);
+  writeKey(bytes, 200, sortedMints[1]);
+  return bytes.toString("base64");
+}
+const POOL_DATA_BASE64 = poolDataBase64ForQuote(USDC);
+const USDT_POOL_DATA_BASE64 = poolDataBase64ForQuote(USDT);
 const HIGH_CPMM = "Ff68JGeEiUEF859B2xEaPX82vuFeuwxqoxGNHTZPAuKR";
 const LOW_CPMM = "7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny";
 const HIGH_CLMM = "3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv";
+const HIGH_USDT_CPMM = "47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4";
 
 const approvals = {
   ATA_CPMM_DISCOVERY_RPC_APPROVAL: "APPROVED_READ_ONLY_MAINNET_DISCOVERY",
@@ -49,13 +56,14 @@ const approvals = {
   ATA_CPMM_DISCOVERY_MIN_VOLUME_24H_USD: "10000"
 };
 
-function makePair(pairAddress, liquidity, volume24h, dexId = "raydium") {
+function makePair(pairAddress, liquidity, volume24h, dexId = "raydium", quoteMint = USDC) {
+  const quoteSymbol = quoteMint === USDT ? "USDT" : "USDC";
   return {
     chainId: "solana",
     dexId,
     pairAddress,
     baseToken: { address: SOL, symbol: "SOL" },
-    quoteToken: { address: USDC, symbol: "USDC" },
+    quoteToken: { address: quoteMint, symbol: quoteSymbol },
     priceUsd: "100.51",
     liquidity: { usd: liquidity },
     volume: { h24: volume24h },
@@ -64,13 +72,14 @@ function makePair(pairAddress, liquidity, volume24h, dexId = "raydium") {
   };
 }
 
-function makeRaydiumPool(poolAddress, programId, tvl, volume24h, type = "Standard") {
+function makeRaydiumPool(poolAddress, programId, tvl, volume24h, type = "Standard", quoteMint = USDC) {
+  const quoteSymbol = quoteMint === USDT ? "USDT" : "USDC";
   return {
     id: poolAddress,
     programId,
     type,
     mintA: { address: SOL, symbol: "SOL", decimals: 9 },
-    mintB: { address: USDC, symbol: "USDC", decimals: 6 },
+    mintB: { address: quoteMint, symbol: quoteSymbol, decimals: 6 },
     price: 100.51,
     mintAmountA: 1000,
     mintAmountB: 100510,
@@ -108,12 +117,16 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
   const calls = [];
   const dexPairs = [
     makePair(HIGH_CPMM, 500_000, 75_000),
-    makePair(LOW_CPMM, 86, 2)
+    makePair(LOW_CPMM, 86, 2),
+    makePair(HIGH_USDT_CPMM, 700_000, 90_000, "raydium", USDT)
   ];
-  const raydiumPools = [
+  const raydiumPoolsUsdc = [
     makeRaydiumPool(HIGH_CLMM, CLMM, 2_000_000, 500_000),
     makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000),
     makeRaydiumPool(LOW_CPMM, CPMM, 86, 2)
+  ];
+  const raydiumPoolsUsdt = [
+    makeRaydiumPool(HIGH_USDT_CPMM, CPMM, 700_000, 90_000, "Standard", USDT)
   ];
 
   const fetchImpl = async (input, init = {}) => {
@@ -121,14 +134,17 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
     calls.push({ url, init });
     if (poolApiUrl(url)) {
       assert.equal(init.method, "GET");
-      assert.match(url, /mint1=So11111111111111111111111111111111111111112/);
-      assert.match(url, /mint2=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/);
+      const parsedUrl = new URL(url);
+      assert.equal(parsedUrl.searchParams.get("mint1"), SOL);
+      const quoteMint = parsedUrl.searchParams.get("mint2");
+      assert.ok([USDC, USDT].includes(quoteMint));
       assert.match(url, /poolType=standard/);
       assert.match(url, /poolSortField=liquidity/);
       assert.match(url, /sortType=desc/);
       assert.match(url, /pageSize=100/);
-      assert.match(url, /page=1/);
-      return new Response(JSON.stringify(raydiumResponse(raydiumPools, { hasNextPage })), {
+      assert.ok(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"].includes(parsedUrl.searchParams.get("page")));
+      const pools = quoteMint === USDT ? raydiumPoolsUsdt : raydiumPoolsUsdc;
+      return new Response(JSON.stringify(raydiumResponse(pools, { hasNextPage })), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -143,7 +159,13 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
         [HIGH_CLMM]: CLMM,
         [HIGH_CPMM]: CPMM,
         [LOW_CPMM]: CPMM,
+        [HIGH_USDT_CPMM]: CPMM,
         ...rpcOwnerOverrides
+      };
+      const quoteByAddress = {
+        [HIGH_CPMM]: USDC,
+        [LOW_CPMM]: USDC,
+        [HIGH_USDT_CPMM]: USDT
       };
       return new Response(JSON.stringify({
         jsonrpc: "2.0",
@@ -154,7 +176,7 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
             owner: owners[address],
             executable: false,
             space: 637,
-            data: [POOL_DATA_BASE64, "base64"]
+            data: [quoteByAddress[address] === USDT ? USDT_POOL_DATA_BASE64 : POOL_DATA_BASE64, "base64"]
           }))
         }
       }), {
@@ -202,24 +224,28 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
     now: () => "2026-10-29T09:00:00.000Z"
   });
 
-  assert.equal(calls.length, 4); // Raydium pool list, one RPC bundle, two exact CPMM pair lookups
+  assert.equal(calls.length, 6); // Two Raydium pair queries, one RPC bundle, three exact CPMM pair lookups
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
   assert.equal(report.sources.raydiumApi.providerId, "raydium-api-v3");
   assert.equal(report.sources.raydiumApi.freshness, "UNKNOWN");
-  assert.match(report.sources.raydiumApi.rawPayloadSha256, /^[a-f0-9]{64}$/);
+  assert.equal(report.sources.raydiumApi.approvedQuotePairQueries.length, 2);
+  assert.equal(report.sources.raydiumApi.complete, true);
   assert.equal(report.rpcEvidence.synthetic, true);
   assert.equal(report.rpcEvidence.contextSlot, 462900001);
-  assert.equal(report.selectionPolicy.candidateCount, 2);
-  assert.equal(report.selectionPolicy.thresholdQualifiedCount, 1);
-  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, HIGH_CPMM);
-  assert.deepEqual(report.candidates.map((item) => item.poolAddress), [HIGH_CPMM, LOW_CPMM]);
+  assert.equal(report.selectionPolicy.candidateCount, 3);
+  assert.equal(report.selectionPolicy.thresholdQualifiedCount, 2);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, HIGH_USDT_CPMM);
+  assert.deepEqual(report.candidates.map((item) => item.poolAddress), [HIGH_USDT_CPMM, HIGH_CPMM, LOW_CPMM]);
+  assert.equal(report.candidates[0].quoteMint, USDT);
+  assert.equal(report.candidates[0].quoteAssetSymbol, "USDT");
   assert.equal(report.candidates[0].onChainProgram, "RAYDIUM_CPMM");
   assert.equal(report.candidates[0].dexScreenerPairFound, true);
   assert.equal(report.candidates[0].meetsRaydiumThresholds, true);
   assert.equal(report.candidates[0].meetsDexScreenerThresholds, true);
   assert.equal(report.candidates[0].meetsLiquidityAndVolumeThresholds, true);
-  assert.equal(report.candidates[0].dexScreenerMetrics.priceUsd, 100.51);
-  assert.equal(report.candidates[1].meetsLiquidityAndVolumeThresholds, false);
+  assert.equal(report.candidates[1].dexScreenerMetrics.priceUsd, 100.51);
+  assert.equal(report.candidates[1].meetsLiquidityAndVolumeThresholds, true);
+  assert.equal(report.candidates[2].meetsLiquidityAndVolumeThresholds, false);
   assert.equal(report.candidates.some((item) => item.poolAddress === HIGH_CLMM), false);
   assert.equal(report.candidates[0].sourceFreshness, "UNKNOWN");
 });
@@ -244,10 +270,10 @@ test("treats a nullable DEX Screener pair list as not indexed without qualifying
 
   assert.equal(report.status, "CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED");
   assert.equal(report.selectionPolicy.scanIncomplete, false);
-  assert.equal(report.selectionPolicy.candidateCount, 2);
+  assert.equal(report.selectionPolicy.candidateCount, 3);
   assert.equal(report.selectionPolicy.thresholdQualifiedCount, 0);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
-  assert.equal(report.sources.dexScreener.poolLookupsAttempted, 2);
+  assert.equal(report.sources.dexScreener.poolLookupsAttempted, 3);
   assert.equal(report.sources.dexScreener.poolLookupsFound, 0);
   assert.ok(report.candidates.every((candidate) => candidate.dexScreenerPairFound === false));
   assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds === false));
@@ -320,8 +346,10 @@ test("uses the documented mint-pair endpoint and treats a short numbered page as
     now: () => "2026-10-29T09:00:00.000Z"
   });
   assert.equal(report.sources.raydiumApi.endpointClass, "pools/info/mint");
-  assert.equal(report.sources.raydiumApi.paginationKnown, true);
-  assert.equal(report.sources.raydiumApi.paginationSignal, "SHORT_NUMBERED_PAGE_TERMINAL");
+  const usdcQuery = report.sources.raydiumApi.approvedQuotePairQueries.find((query) => query.quoteMint === USDC);
+  assert.equal(usdcQuery.paginationKnown, true);
+  assert.equal(usdcQuery.paginationTerminal, true);
+  assert.equal(usdcQuery.pages[0].paginationSignal, "SHORT_NUMBERED_PAGE_TERMINAL");
   assert.equal(report.selectionPolicy.scanIncomplete, false);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, HIGH_CPMM);
 });
@@ -376,8 +404,9 @@ test("keeps full numbered page incomplete when pagination signals are absent", a
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
-  assert.equal(report.sources.raydiumApi.responseDiagnostics.pageHasNextPageType, "undefined");
-  assert.equal(report.sources.raydiumApi.responseDiagnostics.poolArrayLength, 100);
+  const usdcQuery = report.sources.raydiumApi.approvedQuotePairQueries.find((query) => query.quoteMint === USDC);
+  assert.equal(usdcQuery.pages[0].responseDiagnostics.pageHasNextPageType, "undefined");
+  assert.equal(usdcQuery.pages[0].responseDiagnostics.poolArrayLength, 100);
 });
 
 test("accepts success envelope with a direct pool array but marks it incomplete without pagination metadata", async () => {
@@ -399,7 +428,8 @@ test("accepts success envelope with a direct pool array but marks it incomplete 
     fetchImpl: directArrayFetch,
     now: () => "2026-10-29T09:00:00.000Z"
   });
-  assert.equal(report.sources.raydiumApi.responseShape, "success_array");
+  const usdcQuery = report.sources.raydiumApi.approvedQuotePairQueries.find((query) => query.quoteMint === USDC);
+  assert.equal(usdcQuery.pages[0].responseShape, "success_array");
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
 });
@@ -437,7 +467,7 @@ test("does not admit a CPMM pool if the API program ID disagrees with the on-cha
     fetchImpl,
     now: () => "2026-10-29T09:00:00.000Z"
   });
-  assert.equal(report.selectionPolicy.candidateCount, 1);
+  assert.equal(report.selectionPolicy.candidateCount, 2);
   assert.equal(report.candidates.some((item) => item.poolAddress === HIGH_CPMM), false);
   assert.equal(report.selectionPolicy.poolClassificationSummary.RAYDIUM_API_PROGRAM_ID_MISMATCH, 1);
 });
