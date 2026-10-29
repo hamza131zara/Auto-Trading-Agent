@@ -940,3 +940,362 @@ export function assessProviderAgreement(
     !syntheticEvidence
   );
 }
+
+
+/**
+ * Untrusted RPC account metadata. The reader must collect these records from one
+ * getMultipleAccounts response so contextSlot applies to the whole bundle.
+ */
+export interface OnChainAccountEvidence {
+  readonly address: string;
+  readonly exists: boolean;
+  /** Solana account's program owner, not the token account's authority. */
+  readonly ownerProgramId: string | null;
+  readonly executable: boolean | null;
+}
+
+export interface OnChainMintEvidence extends OnChainAccountEvidence {
+  readonly initialized: boolean | null;
+  readonly decimals: number | null;
+}
+
+export interface OnChainTokenAccountEvidence extends OnChainAccountEvidence {
+  readonly initialized: boolean | null;
+  readonly mint: string | null;
+  /** Authority stored in the decoded token account data. */
+  readonly authority: string | null;
+}
+
+export interface OnChainIdentitySourceEvidence {
+  readonly providerId: string;
+  readonly commitment: "confirmed" | "finalized";
+  readonly retrievedAt: string;
+  readonly contextSlot: number;
+  /** Slot requested through RPC minContextSlot for this evidence bundle. */
+  readonly requestedMinContextSlot: number;
+  readonly requestId: string | null;
+  readonly rawPayloadSha256: string | null;
+  readonly synthetic: boolean;
+}
+
+/** Decoder outputs must come from a versioned, allowlisted protocol-specific decoder. */
+export interface DecodedPoolIdentityEvidence {
+  readonly decoderId: string;
+  readonly decoderVersion: string;
+  readonly poolAddress: string;
+  readonly dexProgramId: string;
+  readonly baseMint: string;
+  readonly quoteMint: string;
+  readonly baseVault: string;
+  readonly quoteVault: string;
+  readonly baseVaultAuthority: string;
+  readonly quoteVaultAuthority: string;
+}
+
+export interface OnChainIdentityEvidence {
+  readonly source: OnChainIdentitySourceEvidence;
+  readonly poolAccount: OnChainAccountEvidence;
+  readonly dexProgramAccount: OnChainAccountEvidence;
+  readonly baseMintAccount: OnChainMintEvidence;
+  readonly quoteMintAccount: OnChainMintEvidence;
+  readonly baseVaultAccount: OnChainTokenAccountEvidence;
+  readonly quoteVaultAccount: OnChainTokenAccountEvidence;
+  readonly decodedPool: DecodedPoolIdentityEvidence | null;
+}
+
+export interface ApprovedPoolDecoder {
+  readonly programId: string;
+  readonly decoderId: string;
+  readonly decoderVersion: string;
+}
+
+export interface OnChainIdentityPolicy {
+  readonly nowAt: string;
+  readonly maxRetrievalAgeMs: number;
+  readonly maxFutureSkewMs?: number;
+  readonly minimumContextSlot: number;
+  readonly requiredCommitment: "confirmed" | "finalized";
+  /** Empty registries are invalid; addresses/decoder versions require explicit review. */
+  readonly approvedPoolDecoders: readonly ApprovedPoolDecoder[];
+  readonly allowedTokenProgramIds: readonly string[];
+  readonly allowedLoaderProgramIds: readonly string[];
+}
+
+export type OnChainIdentityStatus =
+  | "MATCH"
+  | "MISMATCH"
+  | "INSUFFICIENT_EVIDENCE"
+  | "INVALID_INPUT"
+  | "SYNTHETIC_MATCH";
+
+export interface OnChainIdentityAssessment {
+  readonly status: OnChainIdentityStatus;
+  readonly reasonCodes: readonly string[];
+  readonly mismatchFields: readonly string[];
+  readonly sourceProviderId: string | null;
+  readonly contextSlot: number | null;
+  readonly retrievedAt: string | null;
+  readonly commitment: "confirmed" | "finalized" | null;
+  /** Identity agreement only; never authorization to trade. */
+  readonly canProceedToIndependentSafetyReview: boolean;
+  readonly tradingAuthorized: false;
+}
+
+function isNullableSafeId(value: unknown): boolean {
+  return value === null || isOptionalId(value);
+}
+
+function isValidAccountEnvelope(value: unknown): value is OnChainAccountEvidence {
+  if (!isRecord(value) ||
+      typeof value.address !== "string" ||
+      !isSolanaPublicKey(value.address) ||
+      typeof value.exists !== "boolean") {
+    return false;
+  }
+  if (!value.exists) {
+    return (value.ownerProgramId === null || value.ownerProgramId === undefined) &&
+      (value.executable === null || value.executable === undefined);
+  }
+  return typeof value.ownerProgramId === "string" &&
+    isSolanaPublicKey(value.ownerProgramId) &&
+    typeof value.executable === "boolean";
+}
+
+function isValidMintEvidence(value: unknown): value is OnChainMintEvidence {
+  if (!isValidAccountEnvelope(value)) return false;
+  if (!value.exists) {
+    return (value.initialized === null || value.initialized === undefined) &&
+      (value.decimals === null || value.decimals === undefined);
+  }
+  return typeof value.initialized === "boolean" &&
+    Number.isSafeInteger(value.decimals) &&
+    (value.decimals as number) >= 0 &&
+    (value.decimals as number) <= 255;
+}
+
+function isValidTokenAccountEvidence(value: unknown): value is OnChainTokenAccountEvidence {
+  if (!isValidAccountEnvelope(value)) return false;
+  if (!value.exists) {
+    return (value.initialized === null || value.initialized === undefined) &&
+      (value.mint === null || value.mint === undefined) &&
+      (value.authority === null || value.authority === undefined);
+  }
+  return typeof value.initialized === "boolean" &&
+    typeof value.mint === "string" &&
+    isSolanaPublicKey(value.mint) &&
+    typeof value.authority === "string" &&
+    isSolanaPublicKey(value.authority);
+}
+
+function isValidOnChainSource(value: unknown): value is OnChainIdentitySourceEvidence {
+  return isRecord(value) &&
+    typeof value.providerId === "string" &&
+    isSafeSlug(value.providerId) &&
+    (value.commitment === "confirmed" || value.commitment === "finalized") &&
+    typeof value.retrievedAt === "string" &&
+    isUtcTimestamp(value.retrievedAt) &&
+    Number.isSafeInteger(value.contextSlot) &&
+    (value.contextSlot as number) >= 0 &&
+    Number.isSafeInteger(value.requestedMinContextSlot) &&
+    (value.requestedMinContextSlot as number) >= 0 &&
+    isNullableSafeId(value.requestId) &&
+    (value.rawPayloadSha256 === null ||
+      (typeof value.rawPayloadSha256 === "string" && /^[a-fA-F0-9]{64}$/.test(value.rawPayloadSha256))) &&
+    typeof value.synthetic === "boolean";
+}
+
+function isValidApprovedPoolDecoder(value: unknown): value is ApprovedPoolDecoder {
+  return isRecord(value) &&
+    typeof value.programId === "string" &&
+    isSolanaPublicKey(value.programId) &&
+    typeof value.decoderId === "string" &&
+    isSafeSlug(value.decoderId) &&
+    typeof value.decoderVersion === "string" &&
+    VERSION_PATTERN.test(value.decoderVersion);
+}
+
+function isValidOnChainIdentityPolicy(value: unknown): value is OnChainIdentityPolicy {
+  if (!isRecord(value) ||
+      typeof value.nowAt !== "string" ||
+      !isUtcTimestamp(value.nowAt) ||
+      typeof value.maxRetrievalAgeMs !== "number" ||
+      !Number.isFinite(value.maxRetrievalAgeMs) ||
+      value.maxRetrievalAgeMs < 0 ||
+      (value.maxFutureSkewMs !== undefined &&
+        (typeof value.maxFutureSkewMs !== "number" ||
+         !Number.isFinite(value.maxFutureSkewMs) ||
+         value.maxFutureSkewMs < 0)) ||
+      !Number.isSafeInteger(value.minimumContextSlot) ||
+      (value.minimumContextSlot as number) < 0 ||
+      (value.requiredCommitment !== "confirmed" && value.requiredCommitment !== "finalized") ||
+      !Array.isArray(value.approvedPoolDecoders) ||
+      value.approvedPoolDecoders.length === 0 ||
+      !Array.isArray(value.allowedTokenProgramIds) ||
+      value.allowedTokenProgramIds.length === 0 ||
+      !Array.isArray(value.allowedLoaderProgramIds) ||
+      value.allowedLoaderProgramIds.length === 0) {
+    return false;
+  }
+
+  const decoderPrograms = new Set<string>();
+  for (const decoder of value.approvedPoolDecoders as readonly unknown[]) {
+    if (!isValidApprovedPoolDecoder(decoder) || decoderPrograms.has(decoder.programId)) return false;
+    decoderPrograms.add(decoder.programId);
+  }
+  for (const field of ["allowedTokenProgramIds", "allowedLoaderProgramIds"] as const) {
+    const seen = new Set<string>();
+    for (const address of value[field] as readonly unknown[]) {
+      if (typeof address !== "string" || !isSolanaPublicKey(address) || seen.has(address)) return false;
+      seen.add(address);
+    }
+  }
+  return true;
+}
+
+/**
+ * Validates a decoded, read-only on-chain identity evidence bundle against an
+ * explicitly supplied protocol-decoder/program allowlist. This is NOT an RPC
+ * client or binary account decoder. Callers must obtain the accounts from one
+ * context-slot response and use the exact allowlisted decoder/version.
+ *
+ * A MATCH means only that the decoded account identities/owners are internally
+ * consistent at the stated slot. It does not establish token safety, market-data
+ * freshness, program upgrade authority safety, liquidity, or trade authorization.
+ */
+export function assessOnChainIdentityEvidence(
+  targetInput: unknown,
+  evidenceInput: unknown,
+  policyInput: unknown
+): OnChainIdentityAssessment {
+  const assessment = (
+    status: OnChainIdentityStatus,
+    reasonCodes: readonly string[],
+    mismatchFields: readonly string[] = [],
+    evidence?: OnChainIdentityEvidence,
+    canProceedToIndependentSafetyReview = false
+  ): OnChainIdentityAssessment => ({
+    status,
+    reasonCodes: [...reasonCodes],
+    mismatchFields: [...mismatchFields],
+    sourceProviderId: evidence?.source.providerId ?? null,
+    contextSlot: evidence?.source.contextSlot ?? null,
+    retrievedAt: evidence?.source.retrievedAt ?? null,
+    commitment: evidence?.source.commitment ?? null,
+    canProceedToIndependentSafetyReview,
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(targetInput) ||
+      !validateCanonicalMarketSnapshot(targetInput).valid ||
+      targetInput.cluster !== "mainnet-beta" ||
+      typeof targetInput.poolAddress !== "string" ||
+      !isValidOnChainIdentityPolicy(policyInput) ||
+      !isRecord(evidenceInput) ||
+      !isValidOnChainSource(evidenceInput.source) ||
+      !isValidAccountEnvelope(evidenceInput.poolAccount) ||
+      !isValidAccountEnvelope(evidenceInput.dexProgramAccount) ||
+      !isValidMintEvidence(evidenceInput.baseMintAccount) ||
+      !isValidMintEvidence(evidenceInput.quoteMintAccount) ||
+      !isValidTokenAccountEvidence(evidenceInput.baseVaultAccount) ||
+      !isValidTokenAccountEvidence(evidenceInput.quoteVaultAccount) ||
+      (evidenceInput.decodedPool !== null && !isRecord(evidenceInput.decodedPool))) {
+    return assessment("INVALID_INPUT", ["INVALID_TARGET_EVIDENCE_OR_POLICY"]);
+  }
+
+  const evidence = evidenceInput as unknown as OnChainIdentityEvidence;
+  const policy = policyInput as OnChainIdentityPolicy;
+  const target = targetInput as unknown as CanonicalMarketSnapshot;
+  const source = evidence.source;
+
+  const retrievalMs = timestampMs(source.retrievedAt);
+  const nowMs = timestampMs(policy.nowAt);
+  const futureSkewMs = policy.maxFutureSkewMs ?? 0;
+  if (retrievalMs > nowMs + futureSkewMs) {
+    return assessment("INVALID_INPUT", ["RETRIEVAL_TIMESTAMP_IN_FUTURE"], [], evidence);
+  }
+  if (nowMs - retrievalMs > policy.maxRetrievalAgeMs) {
+    return assessment("INSUFFICIENT_EVIDENCE", ["ON_CHAIN_EVIDENCE_RETRIEVAL_STALE"], [], evidence);
+  }
+  if (source.commitment !== policy.requiredCommitment) {
+    return assessment("INSUFFICIENT_EVIDENCE", ["COMMITMENT_BELOW_REQUIRED_POLICY"], [], evidence);
+  }
+  if (source.requestedMinContextSlot < policy.minimumContextSlot ||
+      source.contextSlot < policy.minimumContextSlot ||
+      source.contextSlot < source.requestedMinContextSlot) {
+    return assessment("INSUFFICIENT_EVIDENCE", ["CONTEXT_SLOT_BELOW_MINIMUM"], [], evidence);
+  }
+
+  const requiredAccounts = [
+    evidence.poolAccount,
+    evidence.dexProgramAccount,
+    evidence.baseMintAccount,
+    evidence.quoteMintAccount,
+    evidence.baseVaultAccount,
+    evidence.quoteVaultAccount
+  ];
+  if (requiredAccounts.some((account) => !account.exists) || evidence.decodedPool === null) {
+    return assessment("INSUFFICIENT_EVIDENCE", ["REQUIRED_ACCOUNT_OR_DECODED_POOL_MISSING"], [], evidence);
+  }
+
+  const decoded = evidence.decodedPool as DecodedPoolIdentityEvidence;
+  const mismatches: string[] = [];
+  const addMismatch = (field: string, condition: boolean): void => {
+    if (condition) mismatches.push(field);
+  };
+
+  addMismatch("poolAddress", evidence.poolAccount.address !== target.poolAddress);
+  addMismatch("baseMint", evidence.baseMintAccount.address !== target.baseMint);
+  addMismatch("quoteMint", evidence.quoteMintAccount.address !== target.quoteMint);
+  addMismatch("poolAccountExecutable", evidence.poolAccount.executable !== false);
+
+  const approvedDecoder = policy.approvedPoolDecoders.find((item) =>
+    item.programId === evidence.poolAccount.ownerProgramId
+  );
+  addMismatch("poolProgramNotAllowlisted", approvedDecoder === undefined);
+  addMismatch("poolProgramIdentity", evidence.poolAccount.ownerProgramId !== decoded.dexProgramId);
+  addMismatch("dexProgramAddress", evidence.dexProgramAccount.address !== decoded.dexProgramId);
+  addMismatch("dexProgramExecutable", evidence.dexProgramAccount.executable !== true);
+  addMismatch("dexProgramLoaderNotAllowlisted",
+    !policy.allowedLoaderProgramIds.includes(evidence.dexProgramAccount.ownerProgramId!));
+  addMismatch("baseMintProgramNotAllowlisted",
+    !policy.allowedTokenProgramIds.includes(evidence.baseMintAccount.ownerProgramId!));
+  addMismatch("quoteMintProgramNotAllowlisted",
+    !policy.allowedTokenProgramIds.includes(evidence.quoteMintAccount.ownerProgramId!));
+  addMismatch("baseMintNotInitialized", evidence.baseMintAccount.initialized !== true);
+  addMismatch("quoteMintNotInitialized", evidence.quoteMintAccount.initialized !== true);
+  addMismatch("baseVaultTokenProgram",
+    evidence.baseVaultAccount.ownerProgramId !== evidence.baseMintAccount.ownerProgramId);
+  addMismatch("quoteVaultTokenProgram",
+    evidence.quoteVaultAccount.ownerProgramId !== evidence.quoteMintAccount.ownerProgramId);
+  addMismatch("baseVaultNotInitialized", evidence.baseVaultAccount.initialized !== true);
+  addMismatch("quoteVaultNotInitialized", evidence.quoteVaultAccount.initialized !== true);
+  addMismatch("baseVaultMint", evidence.baseVaultAccount.mint !== target.baseMint);
+  addMismatch("quoteVaultMint", evidence.quoteVaultAccount.mint !== target.quoteMint);
+  addMismatch("baseVaultAuthority", evidence.baseVaultAccount.authority !== decoded.baseVaultAuthority);
+  addMismatch("quoteVaultAuthority", evidence.quoteVaultAccount.authority !== decoded.quoteVaultAuthority);
+  addMismatch("decodedPoolAddress", decoded.poolAddress !== target.poolAddress);
+  addMismatch("decodedBaseMint", decoded.baseMint !== target.baseMint);
+  addMismatch("decodedQuoteMint", decoded.quoteMint !== target.quoteMint);
+  addMismatch("decodedBaseVault", decoded.baseVault !== evidence.baseVaultAccount.address);
+  addMismatch("decodedQuoteVault", decoded.quoteVault !== evidence.quoteVaultAccount.address);
+  addMismatch("vaultAddressesNotDistinct",
+    evidence.baseVaultAccount.address === evidence.quoteVaultAccount.address ||
+    evidence.baseVaultAccount.address === evidence.poolAccount.address ||
+    evidence.quoteVaultAccount.address === evidence.poolAccount.address);
+  addMismatch("decoderId", approvedDecoder !== undefined && decoded.decoderId !== approvedDecoder.decoderId);
+  addMismatch("decoderVersion", approvedDecoder !== undefined && decoded.decoderVersion !== approvedDecoder.decoderVersion);
+
+  if (mismatches.length > 0) {
+    return assessment("MISMATCH", ["ON_CHAIN_IDENTITY_MISMATCH"], mismatches, evidence);
+  }
+  if (source.synthetic) {
+    return assessment("SYNTHETIC_MATCH", ["SYNTHETIC_EVIDENCE_ONLY"], [], evidence);
+  }
+  return assessment(
+    "MATCH",
+    ["ON_CHAIN_IDENTITIES_MATCH_AT_CONTEXT_SLOT"],
+    [],
+    evidence,
+    true
+  );
+}
