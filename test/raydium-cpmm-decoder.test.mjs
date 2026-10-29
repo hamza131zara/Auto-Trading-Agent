@@ -269,7 +269,7 @@ test("decodes the pinned Raydium CPMM PoolState discriminator and packed offsets
   assert.equal(decoded.status, "DECODED");
   assert.equal(decoded.value.address, fixture.pool.address);
   assert.equal(decoded.value.programId, RAYDIUM_CPMM_PROGRAM_ID);
-  assert.equal(decoded.value.ammConfig, makeKey(31));
+  assert.equal(decoded.value.ammConfig, fixture.configPda.address);
   assert.equal(decoded.value.token0Mint, fixture.token0Mint);
   assert.equal(decoded.value.token1Mint, fixture.token1Mint);
   assert.equal(decoded.value.authBump, fixture.authority.bump);
