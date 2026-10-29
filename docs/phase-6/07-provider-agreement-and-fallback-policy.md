@@ -1,6 +1,6 @@
 # Phase 6.7 — Provider Agreement and Fail-Closed Fallback Policy
 
-**Status:** The provider-neutral comparison and Pyth adapter are implemented and CI [run #194](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40880232949) passed 152 tests and all quality/security checks. First manual live run [#2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40892770577) retrieved fresh Pyth SOL/USD and USDC/USD feeds with zero timestamp skew, but reserve/reference comparison returned `DISAGREEMENT` (63 bps vs a 10-bps run tolerance). DEX Screener's indexed price comparison remains `NOT_ASSESSED` because source timestamps are missing. The diagnostic pool is below approved discovery thresholds; do not lower tolerance or approve a provider based on this result.
+**Status:** Provider agreement and the reserve/independent-USD comparison now have a combined fail-closed Phase 6 gate, `assessCriticalMarketDataEvidenceGate`. It allows progression only when two independent indexed providers agree, the reserve/reference comparator is `AGREED`, and all evidence is complete and non-synthetic; provider disagreement, Pyth disagreement, missing timestamps, synthetic evidence, and malformed inputs remain blocked. Live Pyth run [#2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40892770577) returned a 63-bps reserve/reference disagreement against the 10-bps run tolerance, and regression coverage pins that outcome. Production approval and trading authorization remain false.
 
 ## Purpose
 
@@ -50,11 +50,23 @@ The policy has no production defaults. Callers must explicitly supply expected b
 
 The Pyth Hermes adapter is prepared for official Solana SOL/USD and USDC/USD feed IDs, but no live Pyth request has been made and no production provider has been selected. Hermes requires a Pyth API key; see [Phase 6.15](15-pyth-hermes-reference-adapter.md) for the secret name, official endpoint/feed references, and manual-only workflow. Live use remains blocked until the owner reviews the current plan/terms/quota/budget and approves feed identities, source age, retrieval age, cross-feed timestamp skew, future-time skew, and deviation tolerance.
 
+## Combined critical market-data evidence gate
+
+`assessCriticalMarketDataEvidenceGate` combines the indexed-provider agreement assessment with `assessIndependentReservePriceAgreement`. A candidate can advance to the separate on-chain validation stage only when:
+- provider agreement status is `AGREED` and `canProceedToOnChainValidation` is true (at least two distinct, healthy, fresh and non-synthetic observations);
+- independent reserve/USD comparison status is `AGREED`;
+- `comparisonEvidenceComplete` is true; and
+- both component contracts retain `tradingAuthorized: false`.
+
+Any provider disagreement, reserve/reference disagreement, missing indexed source timestamp, stale/unaligned data, synthetic-only agreement, incomplete evidence, or malformed/forged authorization-shaped input blocks the gate. Original component reason codes are preserved alongside gate-level blocker codes. `READY_FOR_ON_CHAIN_VALIDATION` only permits the next independent on-chain evidence stage; it is not a candidate recommendation, production approval, or trade authorization.
+
+The live run #2 regression uses the actual observed reserve ratio, Pyth SOL/USD and USDC/USD values, missing DEX Screener event timestamp and 10-bps tolerance. It asserts `DISAGREEMENT`, `NOT_ASSESSED`, and an overall `BLOCKED` gate. Tests also cover an agreeing synthetic-free fixture and malformed authorization-shaped input.
+
 ## Safety boundary and remaining gates
 
 `canProceedToOnChainValidation` is only an evidence-gate result. On-chain pool/mint/program validation is a separate implementation step and has not been performed by this comparator. `tradingAuthorized` is hard-coded `false` for every result. No Phase 6 code can use this assessment as trade authorization.
 
-The DEX Screener candidate currently leaves source observation/event times null, so its recomputed freshness remains `UNKNOWN` and its indexed-price comparison is `NOT_ASSESSED`. The provider-neutral reserve comparator now exists, but no reference-feed adapter or provider is selected; the result remains insufficient until source identity, source/retrieval age bounds, and deviation tolerance are owner-approved and validated with fresh, non-synthetic observations.
+The first live Pyth read confirms both the reference feeds are available and fresh; however, run #2 returned a 63-bps reserve/reference disagreement and DEX Screener observation/event timestamps remain null. The combined gate rejects that evidence, even if indexed providers agree with one another. Owner-approved production policy, live fallback/degraded testing and a threshold-qualified pool remain open.
 
 ## Tests
 

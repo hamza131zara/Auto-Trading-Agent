@@ -1324,6 +1324,99 @@ export function assessProviderAgreement(
 }
 
 
+export type CriticalMarketDataEvidenceGateStatus =
+  | "READY_FOR_ON_CHAIN_VALIDATION"
+  | "BLOCKED"
+  | "INVALID_INPUT";
+
+export interface CriticalMarketDataEvidenceGateAssessment {
+  readonly status: CriticalMarketDataEvidenceGateStatus;
+  readonly reasonCodes: readonly string[];
+  readonly providerAgreementStatus: ProviderAgreementStatus | null;
+  readonly independentComparisonStatus: IndependentPriceComparisonStatus | null;
+  /** Allows only the next independent on-chain evidence stage; never authorizes a trade. */
+  readonly canProceedToOnChainValidation: boolean;
+  readonly tradingAuthorized: false;
+}
+
+/**
+ * Final fail-closed Phase 6 critical-data gate.
+ *
+ * Provider agreement and reserve-vs-independent-USD comparison are separate checks;
+ * passing either one alone is never enough. This function only decides whether the
+ * evidence is complete enough to proceed to the separate on-chain validation stage.
+ * It never authorizes trading.
+ */
+export function assessCriticalMarketDataEvidenceGate(input: {
+  readonly providerAgreement: ProviderAgreementAssessment;
+  readonly independentComparison: IndependentReservePriceComparisonResult;
+}): CriticalMarketDataEvidenceGateAssessment {
+  const blocked = (
+    status: CriticalMarketDataEvidenceGateStatus,
+    reasonCodes: readonly string[],
+    providerAgreementStatus: ProviderAgreementStatus | null = null,
+    independentComparisonStatus: IndependentPriceComparisonStatus | null = null
+  ): CriticalMarketDataEvidenceGateAssessment => ({
+    status,
+    reasonCodes: [...new Set(reasonCodes)],
+    providerAgreementStatus,
+    independentComparisonStatus,
+    canProceedToOnChainValidation: status === "READY_FOR_ON_CHAIN_VALIDATION",
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !isRecord(input.providerAgreement) ||
+      !isRecord(input.independentComparison)) {
+    return blocked("INVALID_INPUT", ["CRITICAL_EVIDENCE_GATE_INPUT_INVALID"]);
+  }
+
+  const provider = input.providerAgreement;
+  const independent = input.independentComparison;
+  const providerStatuses: readonly string[] = [
+    "AGREED", "DISAGREEMENT", "INSUFFICIENT_EVIDENCE", "NO_ACCEPTABLE_PROVIDER", "INVALID_INPUT"
+  ];
+  const comparisonStatuses: readonly string[] = [
+    "AGREED", "DISAGREEMENT", "INSUFFICIENT_EVIDENCE", "INVALID_INPUT", "NOT_ASSESSED"
+  ];
+  if (!providerStatuses.includes(String(provider.status)) ||
+      !comparisonStatuses.includes(String(independent.status)) ||
+      typeof provider.canProceedToOnChainValidation !== "boolean" ||
+      provider.tradingAuthorized !== false ||
+      typeof independent.comparisonEvidenceComplete !== "boolean" ||
+      independent.tradingAuthorized !== false ||
+      !Array.isArray(provider.reasonCodes) ||
+      !provider.reasonCodes.every((code) => typeof code === "string") ||
+      !Array.isArray(independent.reasonCodes) ||
+      !independent.reasonCodes.every((code) => typeof code === "string")) {
+    return blocked("INVALID_INPUT", ["CRITICAL_EVIDENCE_GATE_INPUT_INVALID"]);
+  }
+
+  const providerStatus = provider.status as ProviderAgreementStatus;
+  const comparisonStatus = independent.status as IndependentPriceComparisonStatus;
+  const reasons: string[] = [];
+  if (providerStatus !== "AGREED") {
+    reasons.push("PROVIDER_AGREEMENT_" + providerStatus);
+    reasons.push(...provider.reasonCodes as string[]);
+  }
+  if (provider.canProceedToOnChainValidation !== true) {
+    reasons.push("PROVIDER_AGREEMENT_GATE_NOT_READY");
+  }
+  if (comparisonStatus !== "AGREED") {
+    reasons.push("INDEPENDENT_PRICE_COMPARISON_" + comparisonStatus);
+    reasons.push(...independent.reasonCodes as string[]);
+  }
+  if (independent.comparisonEvidenceComplete !== true) {
+    reasons.push("INDEPENDENT_PRICE_EVIDENCE_INCOMPLETE");
+  }
+
+  if (reasons.length > 0) {
+    return blocked("BLOCKED", reasons, providerStatus, comparisonStatus);
+  }
+  return blocked("READY_FOR_ON_CHAIN_VALIDATION", [], providerStatus, comparisonStatus);
+}
+
+
 /**
  * Untrusted RPC account metadata. The reader must collect these records from one
  * getMultipleAccounts response so contextSlot applies to the whole bundle.

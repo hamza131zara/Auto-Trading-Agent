@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   assessProviderAgreement,
+  assessCriticalMarketDataEvidenceGate,
+  assessIndependentReservePriceAgreement,
   initialProviderHealth,
   recordProviderResult,
   validateCanonicalMarketSnapshot
@@ -61,6 +63,82 @@ function twoAgreeingCandidates() {
     candidate("provider-primary", 0, snapshotFor("provider-primary")),
     candidate("provider-fallback", 1, snapshotFor("provider-fallback"))
   ];
+}
+
+function twoLiveAgreeingCandidates() {
+  return twoAgreeingCandidates().map((item) => {
+    const snapshot = structuredClone(item.snapshot);
+    snapshot.provenance.synthetic = false;
+    return { ...item, snapshot };
+  });
+}
+
+function independentPriceInput(overrides = {}) {
+  const nowAt = "2026-10-29T12:45:00.000Z";
+  const policy = {
+    nowAt,
+    maxSourceAgeMs: 60_000,
+    maxRetrievalAgeMs: 30_000,
+    maxReferenceTimestampSkewMs: 10_000,
+    maxFutureSkewMs: 0,
+    maxDeviationBps: 10
+  };
+  return {
+    baseMint: "So11111111111111111111111111111111111111112",
+    quoteMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    reserveRatioQuotePerBase: "99.985997437490137051",
+    indexedPriceUsdPerBase: "99.98",
+    indexedProviderId: "dex-screener",
+    indexedIndependenceGroupId: "dex-screener-family",
+    indexedSourceEventAt: "2026-10-29T12:44:50.000Z",
+    indexedRetrievedAt: "2026-10-29T12:44:55.000Z",
+    indexedSynthetic: false,
+    baseUsd: {
+      assetId: "So11111111111111111111111111111111111111112",
+      feedId: "sol-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "99.98",
+      publishedAt: "2026-10-29T12:44:50.000Z",
+      retrievedAt: "2026-10-29T12:44:55.000Z",
+      synthetic: false
+    },
+    quoteUsd: {
+      assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      feedId: "usdc-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "1.0000",
+      publishedAt: "2026-10-29T12:44:50.000Z",
+      retrievedAt: "2026-10-29T12:44:55.000Z",
+      synthetic: false
+    },
+    policy,
+    ...overrides,
+    policy: { ...policy, ...(overrides.policy ?? {}) },
+    baseUsd: { 
+      assetId: "So11111111111111111111111111111111111111112",
+      feedId: "sol-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "99.98",
+      publishedAt: "2026-10-29T12:44:50.000Z",
+      retrievedAt: "2026-10-29T12:44:55.000Z",
+      synthetic: false,
+      ...(overrides.baseUsd ?? {})
+    },
+    quoteUsd: {
+      assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      feedId: "usdc-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "1.0000",
+      publishedAt: "2026-10-29T12:44:50.000Z",
+      retrievedAt: "2026-10-29T12:44:55.000Z",
+      synthetic: false,
+      ...(overrides.quoteUsd ?? {})
+    }
+  };
 }
 
 test("exactly aligned independent providers agree but synthetic fixtures cannot advance to on-chain validation", () => {
@@ -232,6 +310,94 @@ test("provider provenance cannot be relabeled to make another source appear auth
   const assessment = assessProviderAgreement([candidateWithMismatchedProvenance], policy);
   assert.equal(assessment.status, "INVALID_INPUT");
   assert.deepEqual(assessment.reasonCodes, ["PROVENANCE_PROVIDER_ID_MISMATCH"]);
+});
+
+test("critical evidence gate advances only when independent provider and Pyth price gates both pass", () => {
+  const providerAgreement = assessProviderAgreement(twoLiveAgreeingCandidates(), {
+    nowAt: policy.nowAt,
+    maxAgeMs: policy.maxAgeMs,
+    maxHealthAgeMs: policy.maxHealthAgeMs
+  });
+  const independentComparison = assessIndependentReservePriceAgreement(independentPriceInput());
+  assert.equal(providerAgreement.status, "AGREED");
+  assert.equal(providerAgreement.canProceedToOnChainValidation, true);
+  assert.equal(independentComparison.status, "AGREED");
+  assert.equal(independentComparison.comparisonEvidenceComplete, true);
+
+  const gate = assessCriticalMarketDataEvidenceGate({ providerAgreement, independentComparison });
+  assert.equal(gate.status, "READY_FOR_ON_CHAIN_VALIDATION");
+  assert.deepEqual(gate.reasonCodes, []);
+  assert.equal(gate.canProceedToOnChainValidation, true);
+  assert.equal(gate.tradingAuthorized, false);
+});
+
+test("critical evidence gate blocks provider agreement when the live Pyth reserve comparison disagrees", () => {
+  const providerAgreement = assessProviderAgreement(twoLiveAgreeingCandidates(), {
+    nowAt: policy.nowAt,
+    maxAgeMs: policy.maxAgeMs,
+    maxHealthAgeMs: policy.maxHealthAgeMs
+  });
+  const independentComparison = assessIndependentReservePriceAgreement(independentPriceInput({
+    reserveRatioQuotePerBase: "100.643712539836069377",
+    indexedPriceUsdPerBase: "100.64",
+    indexedSourceEventAt: null,
+    indexedRetrievedAt: "2026-10-29T14:34:17.779Z",
+    policy: {
+      nowAt: "2026-10-29T14:34:18.750Z",
+      maxSourceAgeMs: 60_000,
+      maxRetrievalAgeMs: 30_000,
+      maxReferenceTimestampSkewMs: 10_000,
+      maxFutureSkewMs: 0,
+      maxDeviationBps: 10
+    },
+    baseUsd: {
+      priceUsd: "101.25522465",
+      publishedAt: "2026-10-29T14:34:18.000Z",
+      retrievedAt: "2026-10-29T14:34:18.750Z"
+    },
+    quoteUsd: {
+      priceUsd: "0.99975109",
+      publishedAt: "2026-10-29T14:34:18.000Z",
+      retrievedAt: "2026-10-29T14:34:18.750Z"
+    }
+  }));
+  assert.equal(providerAgreement.status, "AGREED");
+  assert.equal(independentComparison.status, "DISAGREEMENT");
+  assert.equal(independentComparison.reserveComparison.deviationBpsRounded, "63");
+  assert.equal(independentComparison.indexedPriceComparison.status, "NOT_ASSESSED");
+
+  const gate = assessCriticalMarketDataEvidenceGate({ providerAgreement, independentComparison });
+  assert.equal(gate.status, "BLOCKED");
+  assert.equal(gate.canProceedToOnChainValidation, false);
+  assert.ok(gate.reasonCodes.includes("INDEPENDENT_PRICE_COMPARISON_DISAGREEMENT"));
+  assert.ok(gate.reasonCodes.includes("RESERVE_RATIO_OUTSIDE_TOLERANCE"));
+  assert.ok(gate.reasonCodes.includes("INDEXED_SOURCE_TIMESTAMP_MISSING"));
+  assert.ok(gate.reasonCodes.includes("INDEPENDENT_PRICE_EVIDENCE_INCOMPLETE"));
+  assert.equal(gate.tradingAuthorized, false);
+});
+
+test("critical evidence gate rejects malformed or forged authorization-shaped inputs", () => {
+  const malformed = assessCriticalMarketDataEvidenceGate(null);
+  assert.equal(malformed.status, "INVALID_INPUT");
+  assert.equal(malformed.canProceedToOnChainValidation, false);
+  assert.equal(malformed.tradingAuthorized, false);
+
+  const providerAgreement = {
+    status: "AGREED",
+    reasonCodes: [],
+    canProceedToOnChainValidation: true,
+    tradingAuthorized: true
+  };
+  const independentComparison = {
+    status: "AGREED",
+    reasonCodes: [],
+    comparisonEvidenceComplete: true,
+    tradingAuthorized: false
+  };
+  const forged = assessCriticalMarketDataEvidenceGate({ providerAgreement, independentComparison });
+  assert.equal(forged.status, "INVALID_INPUT");
+  assert.equal(forged.canProceedToOnChainValidation, false);
+  assert.equal(forged.tradingAuthorized, false);
 });
 
 test("invalid policy fails closed", () => {
