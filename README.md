@@ -6,12 +6,13 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Phases 1–5 are closed for their approved handoffs; provider selection and critical-data validation remain open. A guarded live-source validation runner is available but has not been executed; live trading is not authorized. Do not connect a production wallet or private key.
+> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Phases 1–5 are closed for their approved handoffs; provider selection and critical-data validation remain open. The guarded live-source runner can fetch an explicitly named pair from DEX Screener and check it through read-only Solana RPC; its manual workflow is not yet executed. Live trading is not authorized. Do not connect a production wallet or private key.
 
 ## Start here
 - [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)
 - [Active Phase 6 market-data and canonical data layer](docs/phase-6/README.md)
 - [Phase 6.13 live-source validation runner and operator runbook](docs/phase-6/13-live-source-validation-runner.md)
+- [Manual-only live-source validation workflow](.github/workflows/phase6-live-source-validation.yml)
 - [Locked Phase 4 design handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
 - [Clickable responsive dashboard prototype](docs/phase-4/design-previews/dashboard-prototype.html)
 - [Locked Phase 4 UX and visual design](docs/phase-4/README.md)
