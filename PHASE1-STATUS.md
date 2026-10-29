@@ -1,18 +1,19 @@
-# Project Phase Status — Phase 1–5 Handoff
+# Project Phase Status — Phase 1–6 Handoff
 
 **Repository:** hamza131zara/Auto-Trading-Agent  
 **Phase 1:** CLOSED for design handoff  
 **Phase 2:** CLOSED for requirements handoff  
 **Phase 3:** CLOSED for documentation/design handoff by owner direction  
 **Phase 4:** CLOSED for owner-approved design handoff  
-**Active phase:** Phase 5 — Repository, Environments, CI/CD and Engineering Foundation  
+**Phase 5:** CLOSED for engineering-foundation handoff by owner confirmation on 29 October 2026  
+**Active phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer  
 **Phase 3 status:** Security design package handed off; unresolved signing, key, license and numeric-risk decisions remain implementation/release blockers.  
 **Phase 4 status:** Design system/specifications, dark/light concepts and clickable local prototype are locked for handoff; production UI is not implemented.  
 **Core documentation:** Owner-approved in conversation.  
 **Roadmap comparison/source verification:** Completed and committed.  
 **Commercial model:** No free tier/trial; proposed USD $12,000 one-time lifetime license; owner/admin approval required after payment and registration.  
 **Deployment model:** **LOCKED — self-hosted, customer-isolated licensed software**, per owner decision D-025 on 28 October 2026.  
-**Current disposition:** Phase 5 remains active. The recorded main-push baseline passed on [run 40739952683](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40739952683). Pull-request CI runs for contract/config regressions, Dependabot configuration cleanup and the combined action refresh passed both quality and full-history Gitleaks jobs ([PR #5 run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809400085), [PR #6 run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809562729), [PR #7 run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809677560)). GitHub branch protection/rulesets, mandatory reviews/status checks and the dependency graph are owner-controlled settings and are not claimed enabled. Bank/payment eligibility, qualified legal/tax review, provider verification and unresolved signer/security/risk decisions remain implementation or launch gates.
+**Current disposition:** The latest main-push CI passed on commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6` ([run 40814464474](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814464474)); prior PR quality and Gitleaks checks passed on the recorded Phase 5 maintenance PRs. The owner confirmed branch protection, required reviews/status checks and dependency graph settings are complete; the connected GitHub integration could not independently read the classic branch-protection endpoint. Phase 6 is active with provider-neutral market-data schema/freshness/provider-health/replay work. No provider is selected, no production data credentials are required, and mainnet trading remains unauthorized. Bank/payment eligibility, qualified legal/tax review and unresolved signer/security/numeric-risk decisions remain launch gates.
 
 ## Phase 1 deliverables completed
 - Product, functional, trading/exit, security, quantitative, architecture, data, audit and testing requirements.
@@ -49,7 +50,7 @@
 - No profitability/win-rate guarantee is made.
 
 ## Current phase
-**Phases 1–4 are closed for their owner-approved handoffs; Phase 5 repository/environment/CI work is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work included requirements for license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback. These remain security-design/implementation gates as listed in Phase 3 decisions.
+**Phases 1–5 are closed for their owner-approved handoffs; Phase 6 market-data ingestion and canonical-data work is active.** Use the locked self-hosted model: design the central license portal, quote/payment/registration/approval workflow, signed license activation, customer installation guide, self-hosted runtime/dashboard, signer boundary, signed update/rollback and diagnostics/support boundary. Do not implement online payment or live trading until their respective external and security gates are passed. Phase 2 design work included requirements for license activation/instance binding, offline validation/grace behavior, signed release/update flow and rollback. These remain security-design/implementation gates as listed in Phase 3 decisions.
 
 ## Canonical source references
 - [Phase 1 final closeout and Phase 2 handoff](docs/phase-1/31-phase-1-closeout-and-phase-2-handoff.md)
@@ -57,7 +58,8 @@
 - [Phase 2 completion and Phase 3 handoff](docs/phase-2/08-phase-2-completion-and-phase-3-handoff.md)
 - [Phase 3 security architecture closeout](docs/phase-3/08-phase-3-closeout-and-phase-4-handoff.md)
 - [Phase 3 security architecture package](docs/phase-3/README.md)
-- [Active Phase 5 repository and CI foundation](docs/phase-5/README.md)
+- [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)
+- [Active Phase 6 market-data layer](docs/phase-6/README.md)
 - [Phase 4 closeout and Phase 5 handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
 - [Active Phase 4 UX and visual design](docs/phase-4/README.md)
 - [Phase 1 document index](docs/phase-1/README.md)
