@@ -1,6 +1,6 @@
 # Phase 6.7 — Provider Agreement and Fail-Closed Fallback Policy
 
-**Status:** Provider agreement/fallback remains a deterministic, fixture-tested evidence gate. `assessIndependentReservePriceAgreement` uses exact-decimal math and requires explicit freshness limits, maximum deviation, and a maximum publication-time skew between base/USD and quote/USD feeds. The Pyth Hermes adapter for the canonical Solana SOL/USD and USDC/USD feeds and a manual-only workflow are now implemented; CI [run #194](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40880232949) passed 152 tests, typecheck/build, dependency audit, and Gitleaks. The adapter does not select a vendor or authorize production use. Pyth API-key setup, provider/terms review, run-specific policy values, live validation, and owner approval remain open.
+**Status:** The provider-neutral comparison and Pyth adapter are implemented and CI [run #194](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40880232949) passed 152 tests and all quality/security checks. First manual live run [#2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40892770577) retrieved fresh Pyth SOL/USD and USDC/USD feeds with zero timestamp skew, but reserve/reference comparison returned `DISAGREEMENT` (63 bps vs a 10-bps run tolerance). DEX Screener's indexed price comparison remains `NOT_ASSESSED` because source timestamps are missing. The diagnostic pool is below approved discovery thresholds; do not lower tolerance or approve a provider based on this result.
 
 ## Purpose
 

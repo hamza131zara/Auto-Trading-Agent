@@ -1,6 +1,6 @@
 # Phase 6.15 — Pyth Hermes USD reference adapter
 
-**Status:** Adapter, deterministic tests, and a manual-only validation workflow are implemented. Code CI [run #194](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40880232949) passed 152/152 tests, typechecking, build, dependency audit, and Gitleaks. No live Pyth request has been made by CI, no production price provider has been approved, and this does not authorize trading.
+**Status:** Adapter, deterministic tests, and a manual-only validation workflow are implemented. CI [run #194](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40880232949) passed 152/152 tests, typechecking, build, dependency audit, and Gitleaks. First manual live validation [run #2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40892770577) fetched both non-synthetic Pyth feeds successfully, but reserve/reference comparison returned `DISAGREEMENT` (63 bps against a 10-bps run tolerance); DEX Screener's indexed-price comparison remains `NOT_ASSESSED` because source timestamps are missing. No production provider has been approved, and trading is not authorized.
 
 ## Official API and feed contract
 
@@ -33,6 +33,31 @@ Before a manual run:
 4. Review and confirm each separate read-only RPC, indexed-pair, provider-terms/budget, Pyth-provider, and comparison-policy acknowledgement.
 
 The workflow runs the existing identity/reserve validator, fetches the two authenticated Pyth references, and calls `assessIndependentReservePriceAgreement`. It records feed IDs, publish/retrieval timestamps, confidence values, response hashes and comparison reason codes, but does not print the API key or raw provider response.
+
+## First manual live validation — run #2 — 2026-10-29
+
+[GitHub Actions run #2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40892770577) completed both the read-only Solana identity/reserve request and authenticated Pyth Hermes request. This is an execution success, **not** a successful price-agreement result.
+
+| Evidence | Observed result |
+|---|---|
+| Identity | `MATCH`; non-synthetic; finalized Solana RPC context slot `462916346` |
+| On-chain SOL reserve | `2.882061767 SOL` |
+| On-chain USDC reserve | `290.061396 USDC` |
+| Reserve ratio | `100.643712539836069377 USDC/SOL` |
+| Pyth SOL/USD | `101.25522465 USD`; confidence `0.0440556` |
+| Pyth USDC/USD | `0.99975109 USD`; confidence `0.00005294` |
+| Pyth publication time | Both feeds: `2026-10-29T14:34:18Z` |
+| Pyth retrieval time | `2026-10-29T14:34:18.750Z` |
+| Reference-feed timestamp skew | `0 ms`; run policy allowed `10000 ms` |
+| Indexed DEX Screener SOL price | `100.64 USD`; liquidity `$580.12`; 24-hour volume `$272.64` |
+| Indexed-source freshness | `UNKNOWN`; DEX Screener source/event timestamps are absent |
+| Comparison result | `DISAGREEMENT`; reserve/reference deviation `63 bps`; run tolerance `10 bps` |
+| Indexed-price comparison | `NOT_ASSESSED`; reason `INDEXED_SOURCE_TIMESTAMP_MISSING` |
+| Overall evidence | `comparisonEvidenceComplete: false`; `phase6Complete: false`; `productionProviderApprovedByThisReport: false`; `tradingAuthorized: false` |
+
+The disagreement is consistent with rejecting this low-liquidity diagnostic pool: its indexed liquidity is only about $580 and its indexed 24-hour volume about $273, far below the discovery minimums ($100,000 and $10,000). The reserve ratio is not an executable swap quote, and DEX Screener's price cannot be accepted as a timestamp-validated independent observation from this report. **Do not lower the tolerance to force a pass.** Investigate discrepancies on a future pool that actually meets the existing discovery thresholds and has verified on-chain identity.
+
+This run confirms that secret/environment binding, explicit approvals, the live RPC path, Pyth authentication, feed-ID matching, timestamp/confidence extraction, and comparison execution work end-to-end. It does not prove Pyth or the public RPC is an approved production provider; deployed-binary/source matching, provider fallback, and token-safety gates remain open.
 
 ## Interpretation and unresolved gates
 
