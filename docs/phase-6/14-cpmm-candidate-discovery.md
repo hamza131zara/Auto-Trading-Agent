@@ -1,6 +1,6 @@
 # Phase 6.14 — Read-only Raydium CPMM candidate discovery
 
-**Status:** Live discovery executed successfully, but no candidate met the configured qualification thresholds. Run [#9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606) on commit `7f438e9` completed with a complete scan: Raydium returned 31 exact-mint Standard-pool records, finalized RPC checked all 31 accounts, 14 were verified as CPMM pools and 17 as AMM v4; DEX Screener exact-address cross-checks were attempted for all 14 CPMM candidates and found 8 indexed pairs. None qualified under the default minimums of $100,000 liquidity and $10,000 24-hour volume in both indexed sources, so `recommendedFollowUpPoolAddress` is correctly `null`. The highest Raydium-indexed CPMM liquidity in the report was approximately $578, with 24-hour volume approximately $208—well below the filters. The nullable DEX Screener response fix is verified end-to-end for this run. This step finds candidate pools only. It does not approve a token for trading or complete Phase 6.
+**Status:** The initial SOL/USDC live discovery completed successfully in [run #9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606), but none of its 14 verified CPMM pools met the configured $100,000 liquidity and $10,000 24-hour volume thresholds. The next implementation step now expands the discovery-only quote allowlist to canonical SOL/USDC and SOL/USDT, retains both thresholds unchanged, pages each pair query with a hard cap, and verifies each returned account against the expected quote mint. The broadened implementation is committed, with CI verification pending; a new manual live run is required before claiming whether SOL/USDT produces any qualifying pool. This is discovery-only: no token-safety approval or trading authorization is implied.
 
 ## Why this exists
 
@@ -12,9 +12,24 @@ Only on-chain CPMM candidates are then cross-checked by exact pool address again
 
 ## First full live discovery result — 2026-10-29
 
-Run [#9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606) completed against live sources at finalized Solana context slot `462874226`. The report recorded `synthetic: false`, Raydium response shape `success_data`, `count: 31`, and explicit terminal pagination. All 31 returned pool accounts were checked: 14 classified as `RAYDIUM_CPMM` and 17 as `RAYDIUM_AMM_V4`. All 14 CPMM candidates were cross-checked against the exact DEX Screener pool endpoint; 8 were found and 6 were not indexed there. The scan was complete (`scanIncomplete: false`) with zero threshold-qualified candidates (`thresholdQualifiedCount: 0`) and no recommendation.
+Historical SOL/USDC-only run [#9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606) completed against live sources at finalized Solana context slot `462874226`. The report recorded `synthetic: false`, Raydium response shape `success_data`, `count: 31`, and explicit terminal pagination. All 31 returned pool accounts were checked: 14 classified as `RAYDIUM_CPMM` and 17 as `RAYDIUM_AMM_V4`. All 14 CPMM candidates were cross-checked against the exact DEX Screener pool endpoint; 8 were found and 6 were not indexed there. The scan was complete (`scanIncomplete: false`) with zero threshold-qualified candidates (`thresholdQualifiedCount: 0`) and no recommendation.
 
-The highest-liquidity CPMM entry in this scan reported approximately $578.07 liquidity and $208.34 in 24-hour volume through Raydium; DEX Screener reported approximately $578.06 liquidity and $234.91 in 24-hour volume for that exact pool. Those observations are far below the run's $100,000 liquidity and $10,000 24-hour volume thresholds. This is a successful discovery result with **no qualifying pool**, not a provider integration failure. Do not lower thresholds just to obtain a recommendation. The next decision is whether to broaden the reviewed discovery universe or retain SOL/USDC and document that no pool in this complete indexed scan meets the existing filters. This result still does not prove executable liquidity or authorize trading.
+The highest-liquidity CPMM entry in this scan reported approximately $578.07 liquidity and $208.34 in 24-hour volume through Raydium; DEX Screener reported approximately $578.06 liquidity and $234.91 in 24-hour volume for that exact pool. Those observations are far below the run's $100,000 liquidity and $10,000 24-hour volume thresholds. This is a successful discovery result with **no qualifying pool**, not a provider integration failure. Do not lower thresholds just to obtain a recommendation. The next decision is to review the broadened SOL/USDC and SOL/USDT live report; do not lower the filters just to obtain a recommendation. This result still does not prove executable liquidity or authorize trading.
+
+## Next step — bounded SOL/USDC and SOL/USDT discovery
+
+The original full live run covered SOL/USDC only. Because that complete indexed universe had no qualifying candidate, discovery now also searches the canonical Solana USDT mint while retaining the existing SOL/USDC query. Raydium's current API v3 reference supports exact two-mint pool queries with numbered pagination; the code queries each approved quote mint separately and fails closed if pagination is unknown or the hard page cap is reached.
+
+The allowlist is limited to these canonical mainnet mint addresses:
+
+| Quote asset | Mint address |
+|---|---|
+| USDC | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` |
+| USDT | `Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB` |
+
+Mint identifiers are sourced from [Solana's mainnet stablecoin reference](https://solana.com/docs/payments/how-payments-work). This is a discovery-only allowlist, not approval to use either quote asset in production. Unknown quote mints, wrong-pair DEX Screener responses, on-chain mint mismatches, malformed responses and incomplete scans cannot qualify a candidate.
+
+The $100,000 liquidity and $10,000 24-hour volume minimums are unchanged. The broadened workflow must be manually run to validate live SOL/USDT coverage; CI uses mocks only and never contacts live provider APIs. The top candidate, if any, remains a follow-up candidate rather than a trading recommendation.
 
 ## Default triage thresholds
 
