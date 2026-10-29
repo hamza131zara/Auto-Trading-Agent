@@ -749,7 +749,7 @@ export function assessIndependentReservePriceAgreement(
   const status: IndependentPriceComparisonStatus =
     reserveStatus === "DISAGREEMENT" || indexedStatus === "DISAGREEMENT"
       ? "DISAGREEMENT"
-      : reserveStatus === "INVALID_INPUT" || indexedStatus === "INVALID_INPUT"
+      : indexedStatus === "INVALID_INPUT"
         ? "INVALID_INPUT"
         : reserveStatus === "AGREED" && indexedStatus === "AGREED"
           ? "AGREED"
