@@ -45,8 +45,14 @@ function snapshotFor(providerId, mutate = () => {}) {
   return snapshot;
 }
 
-function candidate(providerId, priority, snapshot, health = healthyHealth(providerId)) {
-  return { providerId, priority, snapshot, health };
+function candidate(
+  providerId,
+  priority,
+  snapshot,
+  health = healthyHealth(providerId),
+  independenceGroupId = providerId
+) {
+  return { providerId, independenceGroupId, priority, snapshot, health };
 }
 
 function twoAgreeingCandidates() {
@@ -184,6 +190,10 @@ test("duplicate providers or provider priority values are rejected as invalid in
     candidate("provider-primary", 0, snapshotFor("provider-primary")),
     candidate("provider-fallback", 0, snapshotFor("provider-fallback"))
   ];
+  const duplicateIndependenceGroup = [
+    candidate("provider-primary", 0, snapshotFor("provider-primary"), healthyHealth("provider-primary"), "same-upstream"),
+    candidate("provider-alias", 1, snapshotFor("provider-alias"), healthyHealth("provider-alias"), "same-upstream")
+  ];
   assert.deepEqual(
     assessProviderAgreement(duplicateProvider, policy).reasonCodes,
     ["DUPLICATE_PROVIDER_ID"]
@@ -191,6 +201,10 @@ test("duplicate providers or provider priority values are rejected as invalid in
   assert.deepEqual(
     assessProviderAgreement(duplicatePriority, policy).reasonCodes,
     ["DUPLICATE_PROVIDER_PRIORITY"]
+  );
+  assert.deepEqual(
+    assessProviderAgreement(duplicateIndependenceGroup, policy).reasonCodes,
+    ["DUPLICATE_INDEPENDENCE_GROUP"]
   );
 });
 
