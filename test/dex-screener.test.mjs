@@ -122,6 +122,17 @@ test("normalizes an exact pair and retains decimal numeric lexemes as strings", 
   assert.equal(snapshot.provenance.synthetic, true);
 });
 
+test("expands exponent-form provider measures without binary floating-point conversion", () => {
+  const exponentFixture = fixtureText.replace(
+    '"priceUsd": "0.123456789012345678"',
+    '"priceUsd": "1e-8"'
+  );
+  const adapter = new DexScreenerPairsAdapter(async () => successResponse());
+  const result = adapter.normalize(envelope(exponentFixture), context);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.observations[0].price.value, "0.00000001");
+});
+
 test("does not invent a market event timestamp from pair creation time", () => {
   const adapter = new DexScreenerPairsAdapter(async () => successResponse());
   const result = adapter.normalize(envelope(), context);
