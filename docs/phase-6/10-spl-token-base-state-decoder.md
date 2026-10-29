@@ -28,7 +28,7 @@ The decoder first requires the Solana account's program owner to be exactly the 
 
 For a Token-2022 account without extension bytes (exact base length), the base state may be `DECODED`. If the account is longer than the base layout, the decoder validates the padding and Token-2022 account-type marker but returns `EXTENSIONS_UNINSPECTED`, and `baseStateEligibleForIdentityEvidence` is `false`. It does not inspect extension TLVs or claim that the extended token is safe.
 
-This is deliberate: Token-2022 can add transfer fees, transfer hooks, non-transferable state, confidential transfer, pausable controls and other behavior that changes token semantics. A future extension parser must validate the complete TLV structure, unknown extension IDs, type/length bounds and extension semantics before an extended token can satisfy any identity/safety requirement. The decoder's “base state eligible” boolean is only a parsing gate; it is not a safety score, recommendation or trading permission.
+This is deliberate: Token-2022 can add transfer fees, transfer hooks, non-transferable state, confidential transfer, pausable controls and other behavior that changes token semantics. The separate [Phase 6.11 TLV inspector](11-token2022-extension-tlv-inspector.md) checks framing, while its fail-closed semantic registry names the current official extension IDs, maps conservative impact categories and blocks unknown/future or wrong-account-kind types. This is not a token-safety approval; extension-bearing tokens remain blocked from identity evidence pending Phase 7 policy. The decoder's “base state eligible” boolean is only a parsing gate; it is not a safety score, recommendation or trading permission.
 
 ## Error and data boundaries
 

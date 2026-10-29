@@ -1,6 +1,6 @@
 # Phase 6.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active; the provider-neutral contract and read-only DEX Screener candidate adapter are fixture-tested, and PR CI/security gates passed on 29 October 2026. No production market-data vendor is approved.
+**Status:** Active, not complete. Canonical contracts, fallback assessment, read-only RPC transport, SPL Token base decoder and fail-closed Token-2022 extension classification are implemented with synthetic tests. No DEX pool protocol or production market-data/RPC provider is owner-approved.
 
 ## Acceptance checklist
 
@@ -15,9 +15,10 @@
 - [x] Add a read-only JSON-RPC `getMultipleAccounts` transport for explicit account lists, bounded streaming reads, strict response validation, raw-response digest, timeout/cancellation, context-slot enforcement and sanitized errors. CI uses only mocked fetch; injected responses are marked synthetic. See [Phase 6.9](09-solana-rpc-account-reader.md).
 - [x] Add a base-state decoder for classic SPL Token mint/account records with strict program-owner/size/tag/state checks and exact integer strings. Token-2022 records with extensions remain flagged uninspected and are ineligible for identity evidence until a separate extension-aware parser is implemented. See [Phase 6.10](10-spl-token-base-state-decoder.md).
 - [x] Add structural Token-2022 TLV parsing for type/length boundaries, bounds checking, duplicates and terminators; results remain ineligible for identity evidence because the parser does not classify extension semantics. See [Phase 6.11](11-token2022-extension-tlv-inspector.md).
-- [ ] Implement a reviewed semantic policy for known and unknown Token-2022 extension types before extended-token identity evidence can be used.
+- [x] Add a fail-closed semantic registry for the current official Token-2022 extension type enum: known IDs are named and mapped to a conservative impact category/account scope; wrong-scope and unknown/future IDs are blocked. No extension-bearing token is auto-approved for identity evidence; phase-specific safety review remains Phase 7. See [Phase 6.11](11-token2022-extension-tlv-inspector.md).
 - [x] Add a protocol-neutral evidence-bundle checker for pool/program/mint/vault identity, explicit, disjoint decoder/token/loader allowlists, commitment/context-slot gates and evidence provenance. Synthetic-only fixtures cannot advance. See [Phase 6.8](08-on-chain-identity-evidence-contract.md).
-- [ ] Implement the read-only Solana RPC reader and approved protocol-specific account decoder. The evidence-bundle checker does not fetch RPC data or decode raw account bytes.
+- [x] Implement the read-only Solana `getMultipleAccounts` transport with mocked tests; it preserves context slots and returns bounded raw account data. See [Phase 6.9](09-solana-rpc-account-reader.md).
+- [ ] Implement and test a protocol-specific DEX pool decoder and integrate it with decoded mint/token-account/vault state and the identity evidence checker. No production protocol is selected yet.
 - [ ] Production approval of the DEX Screener candidate requires a fresh official schema/terms/quota review, account/budget decision where applicable, and documented on-chain validation/fallback/disagreement behavior.
 - [ ] Production use stays disabled until selected adapters are tested against the chosen plan and critical fields have independent validation paths.
 
@@ -35,4 +36,4 @@
 
 ## Phase exit rule
 
-Close Phase 6 only when acceptance items above are tested, selected adapters and fallback behavior are documented, failure/degraded modes are proven safe, and replay is deterministic. Phase 7 token safety and all trade execution remain out of scope.
+**Phase 6 remains ACTIVE. Do not mark it complete yet.** The remaining technical gate is the protocol-specific pool decoder plus end-to-end raw-account-to-identity evidence integration. The owner decision gates also remain open: choose the production RPC/indexed provider(s), confirm current endpoint/terms/quota/retention rules and account-specific plan, approve usage budget, and obtain at least one independently verifiable real-source identity validation. These cannot be claimed complete from synthetic fixtures or a public rate-limit page. Close Phase 6 only after all acceptance items are tested, selected adapters and fallback behavior are documented, failure/degraded modes are proven safe, critical identity is independently validated, and replay is deterministic. Phase 7 token safety and all trade execution remain out of scope.

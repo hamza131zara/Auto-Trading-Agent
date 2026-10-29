@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — canonical market-data contracts, deterministic replay and the read-only DEX Screener candidate are merged to main. The next Phase 6 slice adds fail-closed multi-provider agreement and fallback assessment; no production provider is selected.
+**Status:** ACTIVE — implementation includes canonical market-data contracts, provider-agreement/fallback gates, an on-chain identity evidence contract, read-only RPC transport, SPL Token base-state decoding, Token-2022 TLV structure inspection, and a fail-closed semantic registry for known/unknown Token-2022 extension IDs. Phase 6 is not closed: a protocol-specific pool decoder/integration and owner-approved production provider/plan remain gates.
 **Started:** 29 October 2026.
 **Previous phase:** Phase 5 closed for engineering-foundation handoff; see [Phase 5 closeout](../phase-5/06-phase-5-closeout-and-phase-6-handoff.md).
 **Canonical roadmap:** Frozen Roadmap v1.0; phase order is unchanged.
@@ -49,9 +49,9 @@ A read-only DEX Screener reference adapter is included for evaluation. Its fixtu
 
 Candidates remain those in the owner-approved provider matrix (Solana RPC, Helius, DEX Screener, Birdeye and other reviewed sources as appropriate). This phase must not turn the research shortlist or earlier dated pricing snapshot into an implied vendor commitment. A provider adapter may be considered production-ready only after endpoint/version and terms review, quota/budget selection, schema validation, timeout/retry/circuit-breaker behavior, fallback/disagreement tests, and deterministic fixtures pass.
 
-## Token-2022 extension TLV structure
+## Token-2022 extension TLV structure and semantic policy
 
-The structural inspector in [Phase 6.11](11-token2022-extension-tlv-inspector.md) validates TLV entry boundaries, lengths, duplicate types and termination, returning type codes and offsets without payload bytes. Any inspected extension layout remains ineligible for identity evidence until a reviewed semantic policy classifies known and unknown extension types.
+The structural inspector and fail-closed semantic registry in [Phase 6.11](11-token2022-extension-tlv-inspector.md) validate TLV entry boundaries, lengths, duplicate types, termination and account-kind applicability. Known types are inventoried against the published `spl-token-2022-interface` 3.1.2 enum with a conservative impact category; unknown/future IDs are explicitly blocked. No extension-bearing token is deemed safe or eligible for identity evidence by this Phase 6 policy. Token-specific safety review remains Phase 7.
 
 ## SPL Token base-state decoder
 

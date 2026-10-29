@@ -1358,3 +1358,14 @@ export type {
   Token2022StateKind,
   Token2022TlvErrorCode
 } from "./solana-token-account-decoder.js";
+
+export {
+  TOKEN2022_EXTENSION_SEMANTICS,
+  assessToken2022ExtensionPolicy
+} from "./solana-token-account-decoder.js";
+export type {
+  KnownToken2022ExtensionDefinition,
+  Token2022ExtensionImpact,
+  Token2022ExtensionPolicyEntry,
+  Token2022ExtensionPolicyResult
+} from "./solana-token-account-decoder.js";
