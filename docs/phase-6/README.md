@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — implementation includes canonical market-data contracts, provider-agreement/fallback gates, an on-chain identity evidence contract, read-only RPC transport, SPL Token base-state decoding, Token-2022 TLV structure inspection, and a fail-closed semantic registry for known/unknown Token-2022 extension IDs. Phase 6 is not closed: a protocol-specific pool decoder/integration and owner-approved production provider/plan remain gates.
+**Status:** ACTIVE — implementation includes canonical market-data contracts, provider-agreement/fallback gates, on-chain identity evidence, bounded read-only RPC transport, SPL Token base-state decoding, Token-2022 TLV structure and fail-closed semantic policy, plus a pinned-source Raydium CPMM decoder/integration candidate. Phase 6 is not closed: real-source identity validation and owner-approved provider/plan decisions remain gates.
 **Started:** 29 October 2026.
 **Previous phase:** Phase 5 closed for engineering-foundation handoff; see [Phase 5 closeout](../phase-5/06-phase-5-closeout-and-phase-6-handoff.md).
 **Canonical roadmap:** Frozen Roadmap v1.0; phase order is unchanged.
@@ -78,4 +78,4 @@ The agreement evaluator requires at least two eligible independent providers; re
 
 ## Exit rule
 
-Phase 6 closes only after the canonical schema and adapter contract are approved, selected adapters have fixture-backed parse/error/retry/freshness/provenance tests, provider-health, provider disagreement and fallback/degraded-mode behaviors are verified, independent on-chain validation is implemented and tested, and replay is deterministic. The Phase 6 exit does not authorize token-safety scoring (Phase 7) or execution.
+**Phase 6 remains ACTIVE.** The protocol-decoder implementation item now has synthetic test coverage, but Phase 6 cannot close until an integrated identity assessment succeeds against a real, independently sourced pool using an owner-approved read-only RPC source, the chosen RPC/indexed-provider plans and their current terms/quota/retention behavior are reviewed, the usage budget is explicitly approved, and the selected provider's fallback/degraded modes are tested. A mock run cannot count as live-source verification. Closing Phase 6 does not authorize token-safety scoring (Phase 7) or execution.
