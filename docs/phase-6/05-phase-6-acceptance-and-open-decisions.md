@@ -77,7 +77,7 @@ No live ProgramData request has been made by this change. Missing reference hash
 - [x] Add a manual-only build workflow pinned to the exact Raydium source commit/tree, official Solana Verify CLI version and CLI binary SHA-256.
 - [x] Build two separate clean source copies with the controlled Docker-based verifier and capture build logs/artifacts without invoking Solana RPC.
 - [x] Generate a manifest requiring pinned source/tree, clean worktrees, expected Rust/Anchor/Solana declarations, source build-input digests, successful build exit codes, ELF magic, and identical artifact SHA-256 and byte length.
-- [x] Add deterministic tests for reproducible success and fail-closed handling of source drift, dirty/invalid metadata, build failure, wrong tool checksum, non-ELF artifacts and artifact hash/length divergence.
+- [x] Add deterministic tests for reproducible success and fail-closed handling of source drift, dirty/invalid metadata, build failure, wrong tool checksum, non-ELF artifacts and artifact hash/length divergence. CI [#236](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40957968850) passed 213/213 tests, typecheck/build/repository validation, dependency audit with zero vulnerabilities, and Gitleaks.
 - [ ] Run the manual build-only workflow after an operator intentionally selects its confirmation input; review artifact provenance and repeatability manifest.
 - [ ] Independently review build evidence, then decide whether to authorize the separate Phase 6.18 ProgramData request. The build workflow itself does not call RPC.
 

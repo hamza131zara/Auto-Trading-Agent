@@ -14,6 +14,7 @@ Solana-only autonomous DEX trading research and execution system.
 - [Timestamped indexed-price evidence runner and approval gates](docs/phase-6/17-timestamped-indexed-price-comparison-runner.md)
 - [Raydium CPMM deployed-program integrity evidence](docs/phase-6/18-raydium-program-deployment-integrity.md)
 - [Pinned Raydium reference-build evidence workflow](docs/phase-6/19-raydium-reference-build-evidence.md)
+- [Manual pinned Raydium source-build workflow](.github/workflows/phase6-raydium-reference-build.yml)
 - [Phase 6.13 live-source validation runner and operator runbook](docs/phase-6/13-live-source-validation-runner.md)
 - [Manual-only live-source validation workflow](.github/workflows/phase6-live-source-validation.yml)
 - [Locked Phase 4 design handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)

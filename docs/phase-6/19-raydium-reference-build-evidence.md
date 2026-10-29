@@ -1,6 +1,6 @@
 # Phase 6.19 — Pinned Raydium source build and reference hash evidence
 
-**Status:** Implemented and covered by the normal repository CI tests. The manual build workflow has not yet been run; no reference ELF hash/length has been accepted and no live Solana RPC request is made by this step.
+**Status:** Implemented and covered by CI [#236](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40957968850): 213/213 tests, typecheck/build/repository validation, zero dependency vulnerabilities and Gitleaks passed. The manual build workflow has not yet been run; no reference ELF hash/length has been accepted and no live Solana RPC request is made by this step.
 
 ## Why a reproducible build comes first
 
