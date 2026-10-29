@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  buildMarketDataReportSection,
   buildTargetSnapshotFromDexScreener,
   parseArgs,
   validateLiveTargetSnapshot,
@@ -25,6 +26,46 @@ baseTarget.provenance = {
   rawPayloadSha256: "a".repeat(64),
   synthetic: false
 };
+
+test("live market-data report preserves provider measures and marks absent source time UNKNOWN", () => {
+  const target = structuredClone(baseTarget);
+  target.retrievedAt = "2026-10-29T08:13:26.000Z";
+  target.observedAt = null;
+  target.sourceEventAt = null;
+  target.price = { value: "100.5107", unit: "USD_PER_BASE", assetId: null };
+  target.liquidity = { value: "86", unit: "USD", assetId: null };
+  target.volume24h = { value: "2", unit: "USD", assetId: null };
+  target.buys24h = 44;
+  target.sells24h = 80;
+
+  const report = buildMarketDataReportSection(target);
+  assert.equal(report.retrievedAt, target.retrievedAt);
+  assert.equal(report.price.value, "100.5107");
+  assert.equal(report.liquidity.value, "86");
+  assert.equal(report.volume24h.value, "2");
+  assert.equal(report.buys24h, 44);
+  assert.equal(report.sells24h, 80);
+  assert.equal(report.sourceTimestampStatus, "UNKNOWN");
+  assert.deepEqual(report.sourceFreshness, {
+    state: "UNKNOWN",
+    reasonCodes: ["SOURCE_TIMESTAMP_MISSING"]
+  });
+  assert.match(report.interpretation, /not independently validated/);
+});
+
+test("live market-data report never labels source time as fresh without an approved freshness policy", () => {
+  const target = structuredClone(baseTarget);
+  target.observedAt = "2026-10-29T08:13:20.000Z";
+  target.sourceEventAt = "2026-10-29T08:13:20.000Z";
+
+  const report = buildMarketDataReportSection(target);
+  assert.equal(report.sourceTimestampStatus, "PRESENT_BUT_NOT_ASSESSED");
+  assert.deepEqual(report.sourceFreshness, {
+    state: "NOT_ASSESSED",
+    reasonCodes: ["SOURCE_SPECIFIC_FRESHNESS_POLICY_NOT_CONFIGURED"]
+  });
+  assert.notEqual(report.sourceFreshness.state, "FRESH");
+});
 
 test("live-source target requires a real indexed snapshot with verifiable provenance", () => {
   assert.equal(validateLiveTargetSnapshot(baseTarget, "approved-rpc").poolAddress, baseTarget.poolAddress);
