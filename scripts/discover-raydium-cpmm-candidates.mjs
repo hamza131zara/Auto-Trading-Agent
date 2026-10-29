@@ -221,29 +221,45 @@ function normalizeRaydiumPool(pool) {
 
 function normalizeRaydiumPage(payload) {
   if (!isRecord(payload)) {
-    throw codedError("RAYDIUM_API_RESPONSE_SHAPE_INVALID");
+    throw codedError("RAYDIUM_API_RESPONSE_ROOT_NOT_OBJECT");
   }
-
-  // The pinned Raydium SDK's PoolsApiReturn type is the page object itself:
-  // { count, hasNextPage, data: Pool[] }. Some HTTP surfaces may wrap that
-  // page in { success: true, data: page }; accept both shapes explicitly.
-  let page = payload;
-  if (payload.success === true && isRecord(payload.data) && !Array.isArray(payload.data)) {
-    page = payload.data;
-  } else if (payload.success === false) {
+  if (payload.success === false) {
     throw codedError("RAYDIUM_API_REPORTED_FAILURE");
   }
 
-  if (!Array.isArray(page.data) ||
-      typeof page.hasNextPage !== "boolean" ||
-      !Number.isSafeInteger(page.count) || page.count < 0) {
-    throw codedError("RAYDIUM_API_RESPONSE_SHAPE_INVALID");
+  // The SDK PoolsApiReturn is { count, hasNextPage, data: Pool[] }.
+  // The deployed HTTP endpoint may also wrap that page as { data: page }
+  // without a "success" key, or as { success: true, data: page }.
+  // Detect the nested page by its array field, not by an optional wrapper flag.
+  let page = payload;
+  let wrapper = "none";
+  if (isRecord(payload.data) && Array.isArray(payload.data.data)) {
+    page = payload.data;
+    wrapper = payload.success === true ? "success_data" : "data";
+  }
+
+  if (!Array.isArray(page.data)) {
+    throw codedError(wrapper === "none"
+      ? "RAYDIUM_API_PAGE_DATA_NOT_ARRAY"
+      : "RAYDIUM_API_NESTED_PAGE_DATA_NOT_ARRAY");
+  }
+  if (typeof page.hasNextPage !== "boolean") {
+    throw codedError("RAYDIUM_API_PAGE_HAS_NEXT_PAGE_INVALID");
+  }
+  const count = typeof page.count === "number"
+    ? page.count
+    : typeof page.count === "string" && /^(?:0|[1-9][0-9]*)$/.test(page.count)
+      ? Number(page.count)
+      : Number.NaN;
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw codedError("RAYDIUM_API_PAGE_COUNT_INVALID");
   }
 
   return {
-    count: page.count,
+    count,
     hasNextPage: page.hasNextPage,
-    pools: page.data
+    pools: page.data,
+    responseShape: wrapper
   };
 }
 
@@ -504,6 +520,7 @@ export async function discoverRaydiumCpmmCandidates({
     sources: {
       raydiumApi: {
         providerId: RAYDIUM_API_PROVIDER_ID,
+        responseShape: raydiumPage.responseShape,
         endpointClass: "pools/info/mint",
         clientRequestId,
         rawPayloadSha256: sha256(raydium.rawText),
