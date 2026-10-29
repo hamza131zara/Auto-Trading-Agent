@@ -364,8 +364,12 @@ export class ReadOnlyMarketDataOrchestrator {
         }
 
         const snapshot = candidate as unknown as CanonicalMarketSnapshot;
+        const expectedSourceKind =
+          snapshot.provenance.sourceKind === registration.adapter.sourceKind ||
+          (snapshot.provenance.synthetic === true &&
+           snapshot.provenance.sourceKind === "REPLAY_FIXTURE");
         if (snapshot.provenance.providerId !== providerId ||
-            snapshot.provenance.sourceKind !== registration.adapter.sourceKind ||
+            !expectedSourceKind ||
             snapshot.cluster !== target.cluster ||
             snapshot.baseMint !== target.baseMint ||
             snapshot.quoteMint !== target.quoteMint ||
