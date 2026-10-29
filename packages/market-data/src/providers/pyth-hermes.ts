@@ -9,7 +9,7 @@ export const WRAPPED_SOL_MINT = "So11111111111111111111111111111111111111112";
 export const USDC_MAINNET_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const HERMES_BASE_URL = "https://pyth.dourolabs.app/hermes";
 const MAX_RESPONSE_BYTES = 256 * 1024;
-const UTC_PATTERN = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.[0-9]{1,3})?Z$/;
+const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/;
 const INTEGER_PATTERN = /^-?(?:0|[1-9][0-9]*)$/;
 const UNSIGNED_INTEGER_PATTERN = /^(?:0|[1-9][0-9]*)$/;
 const FEED_ID_PATTERN = /^(?:0x)?[a-fA-F0-9]{64}$/;
@@ -153,7 +153,7 @@ export function pythScaledIntegerToDecimal(rawValue: unknown, exponent: unknown,
 
 async function readBoundedText(response: Response): Promise<string> {
   const contentLength = response.headers.get("content-length");
-  if (contentLength !== null && /^\\d+$/.test(contentLength) &&
+  if (contentLength !== null && /^\d+$/.test(contentLength) &&
       Number(contentLength) > MAX_RESPONSE_BYTES) {
     await response.body?.cancel().catch(() => undefined);
     throw new PythHermesAdapterError("PARSE", false);
