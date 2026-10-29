@@ -101,7 +101,7 @@ function pairResponse(pairs) {
 }
 
 function poolApiUrl(url) {
-  return url.startsWith("https://api-v3.raydium.io/pools/info/list-v2?");
+  return url.startsWith("https://api-v3.raydium.io/pools/info/mint?");
 }
 
 function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) {
@@ -121,9 +121,13 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
     calls.push({ url, init });
     if (poolApiUrl(url)) {
       assert.equal(init.method, "GET");
+      assert.match(url, /mint1=So11111111111111111111111111111111111111112/);
+      assert.match(url, /mint2=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v/);
       assert.match(url, /poolType=standard/);
       assert.match(url, /poolSortField=liquidity/);
       assert.match(url, /sortType=desc/);
+      assert.match(url, /pageSize=100/);
+      assert.match(url, /page=1/);
       return new Response(JSON.stringify(raydiumResponse(raydiumPools, { hasNextPage })), {
         status: 200,
         headers: { "content-type": "application/json" }
@@ -243,6 +247,34 @@ test("accepts Raydium SDK page shape and supported HTTP envelope forms", async (
   }
 });
 
+test("uses the documented mint-pair endpoint and treats a short numbered page as terminal", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const documentedFetch = async (input, init = {}) => {
+    const url = String(input);
+    if (poolApiUrl(url)) {
+      return new Response(JSON.stringify({
+        id: "raydium-http-envelope",
+        success: true,
+        data: {
+          count: 1,
+          data: [makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)]
+        }
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return fetchImpl(input, init);
+  };
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: documentedFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+  assert.equal(report.sources.raydiumApi.endpointClass, "pools/info/mint");
+  assert.equal(report.sources.raydiumApi.paginationKnown, true);
+  assert.equal(report.sources.raydiumApi.paginationSignal, "SHORT_NUMBERED_PAGE_TERMINAL");
+  assert.equal(report.selectionPolicy.scanIncomplete, false);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, HIGH_CPMM);
+});
+
 test("uses nextPageId cursor and refuses to recommend from a partial page", async () => {
   const { fetchImpl } = mockFetchFactory();
   const cursorFetch = async (input, init = {}) => {
@@ -269,14 +301,15 @@ test("uses nextPageId cursor and refuses to recommend from a partial page", asyn
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
 });
 
-test("returns safe diagnostics and does not recommend a pool when pagination signals are absent", async () => {
+test("keeps full numbered page incomplete when pagination signals are absent", async () => {
   const { fetchImpl } = mockFetchFactory();
   const noPaginationFetch = async (input, init = {}) => {
     const url = String(input);
     if (poolApiUrl(url)) {
-      return new Response(JSON.stringify(raydiumResponse([
-        makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)
-      ], { includeHasNextPage: false })), {
+      return new Response(JSON.stringify(raydiumResponse(
+        Array.from({ length: 100 }, () => makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)),
+        { includeHasNextPage: false, count: 100 }
+      )), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -293,7 +326,7 @@ test("returns safe diagnostics and does not recommend a pool when pagination sig
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
   assert.equal(report.sources.raydiumApi.responseDiagnostics.pageHasNextPageType, "undefined");
-  assert.equal(report.sources.raydiumApi.responseDiagnostics.poolArrayLength, 1);
+  assert.equal(report.sources.raydiumApi.responseDiagnostics.poolArrayLength, 100);
 });
 
 test("accepts success envelope with a direct pool array but marks it incomplete without pagination metadata", async () => {
