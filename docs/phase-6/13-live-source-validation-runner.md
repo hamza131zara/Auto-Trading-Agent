@@ -1,6 +1,6 @@
 # Phase 6.13 — Explicit Live-Source Validation Runner
 
-**Status:** End-to-end runner and manual-only workflow implemented; the first real-source identity validation returned `MATCH` in [run #2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40840569303) at finalized context slot `462809432`. The broadened discovery in [run #11](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40874763390) is now complete but found no pool meeting both liquidity/volume thresholds. The next diagnostic is a separate manual full identity/reserve validation for the highest-indexed-liquidity SOL/USDC pool `47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4`; the pool is far below qualification thresholds and is not a trading candidate. The shared public Mainnet RPC is one-off validation only, not an approved production provider. Phase 6 remains active.
+**Status:** The read-only full identity/reserve validation completed successfully in [live-source run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349). The exact SOL/USDC pool returned `MATCH`, zero identity mismatches, and decoded on-chain vault reserves at finalized context slot `462885519`. This is diagnostic evidence only: indexed market-data freshness remains `UNKNOWN`, independent reserve/price comparison remains `NOT_ASSESSED`, and the pool remains far below the qualification thresholds. The shared public Mainnet RPC is one-off validation only, not an approved production provider. Phase 6 remains active.
 
 ## Purpose
 
@@ -87,6 +87,30 @@ The decoded pool records `canonicalPoolPdaMatches: true`, `statusFlags: 0`, and 
 
 The report correctly retained `phase6Complete: false`, `productionProviderApprovedByThisReport: false`, and `tradingAuthorized: false`. The first two operator acknowledgements and the terms/budget acknowledgement applied only to this one-off run; they do not constitute blanket production authorization.
 
+## Second live identity/reserve validation — 2026-10-29
+
+[GitHub Actions run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349) completed successfully against live DEX Screener data and Solana Mainnet RPC. The exact target was the highest-indexed-liquidity pool from the completed discovery scan; it remains far below the qualification thresholds and is not a trading candidate.
+
+| Evidence field | Observed value |
+|---|---|
+| Target provider | `dex-screener` (`INDEXED_API`) |
+| Target pool | `47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4` |
+| Base / quote | Wrapped SOL / USDC |
+| Identity result | `MATCH`; `identityGatePassed: true`; no mismatch fields |
+| Decoder | `raydium-cp-swap-pool-state` version `0.1.0`; PoolState 637 bytes, AmmConfig 236 bytes |
+| RPC provider / commitment | `solana-public-shared` / `finalized` |
+| Required minimum slot / actual slot | `462883564` / `462885519` |
+| RPC request ID | `live-raydium-mvtjc5z7-identity` |
+| Base reserve | `2.890749459 SOL` |
+| Quote reserve | `289.034468 USDC` |
+| On-chain quote/base reserve ratio | `99.985997437490137051 USDC per SOL` |
+| DEX Screener indexed price | `99.98 USD per SOL` |
+| DEX Screener indexed liquidity / 24-hour volume | `$578.06` / `$233.47` |
+| Independent comparison | `NOT_ASSESSED` |
+| Source freshness | `UNKNOWN` (`observedAt` and `sourceEventAt` are null) |
+
+The on-chain decoder confirmed the expected pool, token mint, vault, LP-mint, AMM-config and observation identities. Both vault balances were decoded from one finalized RPC account bundle. The reserve ratio and indexed USD price are numerically close in this snapshot, but this is **not** an independent price validation: the reserve ratio is not an executable swap quote, DEX Screener is still the only indexed price source in this report, and the quote asset's USD valuation has not been independently sourced. The report therefore appropriately retained `independentComparisonStatus: NOT_ASSESSED`, `phase6Complete: false`, `productionProviderApprovedByThisReport: false`, and `tradingAuthorized: false`.
+
 ## On-chain reserve evidence in the report
 
 The full live identity report now decodes the base and quote SPL mint and vault accounts from the same finalized nine-account RPC bundle. If those accounts are eligible for base-state decoding, the report includes exact raw integer balances, human-readable reserve amounts using the decoded mint decimals, and a quote-per-base reserve ratio truncated to 18 decimal places. It also verifies each vault's decoded mint matches its expected target mint and keeps the bundle's finalized context slot and response hash alongside the reserve fields.
@@ -109,9 +133,9 @@ A successful report still records phase6Complete: false, productionProviderAppro
 
 - [ ] Owner-approved mainnet RPC endpoint and account plan are recorded; current terms/quota/retention and usage budget are reviewed.
 - [ ] Target snapshot is captured from a different, reviewed indexed provider with preserved request ID and source-response digest.
-- [ ] The real run returns MATCH with synthetic: false, commitment: finalized, and one shared reported context slot for the nine-account identity bundle.
+- [x] A real run returned MATCH with synthetic: false, finalized commitment, and one shared reported context slot for the nine-account identity bundle ([run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349)).
 - [ ] Deployed program/source compatibility is independently verified against the pinned decoder version.
-- [ ] The report is reviewed and linked in the Phase 6 evidence register without exposing credentials.
+- [x] The run #3 evidence summary is recorded in this document and linked from the Phase 6 acceptance notes without exposing credentials.
 - [ ] Independent critical market-data checks and selected-provider fallback/degraded-mode tests are completed.
 
 A non-match, unavailable account, unresolved Token-2022 extension, insufficient context slot, unknown provenance, or transport failure leaves the gate open. Do not relax the decoder or allowlist just to obtain a match. Phase 7 token safety, transaction signing and live trading remain outside this runner.
