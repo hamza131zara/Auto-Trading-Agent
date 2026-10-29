@@ -329,7 +329,9 @@ export async function discoverRaydiumCpmmCandidates({
     schemaVersion: "ata.phase6.cpmm-candidate-discovery.v1",
     generatedAt: now(),
     scope: "READ_ONLY_SOL_USDC_RAYDIUM_CPMM_CANDIDATE_DISCOVERY",
-    status: cpmmCandidates.length > 0 ? "CPMM_CANDIDATES_FOUND" : "NO_CPMM_CANDIDATES_FOUND",
+    status: exactPairs.length > MAX_POOL_ACCOUNTS
+      ? cpmmCandidates.length > 0 ? "CPMM_CANDIDATES_FOUND_PARTIAL_SCAN" : "INCOMPLETE_RPC_ACCOUNT_CAP"
+      : cpmmCandidates.length > 0 ? "CPMM_CANDIDATES_FOUND" : "NO_CPMM_CANDIDATES_FOUND",
     source: {
       providerId: "dex-screener",
       endpointClass: "latest-dex-tokens",
