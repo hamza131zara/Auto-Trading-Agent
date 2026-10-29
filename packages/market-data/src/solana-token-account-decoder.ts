@@ -11,7 +11,6 @@ const TOKEN_2022_MINT_ACCOUNT_TYPE = 1;
 const TOKEN_2022_TOKEN_ACCOUNT_TYPE = 2;
 const MAX_TOKEN_DATA_BYTES = 2_000_000;
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const BASE58_INDEX = new Map(Array.from(BASE58_ALPHABET, (character, index) => [character, index]));
 const CANONICAL_BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
 export type SplTokenProgramKind = "SPL_TOKEN" | "TOKEN_2022";
@@ -21,6 +20,7 @@ export type TokenExtensionState = "NONE" | "PRESENT_UNINSPECTED";
 export type SplTokenDecodeErrorCode =
   | "ACCOUNT_MISSING"
   | "ACCOUNT_ENVELOPE_INVALID"
+  | "ACCOUNT_SPACE_MISMATCH"
   | "UNSUPPORTED_TOKEN_PROGRAM"
   | "TOKEN_DATA_MISSING"
   | "TOKEN_DATA_TOO_LARGE"
@@ -217,6 +217,9 @@ function decodeInput(
       return "TOKEN_DATA_TOO_LARGE";
     }
     return "INVALID_BASE64";
+  }
+  if (!Number.isSafeInteger(account.space) || account.space !== bytes.length) {
+    return "ACCOUNT_SPACE_MISMATCH";
   }
   return { bytes, programId: account.ownerProgramId, kind };
 }
