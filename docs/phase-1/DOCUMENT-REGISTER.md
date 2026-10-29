@@ -3,11 +3,11 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 2.5  
+**Register version:** 2.6  
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `a78f5ef38f393f32863ea15b126e36afe7437993`  
+**Source snapshot before this register refresh:** `f438e6b55e4e230ac172d64bc003ffacc81e0ce0`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -29,10 +29,11 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 ## Root entry points
 
-| Path | Git blob SHA in pre-register snapshot | Bytes |
-|---|---|---:|
+| Path | Coverage/status | Git blob SHA | Bytes |
+|---|---|---|---:|
 | `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `c17678839ddb02e1fd93aae4f90884a49d50bdaf` | 7058 |
 | `README.md` | Project overview, frozen roadmap, Phase 5 active status and current gates | `ff642a4ace7ac81c09e7b9f06a6993f94b97ed84` | 6678 |
+| `SECURITY.md` | Project-specific supported-branch and responsible vulnerability-reporting policy | `7c80c6cc4717412380050f53e5bf095d64f03e6b` | 2684 |
 
 ## Phase 1 documents
 
@@ -218,7 +219,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source tree `a78f5ef38f393f32863ea15b126e36afe7437993`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source tree `f438e6b55e4e230ac172d64bc003ffacc81e0ce0`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
