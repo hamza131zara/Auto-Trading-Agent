@@ -1,6 +1,6 @@
 # Phase 5 — Repository, Environments, CI/CD and Engineering Foundation
 
-**Status:** ACTIVE — the scaffold, contract/config regression tests, dependency update configuration and refreshed CI action pins are merged. Main-push baseline CI and multiple pull-request CI runs passed. Owner-side GitHub settings remain open.  
+**Status:** CLOSED for engineering-foundation handoff on 29 October 2026. The owner confirmed the repository security settings are complete; main-push and multiple PR CI jobs passed. See [Phase 5 closeout](06-phase-5-closeout-and-phase-6-handoff.md).  
 **Started:** 28 October 2026.  
 **Previous phase:** Phase 4 design baseline is locked for handoff.  
 **Canonical roadmap:** Roadmap v1.0 order remains frozen.
@@ -30,17 +30,18 @@ TypeScript 7.0.2 remains an exact engineering-bootstrap pin. Its successful CI c
 
 ## Verified CI evidence
 
-The main-push baseline completed successfully at commit `31ce3ea97efab31e003a7e0a49747118b0c7c5b4`: [workflow run 40739952683](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40739952683).
+The latest main-push workflow completed successfully at commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6`: [run 40814464474](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814464474).
 
-Subsequent pull-request runs also passed both the quality job and the full-history secret-scan job:
-
-- [PR #5 — contract and configuration regression checks, run 40809400085](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809400085)
+Pull-request CI runs also passed both the quality job and full-history secret scan:
+- [PR #5 — contract/config regression checks, run 40809400085](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809400085)
 - [PR #6 — Dependabot configuration cleanup, run 40809562729](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809562729)
-- [PR #7 — combined GitHub Actions pin refresh, run 40809677560](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809677560)
+- [PR #7 — combined action pin refresh, run 40809677560](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809677560)
+- [PR #8 — status/register refresh, run 40810130331](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40810130331)
+- [PR #9 — project-specific SECURITY.md, run 40814417411](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814417411)
 
-The current action pins are reviewed full commit SHAs for checkout 7.0.1, setup-node 7.1.0 and Gitleaks v3.0.0. PR #7 tested the combined pin changes in one run. The contract type checks now explicitly reject execution-authorizing decision outcomes, and config tests cover frozen results and exact lowercase boolean parsing.
+Current pins are full commit SHAs for checkout 7.0.1, setup-node 7.1.0 and Gitleaks v3.0.0. The root `SECURITY.md` policy is project-specific, and contract/config regression tests are active.
 
-The Dependency Review Action remains deferred because GitHub reported that this repository's dependency graph is not enabled. `npm audit --audit-level=high` is active and passed in the cited CI runs. Branch protection, required reviews and required status checks are not claimed enabled; an authorized owner must configure and verify them.
+The owner confirmed branch protection, required checks/reviews and dependency graph settings are complete. The connected GitHub integration could not read the classic branch-protection endpoint (403), so this is recorded as owner-confirmed rather than independently API-verified. The separate Dependency Review workflow is being re-enabled in the Phase 6 branch; its next PR run must verify that GitHub accepts the repository dependency graph. `npm audit --audit-level=high` remains active.
 
 ## Security invariants
 
