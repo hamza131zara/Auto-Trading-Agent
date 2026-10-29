@@ -40,7 +40,7 @@ function usage() {
     "  node scripts/validate-raydium-live-source.mjs --target <canonical-snapshot.json> [--output <new-report.json>]",
     "  node scripts/validate-raydium-live-source.mjs --pool-address <pair> --base-mint <mint> --quote-mint <mint> [--output <new-report.json>]",
     "",
-    "The second mode fetches the explicitly named pair from DEX Screener before the read-only RPC check."
+    "The second mode fetches the explicitly named pair from DEX Screener before the read-only RPC check.",
     "",
     "Required environment variables:",
     "  ATA_LIVE_SOURCE_APPROVAL=APPROVED_READ_ONLY_MAINNET_RPC",
