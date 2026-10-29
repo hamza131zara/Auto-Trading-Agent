@@ -10,6 +10,8 @@ import {
   RAYDIUM_CPMM_POOL_STATE_LENGTH,
   RAYDIUM_CPMM_AMM_CONFIG_LENGTH,
   RAYDIUM_CPMM_PROGRAM_ID,
+  inspectUpgradeableProgramAccount,
+  assessUpgradeableProgramDeployment,
   SPL_TOKEN_PROGRAM_ID,
   SPL_TOKEN_2022_PROGRAM_ID,
   decodeSplTokenAccount,
@@ -230,8 +232,19 @@ function readOperatorConfiguration(env) {
   }
   const minContextSlot = readPositiveInteger(env, "ATA_LIVE_MIN_CONTEXT_SLOT", Number.MAX_SAFE_INTEGER);
   const maxRetrievalAgeMs = readPositiveInteger(env, "ATA_LIVE_MAX_RETRIEVAL_AGE_MS", 300_000);
+  const expectedProgramElfSha256 = (env.ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256 ?? "").trim();
+  if (expectedProgramElfSha256.length > 0 && !/^[a-f0-9]{64}$/.test(expectedProgramElfSha256)) {
+    throw codedError("EXPECTED_PROGRAM_ELF_SHA256_INVALID");
+  }
+  if (expectedProgramElfSha256.length > 0 &&
+      env.ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW !== "EXPECTED_RAYDIUM_ELF_HASH_REVIEWED") {
+    throw codedError("PROGRAM_BUILD_HASH_REVIEW_REQUIRED");
+  }
 
-  return { endpoint, providerId, minContextSlot, maxRetrievalAgeMs };
+  return {
+    endpoint, providerId, minContextSlot, maxRetrievalAgeMs,
+    expectedProgramElfSha256: expectedProgramElfSha256 || null
+  };
 }
 
 export function buildMarketDataReportSection(target) {
@@ -428,8 +441,136 @@ export function buildOnChainReserveEvidence(target, bundle, pool) {
   };
 }
 
-function buildReport({ target, bundle, assessment, config, generatedAt }) {
+async function buildProgramDeploymentVerification(reader, bundle, config, requestId) {
+  const programAccount = bundle.accounts.find((item) => item.address === RAYDIUM_CPMM_PROGRAM_ID) ?? null;
+  const inspection = programAccount === null
+    ? { valid: false, programDataAddress: null, reasonCodes: ["PROGRAM_ACCOUNT_MISSING"] }
+    : inspectUpgradeableProgramAccount(programAccount, RAYDIUM_CPMM_PROGRAM_ID, UPGRADEABLE_LOADER_PROGRAM_ID);
+  const common = {
+    programId: RAYDIUM_CPMM_PROGRAM_ID,
+    loaderProgramId: UPGRADEABLE_LOADER_PROGRAM_ID,
+    programDataAddress: inspection.programDataAddress,
+    programAccountContextSlot: bundle.source.contextSlot,
+    identityBundleContextSlot: bundle.source.contextSlot,
+    programDataContextSlot: null,
+    expectedElfSha256: config.expectedProgramElfSha256,
+    observedElfSha256: null,
+    elfByteLength: null,
+    deploymentSlot: null,
+    upgradeAuthorityPresent: null,
+    synthetic: bundle.source.synthetic,
+    programDataReadAttempted: false,
+    programDataRpcEvidence: null,
+    tradingAuthorized: false
+  };
+  if (config.expectedProgramElfSha256 === null) {
+    return {
+      ...common,
+      status: "NOT_ASSESSED",
+      reasonCodes: inspection.valid ? ["EXPECTED_REFERENCE_ELF_SHA256_REQUIRED"] : inspection.reasonCodes
+    };
+  }
+  if (programAccount === null || !inspection.valid || inspection.programDataAddress === null) {
+    const failure = await assessUpgradeableProgramDeployment({
+      programAccount: programAccount ?? {
+        address: RAYDIUM_CPMM_PROGRAM_ID, exists: false, ownerProgramId: null,
+        executable: null, dataBase64: null, space: null
+      },
+      programDataAccount: null,
+      expectedProgramId: RAYDIUM_CPMM_PROGRAM_ID,
+      expectedElfSha256: config.expectedProgramElfSha256,
+      programAccountContextSlot: bundle.source.contextSlot,
+      programDataContextSlot: null,
+      synthetic: bundle.source.synthetic,
+      loaderProgramId: UPGRADEABLE_LOADER_PROGRAM_ID
+    });
+    return { ...common, ...failure, programDataReadAttempted: false };
+  }
+  let dataBundle;
+  try {
+    // Re-read both accounts in one response/context slot to bind the pointer and bytecode atomically.
+    dataBundle = await reader.readAccounts({
+      addresses: [RAYDIUM_CPMM_PROGRAM_ID, inspection.programDataAddress],
+      commitment: "finalized",
+      minContextSlot: bundle.source.contextSlot,
+      requestId: requestId + "-deployment"
+    });
+  } catch {
+    return {
+      ...common,
+      status: "INSUFFICIENT_EVIDENCE",
+      reasonCodes: ["PROGRAMDATA_RPC_READ_FAILED"],
+      programDataReadAttempted: true
+    };
+  }
+  const programAtSlot = dataBundle.accounts[0] ?? null;
+  const programDataAccount = dataBundle.accounts[1] ?? null;
+  if (programAtSlot === null) {
+    return {
+      ...common,
+      status: "INSUFFICIENT_EVIDENCE",
+      reasonCodes: ["PROGRAM_ACCOUNT_MISSING_AT_VERIFICATION_SLOT"],
+      programAccountContextSlot: dataBundle.source.contextSlot,
+      programDataContextSlot: dataBundle.source.contextSlot,
+      programDataReadAttempted: true,
+      programDataRpcEvidence: {
+        providerId: dataBundle.source.providerId,
+        commitment: dataBundle.source.commitment,
+        retrievedAt: dataBundle.source.retrievedAt,
+        contextSlot: dataBundle.source.contextSlot,
+        requestId: dataBundle.source.requestId,
+        rawPayloadSha256: dataBundle.source.rawPayloadSha256,
+        synthetic: dataBundle.source.synthetic
+      }
+    };
+  }
+  const result = await assessUpgradeableProgramDeployment({
+    programAccount: programAtSlot,
+    programDataAccount,
+    expectedProgramId: RAYDIUM_CPMM_PROGRAM_ID,
+    expectedElfSha256: config.expectedProgramElfSha256,
+    programAccountContextSlot: dataBundle.source.contextSlot,
+    programDataContextSlot: dataBundle.source.contextSlot,
+    synthetic: bundle.source.synthetic || dataBundle.source.synthetic,
+    loaderProgramId: UPGRADEABLE_LOADER_PROGRAM_ID
+  });
+  return {
+    ...result,
+    identityBundleContextSlot: bundle.source.contextSlot,
+    programDataReadAttempted: true,
+    programDataRpcEvidence: {
+      providerId: dataBundle.source.providerId,
+      commitment: dataBundle.source.commitment,
+      retrievedAt: dataBundle.source.retrievedAt,
+      contextSlot: dataBundle.source.contextSlot,
+      requestId: dataBundle.source.requestId,
+      rawPayloadSha256: dataBundle.source.rawPayloadSha256,
+      synthetic: dataBundle.source.synthetic
+    }
+  };
+}
+
+function buildReport({ target, bundle, assessment, config, generatedAt, programDeploymentVerification = null }) {
   const pool = assessment.pool;
+  const deploymentVerification = programDeploymentVerification ?? {
+    status: "NOT_ASSESSED",
+    reasonCodes: ["EXPECTED_REFERENCE_ELF_SHA256_REQUIRED"],
+    programId: RAYDIUM_CPMM_PROGRAM_ID,
+    programDataAddress: null,
+    loaderProgramId: UPGRADEABLE_LOADER_PROGRAM_ID,
+    deploymentSlot: null,
+    upgradeAuthorityPresent: null,
+    programAccountContextSlot: bundle.source.contextSlot,
+    identityBundleContextSlot: bundle.source.contextSlot,
+    programDataContextSlot: null,
+    expectedElfSha256: null,
+    observedElfSha256: null,
+    elfByteLength: null,
+    synthetic: bundle.source.synthetic,
+    programDataReadAttempted: false,
+    programDataRpcEvidence: null,
+    tradingAuthorized: false
+  };
   return {
     schemaVersion: "ata.phase6.live-source-validation.v1",
     generatedAt,
@@ -442,6 +583,7 @@ function buildReport({ target, bundle, assessment, config, generatedAt }) {
         assessment.canProceedToIndependentSafetyReview === true &&
         bundle.source.synthetic === false,
       canProceedToIndependentSafetyReview: assessment.canProceedToIndependentSafetyReview,
+      programDeploymentVerificationPassed: deploymentVerification.status === "MATCH",
       phase6Complete: false,
       productionProviderApprovedByThisReport: false,
       tradingAuthorized: false
@@ -464,6 +606,7 @@ function buildReport({ target, bundle, assessment, config, generatedAt }) {
     },
     marketData: buildMarketDataReportSection(target),
     onChainReserves: buildOnChainReserveEvidence(target, bundle, pool),
+    programDeploymentVerification: deploymentVerification,
     rpcEvidence: {
       providerId: bundle.source.providerId,
       commitment: bundle.source.commitment,
@@ -512,6 +655,8 @@ function buildReport({ target, bundle, assessment, config, generatedAt }) {
       "This report proves neither provider honesty nor complete market-data freshness.",
       "Identity MATCH is not token-safety approval, production provider approval, or trading authorization.",
       "Token-2022 extension-bearing accounts remain blocked pending Phase 7 review.",
+      "Program deployment hash comparison requires a reference ELF hash from a separately reviewed source build; a supplied hash alone does not prove the build process was trustworthy.",
+      "If an upgrade authority is present, a matched ELF hash describes the observed deployment only and can change after the read.",
       "A failed or inconclusive run does not validate the target identity."
     ]
   };
@@ -575,7 +720,8 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     allowedTokenProgramIds: [SPL_TOKEN_PROGRAM_ID, SPL_TOKEN_2022_PROGRAM_ID],
     allowedLoaderProgramIds: [UPGRADEABLE_LOADER_PROGRAM_ID]
   });
-  const report = buildReport({ target, bundle, assessment, config, generatedAt });
+  const programDeploymentVerification = await buildProgramDeploymentVerification(reader, bundle, config, requestId);
+  const report = buildReport({ target, bundle, assessment, config, generatedAt, programDeploymentVerification });
   const output = JSON.stringify(report, null, 2) + "\n";
 
   if (args.output !== null) {
@@ -586,7 +732,10 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     }
   }
   console.log(output);
-  return report.result.identityGatePassed ? 0 : 1;
+  const identityPassed = report.result.identityGatePassed;
+  const expectedHashSupplied = config.expectedProgramElfSha256 !== null;
+  const deployedHashMatched = report.programDeploymentVerification.status === "MATCH";
+  return identityPassed && (!expectedHashSupplied || deployedHashMatched) ? 0 : 1;
 }
 
 export { buildReport, readOperatorConfiguration };

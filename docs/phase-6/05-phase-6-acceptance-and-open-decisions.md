@@ -1,6 +1,6 @@
 # Phase 6.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active, not complete. Discovery checked 45 accounts and cross-checked 24 CPMM candidates; none met existing thresholds. The live Pyth comparison remains a 63-bps reserve/reference disagreement against a 10-bps diagnostic tolerance; DEX Screener source timestamps remain missing. GeckoTerminal has separate pool-details and timestamped OHLCV price-evidence paths: pool-details metrics remain freshness-unknown; the manual Pyth runner supports OHLCV price evidence as an explicit choice, defaults to DEX Screener, and requires separate default-no terms/budget and source-review approvals for GeckoTerminal. CI [run #229](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40934354059) passed 191/191 tests, typecheck, build, repository validation, dependency audit and Gitleaks. CI makes no provider API request, and no live GeckoTerminal request was made as part of this implementation. Provider-use rights, attribution, effective quota and live fallback remain open; production approval and trading authorization remain false. See [Phase 6.17](17-timestamped-indexed-price-comparison-runner.md).
+**Status:** Active, not complete. Discovery checked 45 accounts and cross-checked 24 CPMM candidates; none met unchanged thresholds. The live Pyth comparison remains a 63-bps reserve/reference disagreement against a 10-bps diagnostic tolerance; DEX Screener source timestamps remain missing. GeckoTerminal OHLCV is an opt-in price-only comparison path with default-no terms and source-review gates. Phase 6.18 adds an optional deployed Raydium ProgramData ELF hash comparison, but it remains NOT_ASSESSED until a separately reviewed source-build hash is supplied. No ProgramData read is made by default or in CI. CI run #231 passed after workflow freshness input edits; the program-deployment integrity changes are pending CI. Production provider approval and trading authorization remain false.
 
 ## Acceptance checklist
 
@@ -57,3 +57,15 @@
 - [ ] Approve GeckoTerminal current use rights, attribution, storage, quota and budget for intended use; separately authorize any manual live request.
 
 No provider plan is purchased or assumed. Pool thresholds and the diagnostic comparison tolerance are unchanged. Phase 6 completion, production provider approval, and trading authorization remain false.
+
+
+## Phase 6.18 — Deployed Raydium CPMM bytecode integrity
+
+- [x] Add strict parsing of upgradeable-loader Program and ProgramData account state, the ProgramData pointer, metadata, deployment slot, upgrade-authority indicator, ELF magic and ELF SHA-256.
+- [x] Add deterministic tests for hash match/mismatch, missing source reference, synthetic evidence, wrong ProgramData address, malformed loader metadata and context-slot ordering.
+- [x] Wire an optional Program + ProgramData read at a shared finalized context slot into the manual identity runner when a reviewed reference ELF hash is supplied.
+- [x] Require separate affirmative build/hash review when a reference hash is supplied; no expected hash is set by default.
+- [ ] Independently build the exact pinned Raydium source with a reviewed toolchain, preserve build provenance, and obtain owner-approved live verification evidence.
+- [ ] Review upgrade-authority findings and current deployment policy before production selection.
+
+No live ProgramData request has been made by this change. Missing reference hash remains NOT_ASSESSED; Phase 6 completion and trading authorization remain false.

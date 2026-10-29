@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — live discovery found no pool meeting unchanged thresholds. Live Pyth comparison returned DISAGREEMENT (63 bps vs 10 bps); DEX Screener price remains NOT_ASSESSED due to missing source timestamp. The disabled GeckoTerminal pool-details adapter remains unknown-freshness for complete snapshots; the separate OHLCV price path is wired to the manual comparator but defaults to DEX Screener and requires two separate affirmative approvals to use GeckoTerminal. CI [#229](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40934354059) passed 191/191 tests, typecheck, build, repository validation, dependency audit and Gitleaks. No live GeckoTerminal request was made. Terms/use-rights, attribution, effective rate quota, source timestamp semantics for pool metrics, and live fallback remain open.
+**Status:** ACTIVE — live discovery found no pool meeting unchanged thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps); DEX Screener source timestamp remains missing. GeckoTerminal OHLCV is wired as an opt-in price-only path behind default-no terms/source approvals. Phase 6.18 adds optional Raydium ProgramData ELF hash verification, which is NOT_ASSESSED until a reviewed reference build hash is provided; no ProgramData read occurs by default or in CI. Provider terms/use rights, freshness semantics, build provenance, program upgrade authority, independent market fields, and live fallback remain open. Phase 6 remains active; trading is not authorized.
 **Started:** 29 October 2026.
 **Previous phase:** Phase 5 closed for engineering-foundation handoff; see [Phase 5 closeout](../phase-5/06-phase-5-closeout-and-phase-6-handoff.md).
 **Canonical roadmap:** Frozen Roadmap v1.0; phase order is unchanged.
@@ -35,6 +35,7 @@
 15. [Pyth Hermes USD reference adapter and manual validation](15-pyth-hermes-reference-adapter.md)
 16. [GeckoTerminal provider review and read-only adapter](16-geckoterminal-provider-review-and-adapter.md)
 17. [Timestamped indexed-price evidence in the manual reserve comparator](17-timestamped-indexed-price-comparison-runner.md)
+18. [Raydium CPMM deployed-program integrity evidence](18-raydium-program-deployment-integrity.md)
 
 ## Initial implementation boundary
 
@@ -88,3 +89,8 @@ The agreement evaluator requires at least two eligible independent providers; re
 ## Exit rule
 
 **Phase 6 remains ACTIVE.** The protocol-decoder implementation item now has synthetic test coverage, but Phase 6 cannot close until an integrated identity assessment succeeds against a real, independently sourced pool using an owner-approved read-only RPC source, the chosen RPC/indexed-provider plans and their current terms/quota/retention behavior are reviewed, the usage budget is explicitly approved, and the selected provider's fallback/degraded modes are tested. A mock run cannot count as live-source verification. Closing Phase 6 does not authorize token-safety scoring (Phase 7) or execution.
+
+
+## Program deployment integrity
+
+Phase 6.18 adds an optional SHA-256 verification path for the Raydium CPMM ELF bytes stored in the loader-v3 ProgramData account. This is separate from the identity decoder: it remains NOT_ASSESSED without an independently reviewed source-build hash, and no additional ProgramData request occurs by default or in CI. A matched hash is evidence of byte equality to that reference only and does not certify the build, permanently pin an upgradeable program, or authorize trading. See [Phase 6.18](18-raydium-program-deployment-integrity.md).

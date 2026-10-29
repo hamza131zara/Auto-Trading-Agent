@@ -2153,3 +2153,14 @@ export type {
   RaydiumCpmmPoolDecodeResult,
   RaydiumCpmmPoolState
 } from "./raydium-cpmm-decoder.js";
+
+export {
+  UPGRADEABLE_LOADER_PROGRAM_ID,
+  inspectUpgradeableProgramAccount,
+  assessUpgradeableProgramDeployment
+} from "./program-deployment-verification.js";
+export type {
+  UpgradeableProgramAccountInspection,
+  ProgramDeploymentVerificationStatus,
+  ProgramDeploymentVerificationResult
+} from "./program-deployment-verification.js";

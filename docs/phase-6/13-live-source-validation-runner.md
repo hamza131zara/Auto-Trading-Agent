@@ -162,3 +162,12 @@ A dedicated workflow is registered as `.github/workflows/phase6-live-source-vali
 The workflow requires no API key for the current DEX Screener pair GET or the Solana public RPC endpoint. Public RPC is shared and rate-limited; Solana advises using a private RPC provider for production infrastructure. This workflow does not select or approve a production RPC provider. If any approval is not confirmed, the provider network step does not execute.
 
 The workflow is manual-only so routine CI stays deterministic and does not depend on external APIs. The first real-source run is recorded above; future runs require a separate, justified operator decision. A report from this workflow is identity evidence only and must never be interpreted as production provider approval or trading authorization.
+
+
+## Optional deployed-program integrity check (Phase 6.18)
+
+The existing nine-account identity bundle confirms executable/loader ownership but does not by itself establish which bytecode is deployed. The optional program-deployment check decodes the Raydium program's upgradeable-loader Program state, then reads both the Program and its linked ProgramData address in a single finalized getMultipleAccounts response. It hashes only the ELF bytes after the loader metadata and compares that SHA-256 to an operator-supplied reference build hash. The report includes the shared deployment context slot, ProgramData account address, deployment slot, whether an upgrade authority remains, the expected and observed ELF hashes, and the ProgramData response digest; it never emits raw ELF bytes or the RPC URL.
+
+The workflow input expected_program_elf_sha256 is blank by default. Without a reference hash, the runner does not make the additional ProgramData read and reports NOT_ASSESSED. If a hash is supplied, confirm_program_build_hash_review must be yes; script preflight enforces the same approval before any provider request. A wrong hash causes an unsuccessful run. Synthetic fixtures can never produce operational MATCH. A hash match means only that the observed ELF bytes equal the supplied hash; it does not validate source-build provenance by itself. The reference must be produced from an independently reviewed build of the exact pinned Raydium source/toolchain, and an upgrade authority can change the deployed bytecode after the observed slot.
+
+See [Phase 6.18](18-raydium-program-deployment-integrity.md) for the byte layout, hash semantics, and remaining operator evidence needed. No live ProgramData read was performed during implementation or CI.

@@ -7,6 +7,7 @@ import {
   buildOnChainReserveEvidence,
   buildTargetSnapshotFromDexScreener,
   parseArgs,
+  readOperatorConfiguration,
   validateLiveTargetSnapshot,
   validateRpcEndpoint
 } from "../scripts/validate-raydium-live-source.mjs";
@@ -327,4 +328,52 @@ test("CLI checks operator approvals before attempting live indexed API or RPC ac
   assert.equal(result.status, 2);
   assert.match(result.stderr, /READ_ONLY_MAINNET_APPROVAL_REQUIRED/);
   assert.doesNotMatch(result.stderr, /api\.dexscreener\.com|api\.mainnet\.solana\.com/);
+});
+
+
+function validOperatorEnvironment(overrides = {}) {
+  return {
+    ATA_LIVE_SOURCE_APPROVAL: "APPROVED_READ_ONLY_MAINNET_RPC",
+    ATA_LIVE_TARGET_SOURCE_APPROVAL: "INDEPENDENT_INDEXED_SOURCE_REVIEWED",
+    ATA_LIVE_PROVIDER_TERMS_APPROVAL: "TERMS_QUOTA_AND_BUDGET_REVIEWED",
+    ATA_SOLANA_RPC_URL: "https://rpc.example.invalid/read-only",
+    ATA_SOLANA_RPC_PROVIDER_ID: "test-rpc",
+    ATA_LIVE_MIN_CONTEXT_SLOT: "1",
+    ATA_LIVE_MAX_RETRIEVAL_AGE_MS: "30000",
+    ...overrides
+  };
+}
+
+test("program deployment hash check stays optional unless an owner-reviewed ELF hash is supplied", () => {
+  const config = readOperatorConfiguration(validOperatorEnvironment());
+  assert.equal(config.expectedProgramElfSha256, null);
+  assert.equal(config.providerId, "test-rpc");
+});
+
+test("program deployment reference hash requires a separate affirmative build-review acknowledgement", () => {
+  assert.throws(
+    () => readOperatorConfiguration(validOperatorEnvironment({
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: "a".repeat(64)
+    })),
+    { code: "PROGRAM_BUILD_HASH_REVIEW_REQUIRED" }
+  );
+});
+
+test("program deployment reference hash validates format before any provider request", () => {
+  assert.throws(
+    () => readOperatorConfiguration(validOperatorEnvironment({
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: "not-a-hash",
+      ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: "EXPECTED_RAYDIUM_ELF_HASH_REVIEWED"
+    })),
+    { code: "EXPECTED_PROGRAM_ELF_SHA256_INVALID" }
+  );
+});
+
+test("reviewed program deployment reference hash is accepted as a per-run evidence input", () => {
+  const expected = "b".repeat(64);
+  const config = readOperatorConfiguration(validOperatorEnvironment({
+    ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: expected,
+    ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: "EXPECTED_RAYDIUM_ELF_HASH_REVIEWED"
+  }));
+  assert.equal(config.expectedProgramElfSha256, expected);
 });

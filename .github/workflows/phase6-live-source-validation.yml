@@ -23,6 +23,18 @@ on:
         description: Maximum RPC evidence retrieval age in milliseconds (1-300000)
         required: true
         type: string
+      expected_program_elf_sha256:
+        description: Optional SHA-256 of raydium_cp_swap.so built from the reviewed pinned source/toolchain; leave blank to skip ProgramData read and report NOT_ASSESSED
+        required: false
+        type: string
+      confirm_program_build_hash_review:
+        description: I independently reviewed the pinned source/build process and verified the supplied reference ELF hash belongs to that exact build
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
       confirm_read_only_rpc:
         description: I approve one read-only validation against Solana's public Mainnet RPC (not production infrastructure)
         required: true
@@ -82,6 +94,8 @@ jobs:
           CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}
           CONFIRM_INDEXED_SOURCE_REVIEW: ${{ inputs.confirm_indexed_source_review }}
           CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
+          EXPECTED_PROGRAM_ELF_SHA256: ${{ inputs.expected_program_elf_sha256 }}
+          CONFIRM_PROGRAM_BUILD_HASH_REVIEW: ${{ inputs.confirm_program_build_hash_review }}
         run: |
           if [[ "$CONFIRM_READ_ONLY_RPC" != "yes" ]]; then
             echo "::error::Read-only mainnet RPC approval was not confirmed."
@@ -94,6 +108,16 @@ jobs:
           if [[ "$CONFIRM_PROVIDER_TERMS_BUDGET" != "yes" ]]; then
             echo "::error::Current provider terms/quota/usage-budget review was not confirmed."
             exit 2
+          fi
+          if [[ -n "$EXPECTED_PROGRAM_ELF_SHA256" ]]; then
+            if [[ ! "$EXPECTED_PROGRAM_ELF_SHA256" =~ ^[a-f0-9]{64}$ ]]; then
+              echo "::error::Expected program ELF hash must be lowercase SHA-256 hex."
+              exit 2
+            fi
+            if [[ "$CONFIRM_PROGRAM_BUILD_HASH_REVIEW" != "yes" ]]; then
+              echo "::error::Program build/hash review is required when an expected ELF hash is supplied."
+              exit 2
+            fi
           fi
 
       - name: Run one explicit live-source identity validation
@@ -108,6 +132,8 @@ jobs:
           ATA_SOLANA_RPC_PROVIDER_ID: solana-public-shared
           ATA_LIVE_MIN_CONTEXT_SLOT: ${{ inputs.minimum_context_slot }}
           ATA_LIVE_MAX_RETRIEVAL_AGE_MS: ${{ inputs.max_retrieval_age_ms }}
+          ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: ${{ inputs.expected_program_elf_sha256 }}
+          ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: ${{ inputs.confirm_program_build_hash_review == 'yes' && 'EXPECTED_RAYDIUM_ELF_HASH_REVIEWED' || 'NOT_REVIEWED' }}
         run: |
           node scripts/validate-raydium-live-source.mjs \
             --pool-address "$POOL_ADDRESS" \
