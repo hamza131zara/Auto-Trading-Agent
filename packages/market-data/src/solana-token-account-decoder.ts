@@ -340,3 +340,158 @@ export function decodeSplTokenAccount(account: SolanaRpcRawAccount): SplTokenDec
     ? { status: "DECODED", value, errorCode: null }
     : { status: "EXTENSIONS_UNINSPECTED", value, errorCode: null };
 }
+
+
+export type Token2022StateKind = "MINT" | "TOKEN_ACCOUNT";
+
+export interface Token2022ExtensionEntry {
+  /** Raw extension enum value from the TLV header; it is not a safety classification. */
+  readonly typeCode: number;
+  readonly length: number;
+  /** Byte offset in the decoded account data; the payload itself is not returned. */
+  readonly valueOffset: number;
+}
+
+export type Token2022TlvErrorCode =
+  | SplTokenDecodeErrorCode
+  | "NO_EXTENSION_ENTRIES"
+  | "INVALID_TLV_HEADER"
+  | "TLV_LENGTH_OUT_OF_BOUNDS"
+  | "DUPLICATE_EXTENSION_TYPE"
+  | "INVALID_TLV_TERMINATOR";
+
+export type Token2022ExtensionLayoutResult =
+  | {
+      readonly status: "NO_EXTENSIONS";
+      readonly address: string;
+      readonly accountKind: Token2022StateKind;
+      readonly extensions: readonly [];
+      readonly baseStateEligibleForIdentityEvidence: true;
+      readonly errorCode: null;
+    }
+  | {
+      readonly status: "INSPECTED";
+      readonly address: string;
+      readonly accountKind: Token2022StateKind;
+      readonly extensions: readonly Token2022ExtensionEntry[];
+      readonly terminatedByUninitializedType: boolean;
+      readonly trailingZeroPaddingBytes: number;
+      /** Even structurally valid extension TLVs need a separate semantic policy. */
+      readonly baseStateEligibleForIdentityEvidence: false;
+      readonly errorCode: null;
+    }
+  | {
+      readonly status: "ERROR";
+      readonly address: string | null;
+      readonly accountKind: Token2022StateKind;
+      readonly extensions: readonly [];
+      readonly baseStateEligibleForIdentityEvidence: false;
+      readonly errorCode: Token2022TlvErrorCode;
+    };
+
+function readU16LE(bytes: Uint8Array, offset: number): number | null {
+  if (offset < 0 || offset + 2 > bytes.length) return null;
+  return bytes[offset]! + bytes[offset + 1]! * 0x100;
+}
+
+/**
+ * Validates the structural Token-2022 TLV framing only. It returns numeric
+ * extension IDs and offsets, never extension values, and never classifies the
+ * semantic/safety effect of an extension. Any account with extension entries
+ * remains ineligible for on-chain identity evidence until a separately reviewed
+ * extension policy validates all known and unknown extension semantics.
+ */
+export function inspectToken2022ExtensionLayout(
+  account: SolanaRpcRawAccount,
+  accountKind: Token2022StateKind
+): Token2022ExtensionLayoutResult {
+  const fail = (errorCode: Token2022TlvErrorCode): Token2022ExtensionLayoutResult => ({
+    status: "ERROR",
+    address: typeof account?.address === "string" ? account.address : null,
+    accountKind,
+    extensions: [],
+    baseStateEligibleForIdentityEvidence: false,
+    errorCode
+  });
+
+  if (accountKind !== "MINT" && accountKind !== "TOKEN_ACCOUNT") {
+    return fail("ACCOUNT_ENVELOPE_INVALID");
+  }
+  const input = decodeInput(account);
+  if (typeof input === "string") return fail(input);
+  if (input.kind !== "TOKEN_2022" || input.programId !== SPL_TOKEN_2022_PROGRAM_ID) {
+    return fail("UNSUPPORTED_TOKEN_PROGRAM");
+  }
+
+  const baseLength = accountKind === "MINT" ? BASE_MINT_LENGTH : BASE_TOKEN_ACCOUNT_LENGTH;
+  const expectedType = accountKind === "MINT"
+    ? TOKEN_2022_MINT_ACCOUNT_TYPE
+    : TOKEN_2022_TOKEN_ACCOUNT_TYPE;
+  const prepared = prepareBaseState(input, baseLength, expectedType);
+  if (typeof prepared === "string") return fail(prepared);
+  if (prepared.extensionState === "NONE") {
+    return {
+      status: "NO_EXTENSIONS",
+      address: account.address,
+      accountKind,
+      extensions: [],
+      baseStateEligibleForIdentityEvidence: true,
+      errorCode: null
+    };
+  }
+
+  const bytes = prepared.bytes;
+  let offset = EXTENDED_ACCOUNT_TYPE_OFFSET + 1;
+  const extensions: Token2022ExtensionEntry[] = [];
+  const seen = new Set<number>();
+  let terminatedByUninitializedType = false;
+  let trailingZeroPaddingBytes = 0;
+
+  while (offset < bytes.length) {
+    const remaining = bytes.length - offset;
+    if (remaining < 4) {
+      for (let index = offset; index < bytes.length; index += 1) {
+        if (bytes[index] !== 0) return fail("INVALID_TLV_HEADER");
+      }
+      trailingZeroPaddingBytes = remaining;
+      offset = bytes.length;
+      break;
+    }
+
+    const typeCode = readU16LE(bytes, offset);
+    const length = readU16LE(bytes, offset + 2);
+    if (typeCode === null || length === null) return fail("INVALID_TLV_HEADER");
+
+    if (typeCode === 0) {
+      if (length !== 0) return fail("INVALID_TLV_TERMINATOR");
+      for (let index = offset + 4; index < bytes.length; index += 1) {
+        if (bytes[index] !== 0) return fail("INVALID_TLV_TERMINATOR");
+      }
+      terminatedByUninitializedType = true;
+      trailingZeroPaddingBytes = bytes.length - (offset + 4);
+      offset = bytes.length;
+      break;
+    }
+
+    if (seen.has(typeCode)) return fail("DUPLICATE_EXTENSION_TYPE");
+    const valueOffset = offset + 4;
+    const valueEnd = valueOffset + length;
+    if (valueEnd > bytes.length) return fail("TLV_LENGTH_OUT_OF_BOUNDS");
+
+    extensions.push({ typeCode, length, valueOffset });
+    seen.add(typeCode);
+    offset = valueEnd;
+  }
+
+  if (extensions.length === 0) return fail("NO_EXTENSION_ENTRIES");
+  return {
+    status: "INSPECTED",
+    address: account.address,
+    accountKind,
+    extensions,
+    terminatedByUninitializedType,
+    trailingZeroPaddingBytes,
+    baseStateEligibleForIdentityEvidence: false,
+    errorCode: null
+  };
+}

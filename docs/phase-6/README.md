@@ -28,6 +28,7 @@
 8. [On-chain identity evidence contract](08-on-chain-identity-evidence-contract.md)
 9. [Read-only Solana RPC account reader](09-solana-rpc-account-reader.md)
 10. [SPL Token base-state decoder](10-spl-token-base-state-decoder.md)
+11. [Token-2022 extension TLV structure inspector](11-token2022-extension-tlv-inspector.md)
 
 ## Initial implementation boundary
 
@@ -47,6 +48,10 @@ A read-only DEX Screener reference adapter is included for evaluation. Its fixtu
 ## Provider-selection gate
 
 Candidates remain those in the owner-approved provider matrix (Solana RPC, Helius, DEX Screener, Birdeye and other reviewed sources as appropriate). This phase must not turn the research shortlist or earlier dated pricing snapshot into an implied vendor commitment. A provider adapter may be considered production-ready only after endpoint/version and terms review, quota/budget selection, schema validation, timeout/retry/circuit-breaker behavior, fallback/disagreement tests, and deterministic fixtures pass.
+
+## Token-2022 extension TLV structure
+
+The structural inspector in [Phase 6.11](11-token2022-extension-tlv-inspector.md) validates TLV entry boundaries, lengths, duplicate types and termination, returning type codes and offsets without payload bytes. Any inspected extension layout remains ineligible for identity evidence until a reviewed semantic policy classifies known and unknown extension types.
 
 ## SPL Token base-state decoder
 

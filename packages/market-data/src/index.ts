@@ -1349,3 +1349,12 @@ export type {
   TokenAccountState,
   TokenExtensionState
 } from "./solana-token-account-decoder.js";
+
+
+export { inspectToken2022ExtensionLayout } from "./solana-token-account-decoder.js";
+export type {
+  Token2022ExtensionEntry,
+  Token2022ExtensionLayoutResult,
+  Token2022StateKind,
+  Token2022TlvErrorCode
+} from "./solana-token-account-decoder.js";
