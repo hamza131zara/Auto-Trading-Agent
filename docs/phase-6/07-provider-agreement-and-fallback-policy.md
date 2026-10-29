@@ -16,7 +16,7 @@ Every candidate contains:
 - the provider-health snapshot for that same ID;
 - either a canonical observation or explicit `null` when the provider did not produce one.
 
-The policy requires an injected UTC evaluation time and an explicit maximum age. Freshness is recomputed with the canonical freshness function; a caller-supplied `FRESH` label is not accepted as proof. A candidate is eligible only when its canonical snapshot validates, provenance provider ID matches the candidate ID, the pool identity exists, provider health is `HEALTHY`, and recomputed freshness is `FRESH`.
+The policy requires an injected UTC evaluation time and separate explicit maximum ages for market observations and the provider-health snapshot. Both freshness values are recomputed with the canonical freshness function; a caller-supplied `FRESH` label or old `HEALTHY` state is not accepted as proof. The health snapshot is structurally checked for state-consistent timestamps/counters as well. A candidate is eligible only when its canonical snapshot validates, provenance provider ID matches the candidate ID, the pool identity exists, provider health is `HEALTHY`, and recomputed freshness is `FRESH`.
 
 Synthetic observations are rejected by default. Tests may pass `allowSyntheticFixtures: true` to exercise the comparison algorithm, but an agreement made with any synthetic observation cannot advance to on-chain validation. Unknown, stale, invalid, missing-timestamp and unhealthy observations remain rejected with stable reason codes.
 
