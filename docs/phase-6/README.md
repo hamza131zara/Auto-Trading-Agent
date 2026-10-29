@@ -48,7 +48,7 @@ Candidates remain those in the owner-approved provider matrix (Solana RPC, Heliu
 
 ## On-chain identity evidence boundary
 
-The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry. It does not fetch RPC data or decode raw account bytes. The read-only `getMultipleAccounts` reader and protocol-specific decoder are still required before any live identity result may be claimed.
+The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry with disjoint DEX/token/loader roles. It does not fetch RPC data or decode raw account bytes. The read-only `getMultipleAccounts` reader and protocol-specific decoder are still required before any live identity result may be claimed.
 
 ## Provider agreement and fallback safeguards
 
