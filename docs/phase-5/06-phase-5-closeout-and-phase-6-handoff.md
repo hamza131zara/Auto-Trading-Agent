@@ -10,7 +10,7 @@
 - Repository validation, strict typecheck/build, deterministic config tests, compile-time contract tests, npm audit and Gitleaks full-history scanning passed in the recorded main/PR CI runs.
 - GitHub Action versions are pinned by full commit SHA.
 - The owner confirmed that the requested repository settings were completed on 29 October 2026. The GitHub integration used for this workflow could not read the classic branch-protection endpoint because its API permission was denied; therefore the configuration confirmation is owner-reported rather than independently API-verified here.
-- The standalone Dependency Review Action remains deferred in workflow because prior runs reported the dependency graph unavailable. The owner reports the settings are now complete; reintroduce Dependency Review only after a fresh repository run confirms the graph is actually active and the action succeeds. `npm audit --audit-level=high` remains active meanwhile.
+- The standalone Dependency Review Action has been reintroduced in the Phase 6 PR and passed [run 40815728124](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815728124), confirming that GitHub accepted the dependency graph for that run. `npm audit --audit-level=high` remains active in parallel.
 - Root `SECURITY.md` contains project-specific vulnerability-reporting guidance; private reporting must be enabled in the GitHub UI to make its preferred channel available.
 
 ## Phase 5 exit disposition
