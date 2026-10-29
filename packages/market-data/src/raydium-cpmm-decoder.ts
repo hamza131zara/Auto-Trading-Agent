@@ -10,7 +10,8 @@ import {
   decodeSplTokenMint,
   inspectToken2022ExtensionLayout,
   assessToken2022ExtensionPolicy,
-  SPL_TOKEN_2022_PROGRAM_ID
+  SPL_TOKEN_2022_PROGRAM_ID,
+  SPL_TOKEN_PROGRAM_ID
 } from "./solana-token-account-decoder.js";
 import type { SolanaRpcRawAccount, SolanaRpcAccountBundle } from "./solana-rpc-reader.js";
 import { SolanaRpcAccountReader } from "./solana-rpc-reader.js";
@@ -349,7 +350,9 @@ async function createProgramAddress(
     programBytes,
     UTF8.encode(PDA_MARKER)
   ]);
-  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", digestInput));
+  const digestInputBuffer = new ArrayBuffer(digestInput.byteLength);
+  new Uint8Array(digestInputBuffer).set(digestInput);
+  const digest = new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", digestInputBuffer));
   if (isEd25519CurvePoint(digest)) return null;
   return encodeBase58(digest);
 }
