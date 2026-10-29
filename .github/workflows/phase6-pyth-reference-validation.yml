@@ -1,0 +1,188 @@
+name: Phase 6 read-only Pyth reserve-price validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      pool_address:
+        description: Exact reviewed diagnostic pool (must match the currently approved SOL/USDC scope)
+        required: true
+        type: string
+        default: "47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4"
+      base_mint:
+        description: Wrapped SOL mint
+        required: true
+        type: string
+        default: "So11111111111111111111111111111111111111112"
+      quote_mint:
+        description: Canonical USDC mint
+        required: true
+        type: string
+        default: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      minimum_context_slot:
+        description: Finalized RPC slot floor from the prior verified run
+        required: true
+        type: string
+        default: "462883564"
+      max_rpc_retrieval_age_ms:
+        description: Maximum age of live RPC evidence (1-300000)
+        required: true
+        type: string
+        default: "300000"
+      max_reference_source_age_ms:
+        description: Owner-reviewed maximum age for Pyth published prices; no default is supplied
+        required: true
+        type: string
+      max_reference_retrieval_age_ms:
+        description: Owner-reviewed maximum age since Pyth prices were retrieved; no default is supplied
+        required: true
+        type: string
+      max_future_skew_ms:
+        description: Owner-reviewed allowed future timestamp skew; no default is supplied
+        required: true
+        type: string
+      max_deviation_bps:
+        description: Owner-reviewed comparison tolerance in basis points; no default is supplied
+        required: true
+        type: string
+      confirm_read_only_rpc:
+        description: I approve one read-only request to Solana public Mainnet RPC
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_indexed_source_review:
+        description: I reviewed this exact DEX Screener pool/mint pair for this run
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_provider_terms_budget:
+        description: I reviewed DEX Screener and public RPC terms, rate limits, retention, and this run's budget
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_pyth_provider_review:
+        description: I reviewed Pyth's current API-key requirement, feed IDs, plan/terms, limits, and usage budget
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_comparison_policy_review:
+        description: I approved the four freshness/deviation values entered above for this diagnostic run only
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase6-pyth-reference-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Read-only Pyth USD reference and CPMM reserve comparison
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Require explicit approvals and validate policy before network calls
+        env:
+          CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}
+          CONFIRM_INDEXED_SOURCE_REVIEW: ${{ inputs.confirm_indexed_source_review }}
+          CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
+          CONFIRM_PYTH_PROVIDER_REVIEW: ${{ inputs.confirm_pyth_provider_review }}
+          CONFIRM_COMPARISON_POLICY_REVIEW: ${{ inputs.confirm_comparison_policy_review }}
+          PYTH_API_KEY: ${{ secrets.PYTH_API_KEY }}
+          MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
+          MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
+          MAX_FUTURE_SKEW_MS: ${{ inputs.max_future_skew_ms }}
+          MAX_DEVIATION_BPS: ${{ inputs.max_deviation_bps }}
+        run: |
+          set -euo pipefail
+          for approval in CONFIRM_READ_ONLY_RPC CONFIRM_INDEXED_SOURCE_REVIEW CONFIRM_PROVIDER_TERMS_BUDGET CONFIRM_PYTH_PROVIDER_REVIEW CONFIRM_COMPARISON_POLICY_REVIEW; do
+            if [[ "${!approval}" != "yes" ]]; then
+              echo "::error::Required approval missing: $approval"
+              exit 2
+            fi
+          done
+          if [[ -z "${PYTH_API_KEY:-}" ]]; then
+            echo "::error::Repository secret PYTH_API_KEY is missing; no provider requests were made."
+            exit 2
+          fi
+          for field in MAX_REFERENCE_SOURCE_AGE_MS MAX_REFERENCE_RETRIEVAL_AGE_MS MAX_FUTURE_SKEW_MS MAX_DEVIATION_BPS; do
+            if [[ ! "${!field}" =~ ^(0|[1-9][0-9]*)$ ]]; then
+              echo "::error::Invalid comparison-policy input: $field"
+              exit 2
+            fi
+          done
+          if (( MAX_REFERENCE_SOURCE_AGE_MS < 1 || MAX_REFERENCE_SOURCE_AGE_MS > 86400000 )); then
+            echo "::error::MAX_REFERENCE_SOURCE_AGE_MS must be 1..86400000."
+            exit 2
+          fi
+          if (( MAX_REFERENCE_RETRIEVAL_AGE_MS < 1 || MAX_REFERENCE_RETRIEVAL_AGE_MS > 300000 )); then
+            echo "::error::MAX_REFERENCE_RETRIEVAL_AGE_MS must be 1..300000."
+            exit 2
+          fi
+          if (( MAX_FUTURE_SKEW_MS > 60000 )); then
+            echo "::error::MAX_FUTURE_SKEW_MS must be 0..60000."
+            exit 2
+          fi
+          if (( MAX_DEVIATION_BPS > 10000 )); then
+            echo "::error::MAX_DEVIATION_BPS must be 0..10000."
+            exit 2
+          fi
+
+      - name: Run manual read-only Pyth reference validation
+        env:
+          PYTH_API_KEY: ${{ secrets.PYTH_API_KEY }}
+          POOL_ADDRESS: ${{ inputs.pool_address }}
+          BASE_MINT: ${{ inputs.base_mint }}
+          QUOTE_MINT: ${{ inputs.quote_mint }}
+          MINIMUM_CONTEXT_SLOT: ${{ inputs.minimum_context_slot }}
+          MAX_RPC_RETRIEVAL_AGE_MS: ${{ inputs.max_rpc_retrieval_age_ms }}
+          MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
+          MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
+          MAX_FUTURE_SKEW_MS: ${{ inputs.max_future_skew_ms }}
+          MAX_DEVIATION_BPS: ${{ inputs.max_deviation_bps }}
+          CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}
+          CONFIRM_INDEXED_SOURCE_REVIEW: ${{ inputs.confirm_indexed_source_review }}
+          CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
+          CONFIRM_PYTH_PROVIDER_REVIEW: ${{ inputs.confirm_pyth_provider_review }}
+          CONFIRM_COMPARISON_POLICY_REVIEW: ${{ inputs.confirm_comparison_policy_review }}
+          ATA_LIVE_SOURCE_APPROVAL: APPROVED_READ_ONLY_MAINNET_RPC
+          ATA_LIVE_TARGET_SOURCE_APPROVAL: INDEPENDENT_INDEXED_SOURCE_REVIEWED
+          ATA_LIVE_PROVIDER_TERMS_APPROVAL: TERMS_QUOTA_AND_BUDGET_REVIEWED
+          ATA_SOLANA_RPC_URL: https://api.mainnet.solana.com
+          ATA_SOLANA_RPC_PROVIDER_ID: solana-public-shared
+          ATA_LIVE_MIN_CONTEXT_SLOT: ${{ inputs.minimum_context_slot }}
+          ATA_LIVE_MAX_RETRIEVAL_AGE_MS: ${{ inputs.max_rpc_retrieval_age_ms }}
+        run: node scripts/validate-pyth-reserve-price.mjs

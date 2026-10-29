@@ -11,6 +11,10 @@
     "./providers/dex-screener": {
       "types": "./dist/providers/dex-screener.d.ts",
       "import": "./dist/providers/dex-screener.js"
+    },
+    "./providers/pyth-hermes": {
+      "types": "./dist/providers/pyth-hermes.d.ts",
+      "import": "./dist/providers/pyth-hermes.js"
     }
   },
   "scripts": {
