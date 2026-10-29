@@ -36,6 +36,7 @@ test("live-source target rejects synthetic and replay-fixture evidence", () => {
 
   const replayTarget = structuredClone(baseTarget);
   replayTarget.provenance.sourceKind = "REPLAY_FIXTURE";
+  replayTarget.provenance.synthetic = true;
   assert.throws(() => validateLiveTargetSnapshot(replayTarget, "approved-rpc"), {
     code: "TARGET_MUST_BE_REAL_INDEXED_SOURCE_EVIDENCE"
   });
