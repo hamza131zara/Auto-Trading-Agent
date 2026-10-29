@@ -592,7 +592,6 @@ interface EvaluatedProviderEvidence {
 const PROVIDER_HEALTH_STATES = new Set<ProviderHealthState>([
   "UNKNOWN", "HEALTHY", "DEGRADED", "UNAVAILABLE", "CIRCUIT_OPEN"
 ]);
-const FRESHNESS_STATES = new Set<DataFreshnessState>(["FRESH", "STALE", "UNKNOWN", "INVALID"]);
 
 function isValidAgreementPolicy(policy: ProviderAgreementPolicy): boolean {
   return isRecord(policy) &&
@@ -734,10 +733,13 @@ export function assessProviderAgreement(
             providerId: candidate.providerId,
             priority: candidate.priority,
             snapshot,
-            sourceTimestamp
+            sourceTimestamp: sourceTimestamp!
           });
         }
       }
+    }
+    if (candidate.health.state !== "HEALTHY" && !reasons.includes("PROVIDER_NOT_HEALTHY")) {
+      reasons.push("PROVIDER_NOT_HEALTHY");
     }
     if (reasons.length > 0) {
       rejected.push({ providerId: candidate.providerId, reasonCodes: reasons });
