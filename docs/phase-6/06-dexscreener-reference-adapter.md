@@ -39,7 +39,9 @@ Do not turn an unknown timestamp into a pass or freshness score. Until independe
 
 ## Decimal integrity, response size and errors
 
-- The response body is capped at 1,000,000 bytes.
+- The response body is capped at 1,000,000 bytes while streaming; the adapter cancels the body as soon as the limit is exceeded instead of buffering an unbounded body. A larger declared `Content-Length` is rejected before body reading.
+- Redirects are rejected so the fixed provider host cannot silently redirect the adapter to another destination.
+- Response decoding is strict UTF-8; invalid byte sequences fail as parse errors rather than being replacement-decoded before the provenance digest is computed.
 - A token-preserving JSON scan wraps numeric lexemes as strings before parsing, preserving the decimal source spelling rather than first converting it to IEEE-754.
 - Valid exponent-form numeric lexemes are expanded to decimal strings using string operations, not floating-point arithmetic, within a conservative size bound. Unsupported/invalid measures are rejected.
 - The exact response body is represented by a SHA-256 provenance digest. The raw response body, URL query credentials, or provider error body are not included in canonical observations or error messages.
