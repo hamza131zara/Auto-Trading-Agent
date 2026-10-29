@@ -464,6 +464,10 @@ export function decodeRaydiumCpmmPool(account: SolanaRpcRawAccount): RaydiumCpmm
     if (publicKey === null) return failDecode("INVALID_PUBLIC_KEY_BYTES");
     keys.set(name, publicKey);
   }
+  const token0Bytes = decodeBase58(keys.get("token0Mint")!);
+  const token1Bytes = decodeBase58(keys.get("token1Mint")!);
+  if (token0Bytes === null || token1Bytes === null) return failDecode("INVALID_PUBLIC_KEY_BYTES");
+  if (compareBytes(token0Bytes, token1Bytes) >= 0) return failDecode("INVALID_MINT_ORDER");
 
   const authBump = bytes[POOL_STATE_OFFSETS.authBump]!;
   const status = bytes[POOL_STATE_OFFSETS.status]!;
