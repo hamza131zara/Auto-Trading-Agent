@@ -191,7 +191,7 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
     now: () => "2026-10-29T09:00:00.000Z"
   });
 
-  assert.equal(calls.length, 5); // Raydium pool list, one RPC bundle, two exact CPMM pair lookups
+  assert.equal(calls.length, 4); // Raydium pool list, one RPC bundle, two exact CPMM pair lookups
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
   assert.equal(report.sources.raydiumApi.providerId, "raydium-api-v3");
   assert.equal(report.sources.raydiumApi.freshness, "UNKNOWN");
@@ -252,7 +252,6 @@ test("does not admit a CPMM pool if the API program ID disagrees with the on-cha
 });
 
 test("wrong PoolState size fails closed", async () => {
-  const base = mockFetchFactory();
   const fetchImpl = async (input, init = {}) => {
     const url = String(input);
     if (poolApiUrl(url)) {
@@ -273,7 +272,6 @@ test("wrong PoolState size fails closed", async () => {
     }
     throw new Error("DEX Screener should not be called after bad PoolState data");
   };
-  void base;
   const report = await discoverRaydiumCpmmCandidates({ env: approvals, fetchImpl });
   assert.equal(report.selectionPolicy.candidateCount, 0);
 });
