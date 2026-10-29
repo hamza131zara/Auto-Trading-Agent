@@ -32,7 +32,7 @@ The first package is provider-neutral and performs validation, time/freshness as
 - Main-push CI passed on merge commit `2ba2bdd357257d2d01799f8f7a80bc7439a942ec`: [run 40816041202](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816041202). This includes repository validation, strict typecheck, build, Node tests, `npm audit` and Gitleaks.
 - Dependency Review passed on PR #10: [run 40815954105](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815954105).
 - GitHub's optional AI code-scan workflow passed on PR #10: [run 40815955521](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815955521).
-- CodeQL analysis on the main merge commit was still in progress when this evidence note was drafted: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698). Do not treat a pending scan as a passing result.
+- CodeQL analysis on the main merge commit completed successfully: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698).
 
 ## Provider-selection gate
 
