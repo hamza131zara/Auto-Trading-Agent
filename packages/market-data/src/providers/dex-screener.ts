@@ -302,9 +302,14 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
     const envelope = normalizeEnvelope(rawPayload);
     if (envelope === null) return { observations: [], errors: ["INVALID_PROVIDER_ENVELOPE"] };
     const request = envelope.requested;
+    try {
+      validateRequest(request);
+    } catch {
+      return { observations: [], errors: ["INVALID_PROVIDER_REQUEST"] };
+    }
     const requestedAt = context.requestedAt;
     const retrievedAt = context.retrievedAt;
-    if (!isUtcTimestamp(requestedAt) || !isUtcTimestamp(retrievedAt)) {
+    if (!isUtcTimestamp(requestedAt) || !isUtcTimestamp(retrievedAt) || requestedAt !== request.requestedAt) {
       return { observations: [], errors: ["INVALID_NORMALIZATION_TIMESTAMP"] };
     }
 
