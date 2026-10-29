@@ -231,9 +231,9 @@ test("missing evidence files, non-ELF bytes and mismatched reference lengths fai
   assert.equal(badBytes.result.status, "BLOCKED");
   assert.ok(badBytes.result.reasonCodes.includes("BUILD_A_ARTIFACT_ELF_MAGIC_INVALID"));
 
-  const missingBytes = review(makeManifest(), { artifactBBytes: undefined, manifestBytes: undefined });
-  // The standard fixture has bytes by default; exercise absent raw manifest bytes separately below.
-  assert.equal(missingBytes.result.status, "PASS_MANIFEST_AND_ARTIFACT_CONSISTENCY");
+  const missingBytes = review(makeManifest(), { artifactBBytes: null });
+  assert.equal(missingBytes.result.status, "BLOCKED");
+  assert.ok(missingBytes.result.reasonCodes.includes("BUILD_B_ARTIFACT_BYTES_MISSING"));
 
   const wrongLengthManifest = makeManifest();
   wrongLengthManifest.referenceArtifact.byteLength += 1;
