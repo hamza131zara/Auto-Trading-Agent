@@ -1,0 +1,115 @@
+name: Phase 6 read-only live-source validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      pool_address:
+        description: Exact Solana pair/pool address already reviewed in DEX Screener
+        required: true
+        type: string
+      base_mint:
+        description: Exact base-token mint as indexed by DEX Screener
+        required: true
+        type: string
+      quote_mint:
+        description: Exact quote-token mint as indexed by DEX Screener
+        required: true
+        type: string
+      minimum_context_slot:
+        description: Explicit finalized context-slot floor for this validation
+        required: true
+        type: string
+      max_retrieval_age_ms:
+        description: Maximum RPC evidence retrieval age in milliseconds (1-300000)
+        required: true
+        type: string
+      confirm_read_only_rpc:
+        description: I approve one read-only validation against Solana's public Mainnet RPC (not production infrastructure)
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_indexed_source_review:
+        description: I reviewed the exact indexed pair/mints and accept DEX Screener as the one-off indexed source
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_provider_terms_budget:
+        description: I reviewed current API terms, public rate limits, retention implications, and one-off usage budget
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase6-live-source-validation-\${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Read-only DEX Screener + Solana RPC identity check
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Require explicit operator acknowledgements before network calls
+        env:
+          CONFIRM_READ_ONLY_RPC: \${{ inputs.confirm_read_only_rpc }}
+          CONFIRM_INDEXED_SOURCE_REVIEW: \${{ inputs.confirm_indexed_source_review }}
+          CONFIRM_PROVIDER_TERMS_BUDGET: \${{ inputs.confirm_provider_terms_budget }}
+        run: |
+          if [[ "$CONFIRM_READ_ONLY_RPC" != "yes" ]]; then
+            echo "::error::Read-only mainnet RPC approval was not confirmed."
+            exit 2
+          fi
+          if [[ "$CONFIRM_INDEXED_SOURCE_REVIEW" != "yes" ]]; then
+            echo "::error::Independent indexed-source review was not confirmed."
+            exit 2
+          fi
+          if [[ "$CONFIRM_PROVIDER_TERMS_BUDGET" != "yes" ]]; then
+            echo "::error::Current provider terms/quota/usage-budget review was not confirmed."
+            exit 2
+          fi
+
+      - name: Run one explicit live-source identity validation
+        env:
+          POOL_ADDRESS: \${{ inputs.pool_address }}
+          BASE_MINT: \${{ inputs.base_mint }}
+          QUOTE_MINT: \${{ inputs.quote_mint }}
+          ATA_LIVE_SOURCE_APPROVAL: APPROVED_READ_ONLY_MAINNET_RPC
+          ATA_LIVE_TARGET_SOURCE_APPROVAL: INDEPENDENT_INDEXED_SOURCE_REVIEWED
+          ATA_LIVE_PROVIDER_TERMS_APPROVAL: TERMS_QUOTA_AND_BUDGET_REVIEWED
+          ATA_SOLANA_RPC_URL: https://api.mainnet.solana.com
+          ATA_SOLANA_RPC_PROVIDER_ID: solana-public-shared
+          ATA_LIVE_MIN_CONTEXT_SLOT: \${{ inputs.minimum_context_slot }}
+          ATA_LIVE_MAX_RETRIEVAL_AGE_MS: \${{ inputs.max_retrieval_age_ms }}
+        run: |
+          node scripts/validate-raydium-live-source.mjs \
+            --pool-address "$POOL_ADDRESS" \
+            --base-mint "$BASE_MINT" \
+            --quote-mint "$QUOTE_MINT"
