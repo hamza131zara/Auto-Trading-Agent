@@ -226,6 +226,11 @@ async function makeFixture() {
   target.poolAddress = pool.address;
   target.baseMint = baseMint;
   target.quoteMint = quoteMint;
+  target.dexProgramAddress = RAYDIUM_CPMM_PROGRAM_ID;
+  target.tokenProgramAddress = SPL_TOKEN_PROGRAM_ID;
+  if (target.price?.unit === "QUOTE_PER_BASE") {
+    target.price.assetId = quoteMint;
+  }
   // This target is deliberately synthetic. The integrated gate must never call it a live match.
   target.provenance.sourceKind = "REPLAY_FIXTURE";
   target.provenance.synthetic = true;
