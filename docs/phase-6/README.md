@@ -37,7 +37,7 @@
 17. [Timestamped indexed-price evidence in the manual reserve comparator](17-timestamped-indexed-price-comparison-runner.md)
 18. [Raydium CPMM deployed-program integrity evidence](18-raydium-program-deployment-integrity.md)
 19. [Pinned Raydium source build and reference hash evidence](19-raydium-reference-build-evidence.md)
-18. [Raydium CPMM deployed-program integrity evidence](18-raydium-program-deployment-integrity.md)
+20. [Local review of pinned Raydium reference-build evidence](20-reference-build-evidence-review.md)
 
 ## Initial implementation boundary
 
@@ -101,3 +101,8 @@ Phase 6.18 adds an optional SHA-256 verification path for the Raydium CPMM ELF b
 ## Pinned-source build evidence (Phase 6.19)
 
 The manual build workflow clones the pinned Raydium CPMM source commit, uses the checksum-pinned Solana Verify CLI and its Docker build environment, then performs two clean builds and compares exact ELF SHA-256 and byte length. The resulting manifest records the source commit/tree, critical build-input hashes, declared toolchain versions, binary checksum, both build outcomes and artifact digests. Implementation CI [#236](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40957968850) passed 213/213 tests, typecheck/build/repository validation, zero dependency vulnerabilities and Gitleaks. CI does not trigger the actual build workflow and no RPC/network identity request is included. Run it manually from `main` only when the build-only confirmation is intentionally set to `yes`. The build manifest is candidate evidence, not proof that the deployed program currently matches; the separate Phase 6.18 ProgramData check remains an explicit operator-reviewed step.
+
+
+## Local reference-build evidence review (Phase 6.20)
+
+A local-only review script and synthetic regression tests were added in [PR #32](https://github.com/hamza131zara/Auto-Trading-Agent/pull/32). CI [#238](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40959057478) passed 224/224 tests, repository validation, typecheck/build, dependency audit and Gitleaks; [Dependency Review run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40959057546) passed. The script checks a completed Phase 6.19 manifest against both supplied ELF files, recomputes SHA-256 and exact byte lengths, verifies the independent source/toolchain pins and fails closed on inconsistent or incomplete evidence. It does not prove GitHub artifact provenance, call RPC, inspect live ProgramData, or authorize trading. Phase 6.19's actual pinned source build still must be run manually before any reference artifact is considered; Phase 6.18 live verification remains a separate explicitly approved step.
