@@ -4,6 +4,7 @@ import {
   assessGeckoTerminalRequestPacing,
   GECKOTERMINAL_MIN_REQUEST_INTERVAL_MS,
   GeckoTerminalAdapterError,
+  GeckoTerminalOhlcvPriceAdapter,
   GeckoTerminalPoolAdapter
 } from "../packages/market-data/dist/providers/geckoterminal.js";
 import { validateCanonicalMarketSnapshot } from "../packages/market-data/dist/index.js";
@@ -80,6 +81,117 @@ test("public API request pacing fails closed inside the conservative interval", 
   });
   assert.equal(assessGeckoTerminalRequestPacing(8_000, first.nextAllowedAtMs).canStartRequest, true);
   assert.equal(assessGeckoTerminalRequestPacing(-1, 0).reasonCode, "INVALID_PACING_INPUT");
+});
+
+
+function ohlcvPayload(rows, metaOverrides = {}) {
+  return {
+    data: {
+      attributes: { ohlcv_list: rows }
+    },
+    meta: {
+      base: { address: TARGET.baseMint },
+      quote: { address: TARGET.quoteMint },
+      ...metaOverrides
+    }
+  };
+}
+
+test("OHLCV adapter extracts newest candle close and explicitly reports candle-start observation time", () => {
+  const adapter = new GeckoTerminalOhlcvPriceAdapter();
+  const result = adapter.normalize({
+    providerId: "geckoterminal",
+    requested: TARGET,
+    payload: ohlcvPayload([
+      [1793275200, 99.8, 100.2, 99.7, 100.1, 1234.5],
+      [1793275260, 100.1, 100.5, 100.0, 100.25, 987.6],
+      [1793275140, 99.5, 99.9, 99.4, 99.8, 1500.0]
+    ]),
+    rawPayloadSha256: "d".repeat(64),
+    synthetic: true
+  }, {
+    requestedAt: TARGET.requestedAt,
+    retrievedAt: "2026-10-29T12:01:02.000Z",
+    requestId: "geckoterminal-ohlcv-test"
+  });
+
+  assert.deepEqual(result.errors, []);
+  assert.ok(result.observation);
+  assert.equal(result.observation.priceUsdPerBase, "100.25");
+  assert.equal(result.observation.candleStartAt, new Date(1793275260 * 1000).toISOString());
+  assert.equal(result.observation.timeframe, "minute");
+  assert.equal(result.observation.aggregate, 1);
+  assert.equal(result.observation.synthetic, true);
+  assert.equal(result.observation.poolAddress, TARGET.poolAddress);
+});
+
+test("OHLCV adapter rejects mismatched base/quote metadata", () => {
+  const adapter = new GeckoTerminalOhlcvPriceAdapter();
+  const result = adapter.normalize({
+    providerId: "geckoterminal",
+    requested: TARGET,
+    payload: ohlcvPayload([[1793275200, 99, 100, 98, 99.5, 10]], {
+      base: { address: "11111111111111111111111111111111" }
+    }),
+    rawPayloadSha256: "e".repeat(64),
+    synthetic: true
+  }, {
+    requestedAt: TARGET.requestedAt,
+    retrievedAt: "2026-10-29T12:01:02.000Z",
+    requestId: "geckoterminal-ohlcv-test"
+  });
+  assert.equal(result.observation, null);
+  assert.deepEqual(result.errors, ["OHLCV_MINT_IDENTITY_MISMATCH"]);
+});
+
+test("OHLCV adapter rejects conflicting duplicate latest candles and malformed closes", () => {
+  const adapter = new GeckoTerminalOhlcvPriceAdapter();
+  const context = {
+    requestedAt: TARGET.requestedAt,
+    retrievedAt: "2026-10-29T12:01:02.000Z",
+    requestId: "geckoterminal-ohlcv-test"
+  };
+  const base = {
+    providerId: "geckoterminal",
+    requested: TARGET,
+    rawPayloadSha256: "f".repeat(64),
+    synthetic: true
+  };
+  const duplicate = adapter.normalize({
+    ...base,
+    payload: ohlcvPayload([
+      [1793275260, 100, 101, 99, 100.25, 1],
+      [1793275260, 100, 101, 99, 100.26, 1]
+    ])
+  }, context);
+  assert.equal(duplicate.observation, null);
+  assert.deepEqual(duplicate.errors, ["OHLCV_DUPLICATE_LATEST_CANDLE"]);
+
+  const malformed = adapter.normalize({
+    ...base,
+    payload: ohlcvPayload([[1793275260, 100, 101, 99, "not-a-price", 1]])
+  }, context);
+  assert.equal(malformed.observation, null);
+  assert.deepEqual(malformed.errors, ["OHLCV_CLOSE_INVALID"]);
+});
+
+test("OHLCV adapter requests the pinned exact-pool minute endpoint", async () => {
+  let calledUrl = "";
+  let options;
+  const adapter = new GeckoTerminalOhlcvPriceAdapter(async (url, init) => {
+    calledUrl = String(url);
+    options = init;
+    return response(ohlcvPayload([[1793275260, 100, 101, 99, 100.25, 1]]));
+  });
+  const raw = await adapter.fetchRaw(TARGET, new AbortController().signal);
+  assert.match(calledUrl, /\/networks\/solana\/pools\/47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4\/ohlcv\/minute/);
+  assert.match(calledUrl, /aggregate=1/);
+  assert.match(calledUrl, /limit=5/);
+  assert.match(calledUrl, /currency=usd/);
+  assert.match(calledUrl, /token=base/);
+  assert.equal(options.headers.accept, "application/json;version=20230203");
+  assert.equal(raw.synthetic, true);
+  assert.match(raw.rawPayloadSha256, /^[a-f0-9]{64}$/);
 });
 
 test("normalizes exact pool and explicit market measures without inventing snapshot time", () => {
