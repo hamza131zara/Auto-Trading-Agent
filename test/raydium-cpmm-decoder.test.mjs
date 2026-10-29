@@ -290,27 +290,37 @@ test("rejects an incorrect owner, executable state, size and Anchor discriminato
   assert.equal(decodeRaydiumCpmmPool({ ...poolRaw, dataBase64: badBytes.toString("base64") }).errorCode, "INVALID_POOL_DISCRIMINATOR");
 });
 
-test("read helper requests pool/program/mints/derived vaults at an explicit slot and integrated assessment remains synthetic", async () => {
+test("reads Raydium pool dependencies in a second common-slot bundle and keeps synthetic evidence blocked", async () => {
   const fixture = await makeFixture();
+  let callCount = 0;
   const reader = new SolanaRpcAccountReader({
     endpoint: "https://rpc.example.invalid/path",
     providerId: "test-rpc",
     clock: () => retrievedAt,
     fetchImpl: async (_url, init) => {
+      callCount += 1;
       const request = JSON.parse(String(init?.body));
       assert.equal(request.method, "getMultipleAccounts");
       assert.equal(request.params[1].commitment, "finalized");
-      assert.equal(request.params[1].minContextSlot, 400);
       assert.equal(request.params[1].encoding, "base64");
       const addresses = request.params[0];
-      assert.deepEqual(addresses, [
-        fixture.pool.address,
-        RAYDIUM_CPMM_PROGRAM_ID,
-        baseMint,
-        quoteMint,
-        (await deriveRaydiumCpmmVaultPda(fixture.pool.address, baseMint)).address,
-        (await deriveRaydiumCpmmVaultPda(fixture.pool.address, quoteMint)).address
-      ]);
+      if (callCount === 1) {
+        assert.deepEqual(addresses, [fixture.pool.address]);
+        assert.equal(request.params[1].minContextSlot, 400);
+      } else {
+        assert.equal(request.params[1].minContextSlot, 500);
+        assert.deepEqual(addresses, [
+          fixture.pool.address,
+          RAYDIUM_CPMM_PROGRAM_ID,
+          fixture.pool ? decodeRaydiumCpmmPool(fixture.rawAccounts.get(fixture.pool.address)).value.ammConfig : "",
+          fixture.lpMint.address,
+          baseMint,
+          quoteMint,
+          (await deriveRaydiumCpmmVaultPda(fixture.pool.address, baseMint)).address,
+          (await deriveRaydiumCpmmVaultPda(fixture.pool.address, quoteMint)).address,
+          fixture.observation.address
+        ]);
+      }
       return new Response(JSON.stringify({
         jsonrpc: "2.0",
         id: request.id,
@@ -336,14 +346,17 @@ test("read helper requests pool/program/mints/derived vaults at an explicit slot
     minContextSlot: 400,
     requestId: "raydium-cpmm-test-001"
   });
+  assert.equal(callCount, 2);
   assert.equal(bundle.source.contextSlot, 500);
+  assert.equal(bundle.source.requestedMinContextSlot, 500);
   assert.equal(bundle.source.synthetic, true);
-  assert.equal(bundle.accounts.length, 6);
+  assert.equal(bundle.accounts.length, 9);
   const assessment = await assessRaydiumCpmmIdentityEvidence(fixture.target, bundle, policy());
   assert.equal(assessment.status, "SYNTHETIC_MATCH");
   assert.equal(assessment.canProceedToIndependentSafetyReview, false);
   assert.equal(assessment.tradingAuthorized, false);
   assert.equal(assessment.pool.canonicalPoolPdaMatches, true);
+  assert.equal(assessment.ammConfig.index, 7);
 });
 
 test("blocks pool/vault identity mismatches and missing vault accounts", async () => {
