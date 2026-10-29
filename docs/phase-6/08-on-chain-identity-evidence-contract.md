@@ -1,6 +1,6 @@
 # Phase 6.8 — On-Chain Identity Evidence Contract
 
-**Status:** The deterministic evidence-bundle checker is implemented with synthetic tests. A production RPC reader and approved protocol-specific account decoder are not implemented. This contract must not be described as completed live on-chain verification.
+**Status:** The deterministic evidence-bundle checker and the generic read-only JSON-RPC transport are implemented with synthetic/mock tests. An approved protocol-specific account decoder is not implemented, and no production RPC provider is selected. This contract must not be described as completed live on-chain verification.
 
 ## Why this is a separate gate
 
@@ -12,7 +12,7 @@ The official [Solana `getMultipleAccounts` RPC documentation](https://solana.com
 
 `assessOnChainIdentityEvidence(target, evidence, policy)` is a pure deterministic checker. It performs no network calls and does not decode raw account bytes. A future read-only RPC reader and a versioned protocol-specific decoder must produce the evidence it consumes.
 
-The check requires:
+The separate reader returns raw base64 account data at a shared context slot; it does not decode protocol-specific pool layouts. The identity check requires:
 
 - **Explicit scope:** target must be a canonical Solana `mainnet-beta` observation with a non-null pool address.
 - **Read provenance:** safe RPC provider ID, UTC retrieval time, context slot, requested `minContextSlot`, commitment, request ID and SHA-256 of raw response bytes. Non-synthetic evidence without request ID or digest is insufficient.
