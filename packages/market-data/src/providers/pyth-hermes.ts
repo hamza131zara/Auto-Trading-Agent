@@ -259,7 +259,7 @@ export class PythHermesUsdPriceAdapter {
     if (!isUtcTimestamp(requestedAt)) throw new PythHermesAdapterError("UNKNOWN", false);
 
     const url = new URL("/hermes/v2/updates/price/latest", "https://pyth.dourolabs.app");
-    for (const feed of PYTH_REFERENCE_FEEDS) url.searchParams.append("ids[]", feed.feedId);
+    for (const feed of PYTH_REFERENCE_FEEDS) url.searchParams.append("ids[]", "0x" + feed.feedId);
     url.searchParams.set("parsed", "true");
     const timeoutSignal = AbortSignal.timeout(this.timeoutMs);
     const combinedSignal = AbortSignal.any([signal, timeoutSignal]);

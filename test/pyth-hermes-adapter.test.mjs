@@ -66,7 +66,7 @@ test("authenticated Hermes request asks for only pinned SOL/USD and USDC/USD fee
   const url = new URL(call.url);
   assert.equal(url.origin, "https://pyth.dourolabs.app");
   assert.equal(url.pathname, "/hermes/v2/updates/price/latest");
-  assert.deepEqual(url.searchParams.getAll("ids[]").sort(), [PYTH_SOL_USD_FEED_ID, PYTH_USDC_USD_FEED_ID].sort());
+  assert.deepEqual(url.searchParams.getAll("ids[]").sort(), ["0x" + PYTH_SOL_USD_FEED_ID, "0x" + PYTH_USDC_USD_FEED_ID].sort());
   assert.equal(url.searchParams.get("parsed"), "true");
   assert.equal(call.init.headers.authorization, "Bearer test-only-key");
   assert.equal(result.errors.length, 0);

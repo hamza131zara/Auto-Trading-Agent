@@ -79,6 +79,9 @@ function validatePreflight() {
 }
 
 function runIdentityValidation(target, env) {
+  // The Pyth credential is not needed by the child identity-only validator.
+  const identityEnv = { ...env };
+  delete identityEnv.PYTH_API_KEY;
   const child = spawnSync(process.execPath, [
     "scripts/validate-raydium-live-source.mjs",
     "--pool-address", target.pool,
@@ -88,7 +91,7 @@ function runIdentityValidation(target, env) {
     encoding: "utf8",
     timeout: 45_000,
     maxBuffer: 1_500_000,
-    env
+    env: identityEnv
   });
   if (child.error || child.status !== 0) throw new Error("LIVE_IDENTITY_VALIDATION_FAILED");
   let report;
