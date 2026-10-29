@@ -164,9 +164,8 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
     }
     if (url.startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
       const requestedAddress = url.split("/").at(-1);
-      return new Response(JSON.stringify(pairResponse(
-        dexPairs.filter((pair) => pair.pairAddress === requestedAddress)
-      )), {
+      const indexedPairs = dexPairs.filter((pair) => pair.pairAddress === requestedAddress);
+      return new Response(JSON.stringify(pairResponse(indexedPairs.length > 0 ? indexedPairs : null)), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -223,6 +222,53 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   assert.equal(report.candidates[1].meetsLiquidityAndVolumeThresholds, false);
   assert.equal(report.candidates.some((item) => item.poolAddress === HIGH_CLMM), false);
   assert.equal(report.candidates[0].sourceFreshness, "UNKNOWN");
+});
+
+test("treats a nullable DEX Screener pair list as not indexed without qualifying the pool", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const noIndexedPairsFetch = async (input, init = {}) => {
+    if (String(input).startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
+      return new Response(JSON.stringify({ schemaVersion: "1.0.0", pairs: null }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return fetchImpl(input, init);
+  };
+
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: noIndexedPairsFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+
+  assert.equal(report.status, "CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED");
+  assert.equal(report.selectionPolicy.scanIncomplete, false);
+  assert.equal(report.selectionPolicy.candidateCount, 2);
+  assert.equal(report.selectionPolicy.thresholdQualifiedCount, 0);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.equal(report.sources.dexScreener.poolLookupsAttempted, 2);
+  assert.equal(report.sources.dexScreener.poolLookupsFound, 0);
+  assert.ok(report.candidates.every((candidate) => candidate.dexScreenerPairFound === false));
+  assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds === false));
+});
+
+test("continues to reject a malformed non-null DEX Screener pairs value", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const malformedPairsFetch = async (input, init = {}) => {
+    if (String(input).startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
+      return new Response(JSON.stringify({ schemaVersion: "1.0.0", pairs: "unexpected" }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return fetchImpl(input, init);
+  };
+
+  await assert.rejects(
+    discoverRaydiumCpmmCandidates({ env: approvals, fetchImpl: malformedPairsFetch }),
+    { code: "DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID" }
+  );
 });
 
 test("accepts Raydium SDK page shape and supported HTTP envelope forms", async () => {
