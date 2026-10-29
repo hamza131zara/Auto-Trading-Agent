@@ -869,6 +869,51 @@ export async function assessRaydiumCpmmIdentityEvidence(
   const baseVaultDecode = decodeSplTokenAccount(baseVaultRaw);
   const quoteVaultDecode = decodeSplTokenAccount(quoteVaultRaw);
 
+  if (baseMintDecode.status === "EXTENSIONS_UNINSPECTED" ||
+      quoteMintDecode.status === "EXTENSIONS_UNINSPECTED" ||
+      baseVaultDecode.status === "EXTENSIONS_UNINSPECTED" ||
+      quoteVaultDecode.status === "EXTENSIONS_UNINSPECTED") {
+    const baseMintBlocked = extensionEvidenceBlocked(baseMintAccountRaw, "MINT");
+    const quoteMintBlocked = extensionEvidenceBlocked(quoteMintAccountRaw, "MINT");
+    const baseVaultBlocked = extensionEvidenceBlocked(baseVaultRaw, "TOKEN_ACCOUNT");
+    const quoteVaultBlocked = extensionEvidenceBlocked(quoteVaultRaw, "TOKEN_ACCOUNT");
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      ["TOKEN_2022_EXTENSION_POLICY_BLOCKED"],
+      [
+        ...(baseMintBlocked ? ["baseMintExtensions"] : []),
+        ...(quoteMintBlocked ? ["quoteMintExtensions"] : []),
+        ...(baseVaultBlocked ? ["baseVaultExtensions"] : []),
+        ...(quoteVaultBlocked ? ["quoteVaultExtensions"] : [])
+      ],
+      bundle,
+      pool,
+      undefined,
+      false,
+      ammConfig
+    );
+  }
+  if (baseMintDecode.status !== "DECODED" ||
+      quoteMintDecode.status !== "DECODED" ||
+      baseVaultDecode.status !== "DECODED" ||
+      quoteVaultDecode.status !== "DECODED") {
+    return result(
+      "MISMATCH",
+      ["TOKEN_BASE_STATE_DECODE_FAILED"],
+      [
+        ...(baseMintDecode.status !== "DECODED" ? ["baseMint:" + baseMintDecode.errorCode] : []),
+        ...(quoteMintDecode.status !== "DECODED" ? ["quoteMint:" + quoteMintDecode.errorCode] : []),
+        ...(baseVaultDecode.status !== "DECODED" ? ["baseVault:" + baseVaultDecode.errorCode] : []),
+        ...(quoteVaultDecode.status !== "DECODED" ? ["quoteVault:" + quoteVaultDecode.errorCode] : [])
+      ],
+      bundle,
+      pool,
+      undefined,
+      false,
+      ammConfig
+    );
+  }
+
   if (lpMintAccount.ownerProgramId !== SPL_TOKEN_PROGRAM_ID || lpMintDecode.status !== "DECODED" ||
       !lpMintDecode.value.initialized || lpMintDecode.value.decimals !== pool.lpMintDecimals ||
       (lpMintDecode.value.mintAuthority !== null && lpMintDecode.value.mintAuthority !== authority.address)) {
