@@ -1142,12 +1142,20 @@ function isValidOnChainIdentityPolicy(value: unknown): value is OnChainIdentityP
     if (!isValidApprovedPoolDecoder(decoder) || decoderPrograms.has(decoder.programId)) return false;
     decoderPrograms.add(decoder.programId);
   }
-  for (const field of ["allowedTokenProgramIds", "allowedLoaderProgramIds"] as const) {
-    const seen = new Set<string>();
+  const tokenPrograms = new Set<string>();
+  const loaderPrograms = new Set<string>();
+  for (const [field, seen] of [
+    ["allowedTokenProgramIds", tokenPrograms],
+    ["allowedLoaderProgramIds", loaderPrograms]
+  ] as const) {
     for (const address of value[field] as readonly unknown[]) {
       if (typeof address !== "string" || !isSolanaPublicKey(address) || seen.has(address)) return false;
       seen.add(address);
     }
+  }
+  if ([...decoderPrograms].some((address) => tokenPrograms.has(address) || loaderPrograms.has(address)) ||
+      [...tokenPrograms].some((address) => loaderPrograms.has(address))) {
+    return false;
   }
   return true;
 }
@@ -1282,10 +1290,16 @@ export function assessOnChainIdentityEvidence(
   addMismatch("decodedQuoteMint", decoded.quoteMint !== target.quoteMint);
   addMismatch("decodedBaseVault", decoded.baseVault !== evidence.baseVaultAccount.address);
   addMismatch("decodedQuoteVault", decoded.quoteVault !== evidence.quoteVaultAccount.address);
-  addMismatch("vaultAddressesNotDistinct",
-    evidence.baseVaultAccount.address === evidence.quoteVaultAccount.address ||
-    evidence.baseVaultAccount.address === evidence.poolAccount.address ||
-    evidence.quoteVaultAccount.address === evidence.poolAccount.address);
+  const identityAddresses = [
+    evidence.poolAccount.address,
+    evidence.dexProgramAccount.address,
+    evidence.baseMintAccount.address,
+    evidence.quoteMintAccount.address,
+    evidence.baseVaultAccount.address,
+    evidence.quoteVaultAccount.address
+  ];
+  addMismatch("identityAddressesNotDistinct",
+    new Set(identityAddresses).size !== identityAddresses.length);
   addMismatch("decoderId", approvedDecoder !== undefined && decoded.decoderId !== approvedDecoder.decoderId);
   addMismatch("decoderVersion", approvedDecoder !== undefined && decoded.decoderVersion !== approvedDecoder.decoderVersion);
 
