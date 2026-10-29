@@ -10,7 +10,7 @@ This workflow requests the SOL/USDC pools indexed by DEX Screener, filters exact
 
 `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`
 
-This owner check is important because DEX Screener's `raydium` label alone is not sufficient to distinguish CPMM from AMM v4 or CLMM. The program owner is the decisive classifier for this shortlist.
+This owner check is important because DEX Screener's `raydium` label alone is not sufficient to distinguish CPMM from AMM v4 or CLMM. For a CPMM-owned account, the workflow also invokes the pinned PoolState decoder and checks that the decoded token0/token1 mints are exactly the canonical Wrapped SOL and USDC mints (in either orientation). A wrong layout, discriminator or mint pair is excluded from the shortlist.
 
 ## Default triage thresholds
 
@@ -31,7 +31,7 @@ The workflow is manual-only; regular CI does not call DEX Screener or Solana RPC
 
 ## Report interpretation
 
-- `onChainProgram: RAYDIUM_CPMM` means the candidate pool account was returned at the reported finalized RPC context and its owner was the pinned CPMM program.
+- `onChainProgram: RAYDIUM_CPMM` means the candidate pool account was returned at the reported finalized RPC context, its owner and 637-byte PoolState layout decoded under the pinned decoder, and its decoded token0/token1 mints matched the canonical pair.
 - `meetsLiquidityAndVolumeThresholds: true` means the one indexed response met the run's triage filters. It is not independent confirmation of liquidity or volume.
 - `sourceFreshness: UNKNOWN` is deliberate. DEX Screener's pair mapping used by this project does not provide a trustworthy market-event timestamp.
 - `recommendedFollowUpPoolAddress` is only the highest indexed-liquidity pool that passed these filters and the CPMM owner check. It is a candidate for further validation, not a trading recommendation.
