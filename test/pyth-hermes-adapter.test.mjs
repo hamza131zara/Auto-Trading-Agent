@@ -79,7 +79,7 @@ test("authenticated Hermes request asks for only pinned SOL/USD and USDC/USD fee
   assert.equal(sol.priceUsd, "99.98");
   assert.equal(sol.confidenceUsd, "0.01234");
   assert.equal(sol.feedName, "SOL/USD");
-  assert.equal(sol.publishedAt, "2026-10-29T13:24:50.000Z");
+  assert.equal(sol.publishedAt, "2026-10-29T12:44:50.000Z");
   assert.equal(sol.retrievedAt, "2026-10-29T13:00:00.000Z");
   assert.equal(sol.synthetic, true, "injected fetch must remain synthetic");
   assert.equal(usdc.assetId, USDC_MAINNET_MINT);
