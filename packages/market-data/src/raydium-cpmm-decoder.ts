@@ -2,9 +2,7 @@ import {
   assessOnChainIdentityEvidence,
   isSolanaPublicKey,
   validateCanonicalMarketSnapshot,
-  type CanonicalMarketSnapshot,
   type OnChainIdentityAssessment,
-  type OnChainIdentityPolicy,
   type OnChainIdentityStatus
 } from "./index.js";
 import {
@@ -12,8 +10,7 @@ import {
   decodeSplTokenMint,
   inspectToken2022ExtensionLayout,
   assessToken2022ExtensionPolicy,
-  SPL_TOKEN_2022_PROGRAM_ID,
-  SPL_TOKEN_PROGRAM_ID
+  SPL_TOKEN_2022_PROGRAM_ID
 } from "./solana-token-account-decoder.js";
 import type { SolanaRpcRawAccount, SolanaRpcAccountBundle } from "./solana-rpc-reader.js";
 import { SolanaRpcAccountReader } from "./solana-rpc-reader.js";
@@ -115,7 +112,7 @@ export interface RaydiumCpmmPoolState {
   readonly creatorFeesToken1: string;
   readonly paddingHex: string;
   /** Informational only: Raydium's source also supports a signer-created non-PDA pool account. */
-  readonly canonicalPoolPdaMatches: boolean;
+  readonly canonicalPoolPdaMatches: boolean | null;
 }
 
 export type RaydiumCpmmPoolDecodeResult =
@@ -446,7 +443,7 @@ export function decodeRaydiumCpmmPool(account: SolanaRpcRawAccount): RaydiumCpmm
     values.set(name, value);
   }
 
-  let canonicalPoolPdaMatches = false;
+  const canonicalPoolPdaMatches: boolean | null = null;
   // A canonical pool PDA is useful provenance, but not required: upstream
   // initialization also permits a signer-created pool account with the same layout.
   // The caller/assessment derives and verifies the PDA when the AMM config is known.
@@ -638,7 +635,9 @@ export async function assessRaydiumCpmmIdentityEvidence(
   if (poolResult.status !== "DECODED") {
     return result("MISMATCH", ["RAYDIUM_POOL_DECODE_" + poolResult.errorCode], [], bundle);
   }
-  const pool = poolResult.value;
+  let pool = poolResult.value;
+  const canonicalPoolPda = await deriveRaydiumCpmmPoolPda(pool.ammConfig, pool.token0Mint, pool.token1Mint);
+  pool = { ...pool, canonicalPoolPdaMatches: canonicalPoolPda.address === pool.address };
   if (programAccount.address !== RAYDIUM_CPMM_PROGRAM_ID ||
       programAccount.ownerProgramId === null ||
       programAccount.executable !== true) {
@@ -663,12 +662,6 @@ export async function assessRaydiumCpmmIdentityEvidence(
   if (authority.bump !== pool.authBump) {
     return result("MISMATCH", ["POOL_AUTHORITY_BUMP_MISMATCH"], ["authBump"], bundle, pool);
   }
-  if (pool.token0Program !== token0VaultAccount.ownerProgramId ||
-      pool.token1Program !== token1VaultAccount.ownerProgramId) {
-    // The token program owner of each vault must match the program recorded for its mint.
-    // The token accounts themselves are checked below against each decoded mint's owner.
-  }
-
   const baseMintDecode = decodeSplTokenMint(baseMintAccountRaw);
   const quoteMintDecode = decodeSplTokenMint(quoteMintAccountRaw);
   const baseVaultDecode = decodeSplTokenAccount(baseVaultRaw);
