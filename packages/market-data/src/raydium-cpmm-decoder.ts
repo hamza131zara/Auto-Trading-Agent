@@ -168,6 +168,7 @@ export interface RaydiumCpmmIdentityAssessment {
   readonly sourceProviderId: string | null;
   readonly contextSlot: number | null;
   readonly pool: RaydiumCpmmPoolState | null;
+  readonly ammConfig: RaydiumCpmmAmmConfigState | null;
   readonly underlyingIdentityAssessment: OnChainIdentityAssessment | null;
   readonly canProceedToIndependentSafetyReview: boolean;
   readonly tradingAuthorized: false;
@@ -608,7 +609,8 @@ function result(
   bundle?: SolanaRpcAccountBundle,
   pool?: RaydiumCpmmPoolState,
   underlyingIdentityAssessment?: OnChainIdentityAssessment,
-  canProceedToIndependentSafetyReview = false
+  canProceedToIndependentSafetyReview = false,
+  ammConfig?: RaydiumCpmmAmmConfigState
 ): RaydiumCpmmIdentityAssessment {
   return {
     status,
@@ -617,6 +619,7 @@ function result(
     sourceProviderId: bundle?.source.providerId ?? null,
     contextSlot: bundle?.source.contextSlot ?? null,
     pool: pool ?? null,
+    ammConfig: ammConfig ?? null,
     underlyingIdentityAssessment: underlyingIdentityAssessment ?? null,
     canProceedToIndependentSafetyReview,
     tradingAuthorized: false
@@ -657,18 +660,48 @@ export async function readRaydiumCpmmIdentityBundle(
       (request.commitment !== "confirmed" && request.commitment !== "finalized") ||
       !Number.isSafeInteger(request.minContextSlot) ||
       request.minContextSlot < 0 ||
-      typeof request.requestId !== "string") {
+      typeof request.requestId !== "string" ||
+      !/^[A-Za-z0-9._:-]{1,110}$/.test(request.requestId)) {
     throw new TypeError("Invalid Raydium CPMM identity-read target or request");
   }
+
+  // The pool state contains the AMM-config and LP-mint addresses, so first perform
+  // a bounded one-account discovery read, then re-read the complete exact bundle
+  // at minContextSlot >= the discovery slot. The returned bundle is only the second
+  // response, keeping all evidence consumed by the validator on one shared slot.
+  const discovery = await reader.readAccounts({
+    addresses: [targetInput.poolAddress],
+    commitment: request.commitment,
+    minContextSlot: request.minContextSlot,
+    requestId: request.requestId + "-discovery",
+    ...(request.signal === undefined ? {} : { signal: request.signal })
+  });
+  const discoveryPool = discovery.accounts[0];
+  if (!discoveryPool?.exists) throw new TypeError("Raydium CPMM discovery pool account is missing");
+  const decoded = decodeRaydiumCpmmPool(discoveryPool);
+  if (decoded.status !== "DECODED") {
+    throw new TypeError("Raydium CPMM discovery failed (" + decoded.errorCode + ")");
+  }
+  const state = decoded.value;
+  const targetMatches =
+    (state.token0Mint === targetInput.baseMint && state.token1Mint === targetInput.quoteMint) ||
+    (state.token0Mint === targetInput.quoteMint && state.token1Mint === targetInput.baseMint);
+  if (!targetMatches) throw new TypeError("Raydium CPMM pool mints do not match requested target");
+
+  const lpMint = await deriveRaydiumCpmmLpMintPda(targetInput.poolAddress);
   const baseVault = await deriveRaydiumCpmmVaultPda(targetInput.poolAddress, targetInput.baseMint);
   const quoteVault = await deriveRaydiumCpmmVaultPda(targetInput.poolAddress, targetInput.quoteMint);
+  const observation = await deriveRaydiumCpmmObservationPda(targetInput.poolAddress);
   const addresses = [
     targetInput.poolAddress,
     RAYDIUM_CPMM_PROGRAM_ID,
+    state.ammConfig,
+    lpMint.address,
     targetInput.baseMint,
     targetInput.quoteMint,
     baseVault.address,
-    quoteVault.address
+    quoteVault.address,
+    observation.address
   ];
   if (new Set(addresses).size !== addresses.length) {
     throw new TypeError("Raydium identity account addresses must be distinct");
@@ -676,8 +709,8 @@ export async function readRaydiumCpmmIdentityBundle(
   return reader.readAccounts({
     addresses,
     commitment: request.commitment,
-    minContextSlot: request.minContextSlot,
-    requestId: request.requestId,
+    minContextSlot: Math.max(request.minContextSlot, discovery.source.contextSlot),
+    requestId: request.requestId + "-identity",
     ...(request.signal === undefined ? {} : { signal: request.signal })
   });
 }
@@ -718,14 +751,14 @@ export async function assessRaydiumCpmmIdentityEvidence(
       !isRecord(bundleInput) ||
       !isRecord(bundleInput.source) ||
       !Array.isArray(bundleInput.accounts) ||
-      bundleInput.accounts.length !== 6 ||
+      bundleInput.accounts.length !== 9 ||
       !bundleInput.accounts.every(isRawAccount)) {
     return result("INVALID_INPUT", ["INVALID_TARGET_OR_ACCOUNT_BUNDLE"]);
   }
 
   const bundle = bundleInput as unknown as SolanaRpcAccountBundle;
   const accounts = bundle.accounts;
-  if (new Set(accounts.map((account) => account.address)).size !== 6) {
+  if (new Set(accounts.map((account) => account.address)).size !== 9) {
     return result("INVALID_INPUT", ["DUPLICATE_ACCOUNT_ADDRESS"], [], bundle);
   }
   const byAddress = new Map(accounts.map((account) => [account.address, account]));
@@ -733,16 +766,10 @@ export async function assessRaydiumCpmmIdentityEvidence(
   const programAccount = byAddress.get(RAYDIUM_CPMM_PROGRAM_ID);
   const baseMintAccountRaw = byAddress.get(targetInput.baseMint);
   const quoteMintAccountRaw = byAddress.get(targetInput.quoteMint);
-  const expectedBaseVault = await deriveRaydiumCpmmVaultPda(targetInput.poolAddress, targetInput.baseMint);
-  const expectedQuoteVault = await deriveRaydiumCpmmVaultPda(targetInput.poolAddress, targetInput.quoteMint);
-  const baseVaultRaw = byAddress.get(expectedBaseVault.address);
-  const quoteVaultRaw = byAddress.get(expectedQuoteVault.address);
-
-  if (!poolAccount || !programAccount || !baseMintAccountRaw || !quoteMintAccountRaw || !baseVaultRaw || !quoteVaultRaw) {
+  if (!poolAccount || !programAccount || !baseMintAccountRaw || !quoteMintAccountRaw) {
     return result("INVALID_INPUT", ["ACCOUNT_BUNDLE_ADDRESS_SET_MISMATCH"], [], bundle);
   }
-  if ([poolAccount, programAccount, baseMintAccountRaw, quoteMintAccountRaw, baseVaultRaw, quoteVaultRaw]
-    .some((account) => !account.exists)) {
+  if ([poolAccount, programAccount, baseMintAccountRaw, quoteMintAccountRaw].some((account) => !account.exists)) {
     return result("INSUFFICIENT_EVIDENCE", ["REQUIRED_ACCOUNT_MISSING"], [], bundle);
   }
 
@@ -751,12 +778,69 @@ export async function assessRaydiumCpmmIdentityEvidence(
     return result("MISMATCH", ["RAYDIUM_POOL_DECODE_" + poolResult.errorCode], [], bundle);
   }
   let pool = poolResult.value;
-  const canonicalPoolPda = await deriveRaydiumCpmmPoolPda(pool.ammConfig, pool.token0Mint, pool.token1Mint);
+  let canonicalPoolPda: { readonly address: string; readonly bump: number };
+  try {
+    canonicalPoolPda = await deriveRaydiumCpmmPoolPda(pool.ammConfig, pool.token0Mint, pool.token1Mint);
+  } catch {
+    return result("MISMATCH", ["POOL_PDA_DERIVATION_FAILED"], ["ammConfig", "token0Mint", "token1Mint"], bundle, pool);
+  }
   pool = { ...pool, canonicalPoolPdaMatches: canonicalPoolPda.address === pool.address };
+
+  const expectedConfig = byAddress.get(pool.ammConfig);
+  const expectedLpMint = await deriveRaydiumCpmmLpMintPda(pool.address);
+  const expectedObservation = await deriveRaydiumCpmmObservationPda(pool.address);
+  const expectedBaseVault = await deriveRaydiumCpmmVaultPda(pool.address, targetInput.baseMint);
+  const expectedQuoteVault = await deriveRaydiumCpmmVaultPda(pool.address, targetInput.quoteMint);
+  const expectedAddresses = new Set([
+    pool.address,
+    RAYDIUM_CPMM_PROGRAM_ID,
+    pool.ammConfig,
+    expectedLpMint.address,
+    targetInput.baseMint,
+    targetInput.quoteMint,
+    expectedBaseVault.address,
+    expectedQuoteVault.address,
+    expectedObservation.address
+  ]);
+  if (expectedAddresses.size !== 9 || accounts.some((account) => !expectedAddresses.has(account.address))) {
+    return result("INVALID_INPUT", ["ACCOUNT_BUNDLE_ADDRESS_SET_MISMATCH"], [], bundle, pool);
+  }
+
+  const ammConfigAccount = expectedConfig;
+  const lpMintAccount = byAddress.get(expectedLpMint.address);
+  const baseVaultRaw = byAddress.get(expectedBaseVault.address);
+  const quoteVaultRaw = byAddress.get(expectedQuoteVault.address);
+  const observationAccount = byAddress.get(expectedObservation.address);
+  if (!ammConfigAccount || !lpMintAccount || !baseVaultRaw || !quoteVaultRaw || !observationAccount) {
+    return result("INVALID_INPUT", ["ACCOUNT_BUNDLE_ADDRESS_SET_MISMATCH"], [], bundle, pool);
+  }
+  if ([ammConfigAccount, lpMintAccount, baseVaultRaw, quoteVaultRaw, observationAccount].some((account) => !account.exists)) {
+    return result("INSUFFICIENT_EVIDENCE", ["REQUIRED_ACCOUNT_MISSING"], [], bundle, pool);
+  }
+
+  const configResult = decodeRaydiumCpmmAmmConfig(ammConfigAccount);
+  if (configResult.status !== "DECODED") {
+    return result("MISMATCH", ["RAYDIUM_AMM_CONFIG_DECODE_" + configResult.errorCode], ["ammConfig"], bundle, pool);
+  }
+  const ammConfig = configResult.value;
+  const derivedConfig = await deriveRaydiumCpmmAmmConfigPda(ammConfig.index);
+  if (derivedConfig.address !== ammConfig.address ||
+      derivedConfig.bump !== ammConfig.bump ||
+      pool.ammConfig !== ammConfig.address) {
+    return result("MISMATCH", ["AMM_CONFIG_PDA_MISMATCH"], ["ammConfig", "ammConfig.bump"], bundle, pool, undefined, false, ammConfig);
+  }
   if (programAccount.address !== RAYDIUM_CPMM_PROGRAM_ID ||
       programAccount.ownerProgramId === null ||
       programAccount.executable !== true) {
-    return result("MISMATCH", ["RAYDIUM_PROGRAM_ACCOUNT_INVALID"], ["dexProgramAccount"], bundle, pool);
+    return result("MISMATCH", ["RAYDIUM_PROGRAM_ACCOUNT_INVALID"], ["dexProgramAccount"], bundle, pool, undefined, false, ammConfig);
+  }
+  if (pool.lpMint !== expectedLpMint.address) {
+    return result("MISMATCH", ["LP_MINT_PDA_MISMATCH"], ["lpMint"], bundle, pool, undefined, false, ammConfig);
+  }
+  if (pool.observationKey !== expectedObservation.address ||
+      observationAccount.ownerProgramId !== RAYDIUM_CPMM_PROGRAM_ID ||
+      observationAccount.executable !== false) {
+    return result("MISMATCH", ["OBSERVATION_ACCOUNT_IDENTITY_MISMATCH"], ["observationKey"], bundle, pool, undefined, false, ammConfig);
   }
 
   const token0IsBase =
@@ -764,73 +848,45 @@ export async function assessRaydiumCpmmIdentityEvidence(
   const token0IsQuote =
     pool.token0Mint === targetInput.quoteMint && pool.token1Mint === targetInput.baseMint;
   if (!token0IsBase && !token0IsQuote) {
-    return result("MISMATCH", ["POOL_MINTS_DO_NOT_MATCH_TARGET"], ["baseMint", "quoteMint"], bundle, pool);
+    return result("MISMATCH", ["POOL_MINTS_DO_NOT_MATCH_TARGET"], ["baseMint", "quoteMint"], bundle, pool, undefined, false, ammConfig);
   }
-
+  const token0MintRaw = token0IsBase ? baseMintAccountRaw : quoteMintAccountRaw;
+  const token1MintRaw = token0IsBase ? quoteMintAccountRaw : baseMintAccountRaw;
   const token0VaultAccount = token0IsBase ? baseVaultRaw : quoteVaultRaw;
   const token1VaultAccount = token0IsBase ? quoteVaultRaw : baseVaultRaw;
   if (pool.token0Vault !== token0VaultAccount.address ||
       pool.token1Vault !== token1VaultAccount.address) {
-    return result("MISMATCH", ["POOL_VAULT_PDA_MISMATCH"], ["token0Vault", "token1Vault"], bundle, pool);
+    return result("MISMATCH", ["POOL_VAULT_PDA_MISMATCH"], ["token0Vault", "token1Vault"], bundle, pool, undefined, false, ammConfig);
   }
+
   const authority = await deriveRaydiumCpmmAuthorityPda();
   if (authority.bump !== pool.authBump) {
-    return result("MISMATCH", ["POOL_AUTHORITY_BUMP_MISMATCH"], ["authBump"], bundle, pool);
+    return result("MISMATCH", ["POOL_AUTHORITY_BUMP_MISMATCH"], ["authBump"], bundle, pool, undefined, false, ammConfig);
   }
   const baseMintDecode = decodeSplTokenMint(baseMintAccountRaw);
   const quoteMintDecode = decodeSplTokenMint(quoteMintAccountRaw);
+  const lpMintDecode = decodeSplTokenMint(lpMintAccount);
   const baseVaultDecode = decodeSplTokenAccount(baseVaultRaw);
   const quoteVaultDecode = decodeSplTokenAccount(quoteVaultRaw);
 
-  if (baseMintDecode.status === "EXTENSIONS_UNINSPECTED" ||
-      quoteMintDecode.status === "EXTENSIONS_UNINSPECTED" ||
-      baseVaultDecode.status === "EXTENSIONS_UNINSPECTED" ||
-      quoteVaultDecode.status === "EXTENSIONS_UNINSPECTED") {
-    const baseMintBlocked = extensionEvidenceBlocked(baseMintAccountRaw, "MINT");
-    const quoteMintBlocked = extensionEvidenceBlocked(quoteMintAccountRaw, "MINT");
-    const baseVaultBlocked = extensionEvidenceBlocked(baseVaultRaw, "TOKEN_ACCOUNT");
-    const quoteVaultBlocked = extensionEvidenceBlocked(quoteVaultRaw, "TOKEN_ACCOUNT");
-    return result(
-      "INSUFFICIENT_EVIDENCE",
-      ["TOKEN_2022_EXTENSION_POLICY_BLOCKED"],
-      [
-        ...(baseMintBlocked ? ["baseMintExtensions"] : []),
-        ...(quoteMintBlocked ? ["quoteMintExtensions"] : []),
-        ...(baseVaultBlocked ? ["baseVaultExtensions"] : []),
-        ...(quoteVaultBlocked ? ["quoteVaultExtensions"] : [])
-      ],
-      bundle,
-      pool
-    );
+  if (lpMintAccount.ownerProgramId !== SPL_TOKEN_PROGRAM_ID || lpMintDecode.status !== "DECODED" ||
+      !lpMintDecode.value.initialized || lpMintDecode.value.decimals !== pool.lpMintDecimals ||
+      (lpMintDecode.value.mintAuthority !== null && lpMintDecode.value.mintAuthority !== authority.address)) {
+    return result("MISMATCH", ["LP_MINT_BASE_STATE_MISMATCH"], ["lpMint"], bundle, pool, undefined, false, ammConfig);
   }
-  if (baseMintDecode.status !== "DECODED" ||
-      quoteMintDecode.status !== "DECODED" ||
-      baseVaultDecode.status !== "DECODED" ||
-      quoteVaultDecode.status !== "DECODED") {
-    return result(
-      "MISMATCH",
-      ["TOKEN_BASE_STATE_DECODE_FAILED"],
-      [
-        ...(baseMintDecode.status !== "DECODED" ? ["baseMint:" + baseMintDecode.errorCode] : []),
-        ...(quoteMintDecode.status !== "DECODED" ? ["quoteMint:" + quoteMintDecode.errorCode] : []),
-        ...(baseVaultDecode.status !== "DECODED" ? ["baseVault:" + baseVaultDecode.errorCode] : []),
-        ...(quoteVaultDecode.status !== "DECODED" ? ["quoteVault:" + quoteVaultDecode.errorCode] : [])
-      ],
-      bundle,
-      pool
-    );
+  if (baseMintDecode.status === "DECODED" && quoteMintDecode.status === "DECODED") {
+    if (pool.mint0Decimals !== (token0IsBase ? baseMintDecode.value.decimals : quoteMintDecode.value.decimals) ||
+        pool.mint1Decimals !== (token0IsBase ? quoteMintDecode.value.decimals : baseMintDecode.value.decimals)) {
+      return result("MISMATCH", ["POOL_MINT_DECIMALS_MISMATCH"], ["mint0Decimals", "mint1Decimals"], bundle, pool, undefined, false, ammConfig);
+    }
+  }
+  const poolMintProgramMismatches: string[] = [];
+  if (pool.token0Program !== token0MintRaw.ownerProgramId) poolMintProgramMismatches.push("token0Program");
+  if (pool.token1Program !== token1MintRaw.ownerProgramId) poolMintProgramMismatches.push("token1Program");
+  if (poolMintProgramMismatches.length > 0) {
+    return result("MISMATCH", ["POOL_TOKEN_PROGRAM_MISMATCH"], poolMintProgramMismatches, bundle, pool, undefined, false, ammConfig);
   }
 
-  const poolMintProgramMismatches: string[] = [];
-  if (pool.token0Program !== (token0IsBase ? baseMintAccountRaw.ownerProgramId : quoteMintAccountRaw.ownerProgramId)) {
-    poolMintProgramMismatches.push("token0Program");
-  }
-  if (pool.token1Program !== (token0IsBase ? quoteMintAccountRaw.ownerProgramId : baseMintAccountRaw.ownerProgramId)) {
-    poolMintProgramMismatches.push("token1Program");
-  }
-  if (poolMintProgramMismatches.length > 0) {
-    return result("MISMATCH", ["POOL_TOKEN_PROGRAM_MISMATCH"], poolMintProgramMismatches, bundle, pool);
-  }
 
   const identityEvidence = {
     source: {
@@ -916,6 +972,7 @@ export async function assessRaydiumCpmmIdentityEvidence(
     bundle,
     pool,
     assessment,
-    assessment.canProceedToIndependentSafetyReview && assessment.status === "MATCH"
+    assessment.canProceedToIndependentSafetyReview && assessment.status === "MATCH",
+    ammConfig
   );
 }
