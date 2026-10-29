@@ -1,6 +1,6 @@
 # Phase 6.18 — Raydium CPMM deployed-program integrity evidence
 
-**Status:** Implemented as an optional, read-only SHA-256 comparison path with deterministic synthetic tests. It is not yet a production verification result: no reviewed reference .so hash has been supplied, and no ProgramData read was made during CI. Phase 6 remains active.
+**Status:** Implemented and CI-verified in [run #234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764): 204/204 tests passed, typecheck/build and repository validation passed, dependency audit reported zero vulnerabilities, and Gitleaks passed. It is not a production verification result: no reviewed reference .so hash has been supplied, and CI made no ProgramData read. Phase 6 remains active.
 
 ## Why this check is separate
 
@@ -22,6 +22,6 @@ The manual workflow inputs expected_program_elf_sha256 and expected_program_elf_
 
 ## Tests and safety boundary
 
-Synthetic unit tests cover ProgramData pointer decoding, hash match/mismatch, missing reference hash, synthetic-only evidence, wrong ProgramData address, malformed loader tags, context-slot ordering, zero-filled allocation padding and rejection of non-zero trailing bytes. The latest exact-length/padding regression change is pending CI. No real RPC request or transaction/signing capability was added.
+Synthetic unit tests cover ProgramData pointer decoding, hash match/mismatch, missing reference hash, synthetic-only evidence, wrong ProgramData address, malformed loader tags, context-slot ordering, zero-filled allocation padding and rejection of non-zero trailing bytes. The exact-length/padding regression passed in CI [#234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764). No real RPC request or transaction/signing capability was added.
 
 A successful comparison verifies byte equality with the supplied reference hash only. It does not establish source-build trust, pool eligibility, token safety, economic safety or trade authorization. Phase 7 review and all provider/freshness/fallback gates remain separate.

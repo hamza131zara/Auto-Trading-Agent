@@ -6,7 +6,7 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Live discovery found no pool meeting approved thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps), and DEX Screener source time is missing. GeckoTerminal OHLCV remains an opt-in price-only path. Phase 6.18 adds optional Raydium ProgramData ELF verification, requiring the exact reference .so SHA-256 and byte length together, rejecting unexpected non-zero allocation padding, and requiring explicit build-review approval. The latest padding-hardening edits are pending CI. No ProgramData read is performed by default or in CI, and trading remains unauthorized.
+> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Live discovery found no pool meeting approved thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps), and DEX Screener source time is missing. GeckoTerminal OHLCV remains an opt-in price-only path. Phase 6.18 adds optional Raydium ProgramData ELF verification, requiring the exact reference .so SHA-256 and byte length together, rejecting unexpected non-zero allocation padding, and requiring explicit build-review approval. The hash/length and zero-padding hardening passed CI [#234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764) with 204/204 tests and all quality/security checks. No ProgramData read is performed by default or in CI, and trading remains unauthorized.
 
 ## Start here
 - [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)
