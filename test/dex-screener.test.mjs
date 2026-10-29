@@ -204,6 +204,26 @@ test("classifies HTTP rate limit without leaking response body", async () => {
   );
 });
 
+test("cancels an oversized response stream once the byte limit is exceeded", async () => {
+  let cancelled = false;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new Uint8Array(1_000_000).fill(0x20));
+      controller.enqueue(new Uint8Array(1).fill(0x20));
+      controller.close();
+    },
+    cancel() {
+      cancelled = true;
+    }
+  });
+  const adapter = new DexScreenerPairsAdapter(async () => new Response(body));
+  await assert.rejects(
+    adapter.fetchRaw(request, new AbortController().signal),
+    (error) => error instanceof DexScreenerAdapterError && error.code === "PARSE"
+  );
+  assert.equal(cancelled, true);
+});
+
 test("rejects invalid base/quote/pool IDs and validates timeout configuration", async () => {
   const adapter = new DexScreenerPairsAdapter(async () => successResponse());
   await assert.rejects(
