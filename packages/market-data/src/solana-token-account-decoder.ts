@@ -366,7 +366,7 @@ export type Token2022ExtensionLayoutResult =
       readonly address: string;
       readonly accountKind: Token2022StateKind;
       readonly extensions: readonly [];
-      readonly baseStateEligibleForIdentityEvidence: true;
+      readonly baseStateEligibleForIdentityEvidence: false;
       readonly errorCode: null;
     }
   | {
@@ -435,7 +435,8 @@ export function inspectToken2022ExtensionLayout(
       address: account.address,
       accountKind,
       extensions: [],
-      baseStateEligibleForIdentityEvidence: true,
+      // Layout absence does not validate base state; the base decoder must run separately.
+      baseStateEligibleForIdentityEvidence: false,
       errorCode: null
     };
   }
@@ -493,5 +494,219 @@ export function inspectToken2022ExtensionLayout(
     trailingZeroPaddingBytes,
     baseStateEligibleForIdentityEvidence: false,
     errorCode: null
+  };
+}
+
+
+export type Token2022ExtensionImpact =
+  | "TRANSFER_FEE_OR_WITHHELD_VALUE"
+  | "MINT_LIFECYCLE_AUTHORITY"
+  | "CONFIDENTIAL_TRANSFER_STATE"
+  | "DEFAULT_ACCOUNT_STATE"
+  | "ACCOUNT_AUTHORITY_CONSTRAINT"
+  | "REQUIRED_TRANSFER_MEMO"
+  | "TRANSFER_RESTRICTION"
+  | "ACCRUAL_OR_UI_AMOUNT_SEMANTICS"
+  | "CPI_OPERATION_CONSTRAINT"
+  | "PERMANENT_DELEGATE_AUTHORITY"
+  | "TRANSFER_HOOK_PROGRAM"
+  | "CONFIDENTIAL_FEE_STATE"
+  | "METADATA_POINTER_OR_CONTENT"
+  | "TOKEN_GROUP_LINKAGE"
+  | "CONFIDENTIAL_SUPPLY_CONTROL"
+  | "PAUSE_CONTROL"
+  | "PERMISSIONED_BURN_CONTROL";
+
+export interface KnownToken2022ExtensionDefinition {
+  readonly typeCode: number;
+  readonly name: string;
+  readonly validAccountKind: Token2022StateKind;
+  readonly impact: Token2022ExtensionImpact;
+  readonly reviewRequirement: "PHASE_7_REVIEW_REQUIRED";
+  readonly semanticSource: "spl-token-2022-interface@3.1.2";
+}
+
+/**
+ * Snapshot of the 29-variant ExtensionType enum in
+ * spl-token-2022-interface 3.1.2. This is an inventory for fail-closed routing,
+ * not an executable allowlist and not a judgment that any extension is safe.
+ * Refresh this map whenever the upstream enum/version changes.
+ */
+export const TOKEN2022_EXTENSION_SEMANTICS: readonly KnownToken2022ExtensionDefinition[] = [
+  { typeCode: 1, name: "TransferFeeConfig", validAccountKind: "MINT", impact: "TRANSFER_FEE_OR_WITHHELD_VALUE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 2, name: "TransferFeeAmount", validAccountKind: "TOKEN_ACCOUNT", impact: "TRANSFER_FEE_OR_WITHHELD_VALUE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 3, name: "MintCloseAuthority", validAccountKind: "MINT", impact: "MINT_LIFECYCLE_AUTHORITY", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 4, name: "ConfidentialTransferMint", validAccountKind: "MINT", impact: "CONFIDENTIAL_TRANSFER_STATE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 5, name: "ConfidentialTransferAccount", validAccountKind: "TOKEN_ACCOUNT", impact: "CONFIDENTIAL_TRANSFER_STATE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 6, name: "DefaultAccountState", validAccountKind: "MINT", impact: "DEFAULT_ACCOUNT_STATE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 7, name: "ImmutableOwner", validAccountKind: "TOKEN_ACCOUNT", impact: "ACCOUNT_AUTHORITY_CONSTRAINT", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 8, name: "MemoTransfer", validAccountKind: "TOKEN_ACCOUNT", impact: "REQUIRED_TRANSFER_MEMO", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 9, name: "NonTransferable", validAccountKind: "MINT", impact: "TRANSFER_RESTRICTION", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 10, name: "InterestBearingConfig", validAccountKind: "MINT", impact: "ACCRUAL_OR_UI_AMOUNT_SEMANTICS", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 11, name: "CpiGuard", validAccountKind: "TOKEN_ACCOUNT", impact: "CPI_OPERATION_CONSTRAINT", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 12, name: "PermanentDelegate", validAccountKind: "MINT", impact: "PERMANENT_DELEGATE_AUTHORITY", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 13, name: "NonTransferableAccount", validAccountKind: "TOKEN_ACCOUNT", impact: "TRANSFER_RESTRICTION", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 14, name: "TransferHook", validAccountKind: "MINT", impact: "TRANSFER_HOOK_PROGRAM", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 15, name: "TransferHookAccount", validAccountKind: "TOKEN_ACCOUNT", impact: "TRANSFER_HOOK_PROGRAM", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 16, name: "ConfidentialTransferFeeConfig", validAccountKind: "MINT", impact: "CONFIDENTIAL_FEE_STATE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 17, name: "ConfidentialTransferFeeAmount", validAccountKind: "TOKEN_ACCOUNT", impact: "CONFIDENTIAL_FEE_STATE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 18, name: "MetadataPointer", validAccountKind: "MINT", impact: "METADATA_POINTER_OR_CONTENT", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 19, name: "TokenMetadata", validAccountKind: "MINT", impact: "METADATA_POINTER_OR_CONTENT", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 20, name: "GroupPointer", validAccountKind: "MINT", impact: "TOKEN_GROUP_LINKAGE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 21, name: "TokenGroup", validAccountKind: "MINT", impact: "TOKEN_GROUP_LINKAGE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 22, name: "GroupMemberPointer", validAccountKind: "MINT", impact: "TOKEN_GROUP_LINKAGE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 23, name: "TokenGroupMember", validAccountKind: "MINT", impact: "TOKEN_GROUP_LINKAGE", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 24, name: "ConfidentialMintBurn", validAccountKind: "MINT", impact: "CONFIDENTIAL_SUPPLY_CONTROL", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 25, name: "ScaledUiAmount", validAccountKind: "MINT", impact: "ACCRUAL_OR_UI_AMOUNT_SEMANTICS", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 26, name: "Pausable", validAccountKind: "MINT", impact: "PAUSE_CONTROL", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 27, name: "PausableAccount", validAccountKind: "TOKEN_ACCOUNT", impact: "PAUSE_CONTROL", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" },
+  { typeCode: 28, name: "PermissionedBurn", validAccountKind: "MINT", impact: "PERMISSIONED_BURN_CONTROL", reviewRequirement: "PHASE_7_REVIEW_REQUIRED", semanticSource: "spl-token-2022-interface@3.1.2" }
+] as const;
+
+export interface Token2022ExtensionPolicyEntry {
+  readonly typeCode: number;
+  readonly name: string | null;
+  readonly disposition: "KNOWN_REQUIRES_PHASE_7_REVIEW" | "UNKNOWN_EXTENSION_BLOCKED" | "INVALID_ACCOUNT_KIND";
+  readonly impact: Token2022ExtensionImpact | "UNKNOWN";
+}
+
+export type Token2022ExtensionPolicyResult =
+  | {
+      readonly status: "NO_EXTENSIONS";
+      readonly address: string;
+      readonly accountKind: Token2022StateKind;
+      readonly entries: readonly [];
+      readonly extensionPolicySatisfied: true;
+      /** Base-state decoding and the rest of the identity gate must still pass. */
+      readonly identityEvidenceEligible: false;
+    }
+  | {
+      readonly status: "BLOCKED";
+      readonly address: string;
+      readonly accountKind: Token2022StateKind;
+      readonly entries: readonly Token2022ExtensionPolicyEntry[];
+      readonly extensionPolicySatisfied: false;
+      readonly identityEvidenceEligible: false;
+      readonly reasonCodes: readonly string[];
+    }
+  | {
+      readonly status: "INVALID_INPUT";
+      readonly address: string | null;
+      readonly accountKind: Token2022StateKind;
+      readonly entries: readonly [];
+      readonly extensionPolicySatisfied: false;
+      readonly identityEvidenceEligible: false;
+      readonly reasonCodes: readonly string[];
+    };
+
+/**
+ * Fail-closed semantic routing for the official ExtensionType enum snapshot.
+ * Known extensions are named and categorized, but none is auto-approved.
+ * Unknown/future IDs and wrong account-kind usage are blocked. Full byte-level
+ * extension decoding and token-risk evaluation remain separate Phase 7 work.
+ */
+export function assessToken2022ExtensionPolicy(
+  layout: Token2022ExtensionLayoutResult
+): Token2022ExtensionPolicyResult {
+  if (!isRecord(layout) ||
+      (layout.status !== "NO_EXTENSIONS" && layout.status !== "INSPECTED") ||
+      typeof layout.address !== "string" ||
+      !isSolanaPublicKey(layout.address) ||
+      (layout.accountKind !== "MINT" && layout.accountKind !== "TOKEN_ACCOUNT") ||
+      !Array.isArray(layout.extensions)) {
+    return {
+      status: "INVALID_INPUT",
+      address: isRecord(layout) && typeof layout.address === "string" ? layout.address : null,
+      accountKind: isRecord(layout) && layout.accountKind === "TOKEN_ACCOUNT" ? "TOKEN_ACCOUNT" : "MINT",
+      entries: [],
+      extensionPolicySatisfied: false,
+      identityEvidenceEligible: false,
+      reasonCodes: ["INVALID_EXTENSION_LAYOUT"]
+    };
+  }
+
+  if (layout.status === "NO_EXTENSIONS") {
+    if (layout.extensions.length !== 0 || layout.errorCode !== null) {
+      return {
+        status: "INVALID_INPUT",
+        address: layout.address,
+        accountKind: layout.accountKind,
+        entries: [],
+        extensionPolicySatisfied: false,
+        identityEvidenceEligible: false,
+        reasonCodes: ["INCONSISTENT_NO_EXTENSION_LAYOUT"]
+      };
+    }
+    return {
+      status: "NO_EXTENSIONS",
+      address: layout.address,
+      accountKind: layout.accountKind,
+      entries: [],
+      extensionPolicySatisfied: true,
+      identityEvidenceEligible: false
+    };
+  }
+
+  if (layout.extensions.length === 0 ||
+      layout.errorCode !== null ||
+      layout.extensions.some((entry) =>
+        !isRecord(entry) ||
+        !Number.isSafeInteger(entry.typeCode) ||
+        (entry.typeCode as number) <= 0 ||
+        !Number.isSafeInteger(entry.length) ||
+        (entry.length as number) < 0 ||
+        !Number.isSafeInteger(entry.valueOffset) ||
+        (entry.valueOffset as number) < 0
+      )) {
+    return {
+      status: "INVALID_INPUT",
+      address: layout.address,
+      accountKind: layout.accountKind,
+      entries: [],
+      extensionPolicySatisfied: false,
+      identityEvidenceEligible: false,
+      reasonCodes: ["INVALID_EXTENSION_ENTRIES"]
+    };
+  }
+
+  const entries: Token2022ExtensionPolicyEntry[] = [];
+  for (const extension of layout.extensions) {
+    const definition = TOKEN2022_EXTENSION_SEMANTICS.find((item) => item.typeCode === extension.typeCode);
+    if (definition === undefined) {
+      entries.push({
+        typeCode: extension.typeCode,
+        name: null,
+        disposition: "UNKNOWN_EXTENSION_BLOCKED",
+        impact: "UNKNOWN"
+      });
+    } else if (definition.validAccountKind !== layout.accountKind) {
+      entries.push({
+        typeCode: extension.typeCode,
+        name: definition.name,
+        disposition: "INVALID_ACCOUNT_KIND",
+        impact: definition.impact
+      });
+    } else {
+      entries.push({
+        typeCode: extension.typeCode,
+        name: definition.name,
+        disposition: "KNOWN_REQUIRES_PHASE_7_REVIEW",
+        impact: definition.impact
+      });
+    }
+  }
+
+  const hasBlockers = entries.some((item) => item.disposition !== "KNOWN_REQUIRES_PHASE_7_REVIEW");
+  return {
+    status: "BLOCKED",
+    address: layout.address,
+    accountKind: layout.accountKind,
+    entries,
+    extensionPolicySatisfied: false,
+    identityEvidenceEligible: false,
+    reasonCodes: [
+      ...(hasBlockers ? ["UNKNOWN_OR_SCOPE_INVALID_EXTENSION"] : []),
+      "TOKEN_2022_EXTENSION_REQUIRES_PHASE_7_REVIEW"
+    ]
   };
 }
