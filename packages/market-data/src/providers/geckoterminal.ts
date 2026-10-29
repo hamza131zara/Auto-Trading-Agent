@@ -227,7 +227,7 @@ export class GeckoTerminalPoolAdapter implements MarketDataAdapter {
     }
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
-    this.synthetic = arguments.length > 0;
+    this.synthetic = this.fetchImpl !== fetch;
   }
 
   async fetchRaw(request: MarketDataRequest, signal: AbortSignal): Promise<unknown> {
