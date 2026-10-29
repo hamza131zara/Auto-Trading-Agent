@@ -1,6 +1,6 @@
 # Phase 6.13 — Explicit Live-Source Validation Runner
 
-**Status:** End-to-end runner and manual-only workflow implemented; real-source validation is **NOT RUN**. The workflow uses Solana's shared public Mainnet RPC for one read-only check and DEX Screener for the explicitly named indexed pair. The public RPC is not a production provider selection and has no production SLA. Terms/rate-limit/usage review and explicit operator acknowledgements are required before starting it. Phase 6 remains active.
+**Status:** End-to-end runner and manual-only workflow implemented; first real-source identity validation completed with `MATCH` on 2026-10-29. [Run #2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40840569303) returned `synthetic: false` at finalized context slot `462809432`. This was one read-only identity check, not production-provider approval or full market-data validation. The workflow uses Solana's shared public Mainnet RPC and DEX Screener for the explicitly named indexed pair. The public RPC is not a production provider selection and has no production SLA. Phase 6 remains active.
 
 ## Purpose
 
@@ -63,6 +63,30 @@ The example slot and retrieval-age values are command examples only; choose valu
 
 The process exits with code **0** only for a non-synthetic MATCH that passes the identity gate; **1** means the identity evidence did not pass; **2** means configuration, transport, or execution stopped safely. Diagnostic output exposes only stable error codes, not the endpoint or account bytes. DEX Screener's current mapping has no trustworthy source-event timestamp, so a successful account-identity check still does not satisfy market-data freshness.
 
+## First real-source run — 2026-10-29
+
+The first manually triggered live run completed successfully: [GitHub Actions run #2](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40840569303). The report is printed in that run's log; no binary artifact was produced.
+
+| Evidence field | Observed value |
+|---|---|
+| Target provider | `dex-screener` (`INDEXED_API`) |
+| Target pool | `7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny` |
+| Base / quote mints | Wrapped SOL `So11111111111111111111111111111111111111112` / USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` |
+| Target request ID | `live-dexscreener-mvt9nqvr` |
+| Target raw-response SHA-256 | `b476ddf829a8ffe6a6ef7c7f3dec12c94cc89fc86d6cc742f52746a160e64adb` |
+| RPC provider / commitment | `solana-public-shared` / `finalized` |
+| RPC context slot | `462809432` |
+| RPC request ID | `live-raydium-mvt9nr78-identity` |
+| RPC raw-response SHA-256 | `ff582c0424f54e911e22920a90fd4ccfb9c93982b91d917355a19c4b69213d1f` |
+| Decoder | `raydium-cp-swap-pool-state` version `0.1.0`; pinned PoolState 637 bytes / AmmConfig 236 bytes |
+| Result | `MATCH`; zero mismatch fields; `identityGatePassed: true`; RPC source `synthetic: false` |
+
+The decoded pool records `canonicalPoolPdaMatches: true`, `statusFlags: 0`, and swap/deposit/withdraw flags enabled. The reported identity result was internally consistent at the finalized context slot.
+
+**Limitations and follow-up:** `observedAt` and `sourceEventAt` were both null in the DEX Screener target. The run therefore provides no evidence of source-price freshness. The reviewed pair page showed very low liquidity (about USD $86) and roughly USD $2 in 24-hour volume at the time of that screenshot; do not treat this as a production trading candidate. The runner checks the CPMM program account is executable and loader-owned, but it does not dump/hash the deployed ProgramData binary and compare it with a reproducible build of the pinned source. That compatibility gate remains open. No independent price/reserve reconciliation or live provider fallback test was included in this run.
+
+The report correctly retained `phase6Complete: false`, `productionProviderApprovedByThisReport: false`, and `tradingAuthorized: false`. The first two operator acknowledgements and the terms/budget acknowledgement applied only to this one-off run; they do not constitute blanket production authorization.
+
 ## Evidence report
 
 The JSON report retains the target provider/request/hash, RPC provider/commitment/time/context slot/request ID/raw-response hash, decoder ID/version, decoded public account identities, outcome reason codes and acknowledgements. It intentionally excludes the endpoint URL and raw base64 account payloads. Store the report outside the repository unless and until the owner decides where a redacted audit artifact belongs.
@@ -93,4 +117,4 @@ A dedicated workflow is registered as `.github/workflows/phase6-live-source-vali
 
 The workflow requires no API key for the current DEX Screener pair GET or the Solana public RPC endpoint. Public RPC is shared and rate-limited; Solana advises using a private RPC provider for production infrastructure. This workflow does not select or approve a production RPC provider. If any approval is not confirmed, the provider network step does not execute.
 
-The workflow is manual-only so routine CI stays deterministic and does not depend on external APIs. **No live run has been completed or recorded yet.** Use the manual workflow to execute the actual request from GitHub Actions after selecting the exact pool and confirming the provider approvals; only a resulting report may be recorded as live-source evidence.
+The workflow is manual-only so routine CI stays deterministic and does not depend on external APIs. The first real-source run is recorded above; future runs require a separate, justified operator decision. A report from this workflow is identity evidence only and must never be interpreted as production provider approval or trading authorization.
