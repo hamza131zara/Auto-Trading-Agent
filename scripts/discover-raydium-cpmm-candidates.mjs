@@ -10,11 +10,16 @@ import {
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const USDT_MINT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
+// Discovery-only allowlist of canonical Solana stablecoin quote mints.
+// This does not approve either asset or any pool for production trading.
+const APPROVED_QUOTE_ASSETS = Object.freeze([
+  { symbol: "USDC", mint: USDC_MINT },
+  { symbol: "USDT", mint: USDT_MINT }
+]);
 const RAYDIUM_POOL_PAGE_SIZE = 100;
-const RAYDIUM_POOL_QUERY_URL =
-  "https://api-v3.raydium.io/pools/info/mint?mint1=" + SOL_MINT +
-  "&mint2=" + USDC_MINT + "&poolType=standard&poolSortField=liquidity&sortType=desc" +
-  "&pageSize=" + String(RAYDIUM_POOL_PAGE_SIZE) + "&page=1";
+const MAX_RAYDIUM_PAGES_PER_QUOTE = 10;
+const RAYDIUM_POOL_QUERY_BASE_URL = "https://api-v3.raydium.io/pools/info/mint";
 const DEX_SCREENER_PAIR_URL_BASE = "https://api.dexscreener.com/latest/dex/pairs/solana/";
 const RAYDIUM_API_PROVIDER_ID = "raydium-api-v3";
 const RPC_URL = "https://api.mainnet.solana.com";
@@ -23,6 +28,31 @@ const MAX_RESPONSE_BYTES = 5_000_000;
 const MAX_POOL_ACCOUNTS = 100;
 const MAX_DISPLAY_CANDIDATES = 20;
 const RPC_REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
+
+function buildRaydiumPoolQueryUrl(quoteMint, pageNumber) {
+  const params = new URLSearchParams({
+    mint1: SOL_MINT,
+    mint2: quoteMint,
+    poolType: "standard",
+    poolSortField: "liquidity",
+    sortType: "desc",
+    pageSize: String(RAYDIUM_POOL_PAGE_SIZE),
+    page: String(pageNumber)
+  });
+  return RAYDIUM_POOL_QUERY_BASE_URL + "?" + params.toString();
+}
+
+function isApprovedSolQuotePair(mintA, mintB) {
+  return mintA === SOL_MINT && APPROVED_QUOTE_ASSETS.some((asset) => asset.mint === mintB)
+    ? { baseMint: SOL_MINT, quoteMint: mintB }
+    : mintB === SOL_MINT && APPROVED_QUOTE_ASSETS.some((asset) => asset.mint === mintA)
+      ? { baseMint: SOL_MINT, quoteMint: mintA }
+      : null;
+}
+
+function quoteAssetForMint(mint) {
+  return APPROVED_QUOTE_ASSETS.find((asset) => asset.mint === mint) ?? null;
+}
 
 function codedError(code) {
   const error = new Error(code);
@@ -146,17 +176,16 @@ function normalizeExactPair(pair) {
       typeof pair.pairAddress !== "string" ||
       !isSolanaPublicKey(pair.pairAddress) ||
       !isRecord(pair.baseToken) ||
-      !isRecord(pair.quoteToken)) {
+      !isRecord(pair.quoteToken) ||
+      typeof pair.baseToken.address !== "string" ||
+      typeof pair.quoteToken.address !== "string") {
     return null;
   }
 
-  const baseMint = pair.baseToken.address;
-  const quoteMint = pair.quoteToken.address;
-  const exactMints =
-    (baseMint === SOL_MINT && quoteMint === USDC_MINT) ||
-    (baseMint === USDC_MINT && quoteMint === SOL_MINT);
-  if (!exactMints) return null;
-
+  const pairMints = isApprovedSolQuotePair(pair.baseToken.address, pair.quoteToken.address);
+  if (pairMints === null) return null;
+  const quoteAsset = quoteAssetForMint(pairMints.quoteMint);
+  const solIsBaseToken = pair.baseToken.address === SOL_MINT;
   const liquidity = asNonNegativeMetric(pair.liquidity?.usd);
   const volume24h = asNonNegativeMetric(pair.volume?.h24);
   const priceUsd = asNonNegativeMetric(pair.priceUsd);
@@ -166,13 +195,22 @@ function normalizeExactPair(pair) {
   return {
     poolAddress: pair.pairAddress,
     dexId: pair.dexId,
-    baseMint,
-    quoteMint,
-    baseSymbol: typeof pair.baseToken.symbol === "string" ? pair.baseToken.symbol : null,
-    quoteSymbol: typeof pair.quoteToken.symbol === "string" ? pair.quoteToken.symbol : null,
+    baseMint: SOL_MINT,
+    quoteMint: pairMints.quoteMint,
+    quoteAssetSymbol: quoteAsset?.symbol ?? null,
+    dexBaseMint: pair.baseToken.address,
+    dexQuoteMint: pair.quoteToken.address,
+    baseSymbol: solIsBaseToken
+      ? (typeof pair.baseToken.symbol === "string" ? pair.baseToken.symbol : null)
+      : (typeof pair.quoteToken.symbol === "string" ? pair.quoteToken.symbol : null),
+    quoteSymbol: solIsBaseToken
+      ? (typeof pair.quoteToken.symbol === "string" ? pair.quoteToken.symbol : null)
+      : (typeof pair.baseToken.symbol === "string" ? pair.baseToken.symbol : null),
     liquidityUsd: liquidity,
     volume24hUsd: volume24h,
+    // priceUsd is the USD price of the source's base token, so keep its mint explicit.
     priceUsd,
+    priceUsdMint: pair.baseToken.address,
     buys24h: buys24h !== null && Number.isSafeInteger(buys24h) ? buys24h : null,
     sells24h: sells24h !== null && Number.isSafeInteger(sells24h) ? sells24h : null,
     pairCreatedAt: Number.isSafeInteger(pair.pairCreatedAt) ? pair.pairCreatedAt : null,
@@ -188,15 +226,16 @@ function normalizeRaydiumPool(pool) {
       typeof pool.programId !== "string" ||
       !isSolanaPublicKey(pool.programId) ||
       !isRecord(pool.mintA) ||
-      !isRecord(pool.mintB)) {
+      !isRecord(pool.mintB) ||
+      typeof pool.mintA.address !== "string" ||
+      typeof pool.mintB.address !== "string") {
     return null;
   }
   const mintA = pool.mintA.address;
   const mintB = pool.mintB.address;
-  const exactMints =
-    (mintA === SOL_MINT && mintB === USDC_MINT) ||
-    (mintA === USDC_MINT && mintB === SOL_MINT);
-  if (!exactMints) return null;
+  const pairMints = isApprovedSolQuotePair(mintA, mintB);
+  if (pairMints === null) return null;
+  const quoteAsset = quoteAssetForMint(pairMints.quoteMint);
   const liquidityUsd = asNonNegativeMetric(pool.tvl);
   const volume24hUsd = asNonNegativeMetric(pool.day?.volume);
   return {
@@ -204,9 +243,10 @@ function normalizeRaydiumPool(pool) {
     raydiumProgramId: pool.programId,
     raydiumPoolType: pool.type,
     baseMint: SOL_MINT,
-    quoteMint: USDC_MINT,
+    quoteMint: pairMints.quoteMint,
+    quoteAssetSymbol: quoteAsset?.symbol ?? null,
     baseSymbol: mintA === SOL_MINT ? pool.mintA.symbol ?? null : pool.mintB.symbol ?? null,
-    quoteSymbol: mintA === USDC_MINT ? pool.mintA.symbol ?? null : pool.mintB.symbol ?? null,
+    quoteSymbol: mintA === SOL_MINT ? pool.mintB.symbol ?? null : pool.mintA.symbol ?? null,
     raydiumLiquidityUsd: liquidityUsd,
     raydiumVolume24hUsd: volume24hUsd,
     raydiumPrice: asNonNegativeMetric(pool.price),
@@ -316,7 +356,7 @@ function normalizeRaydiumPage(payload, { pageNumber = 1, pageSize = RAYDIUM_POOL
   };
 }
 
-async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId) {
+async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expectedQuoteMint) {
   const url = DEX_SCREENER_PAIR_URL_BASE + encodeURIComponent(poolAddress);
   const response = await fetchJson(fetchImpl, url, {
     method: "GET",
@@ -327,15 +367,17 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId) {
     throw codedError("DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID");
   }
 
-  // DEX Screener's pair response allows a null pair list. This means the
-  // address is not indexed there; it is not evidence of a qualifying pair.
-  // An omitted/unexpected field still fails closed as a response-shape error.
+  // A nullable pair list means this address is not indexed; it can never qualify.
+  // An omitted or malformed field still fails closed as a response-shape error.
   const indexedPairs = Array.isArray(response.payload.pairs) ? response.payload.pairs : [];
   const found = indexedPairs
     .map(normalizeExactPair)
-    .find((pair) => pair !== null && pair.poolAddress === poolAddress) ?? null;
+    .find((pair) => pair !== null &&
+      pair.poolAddress === poolAddress &&
+      pair.quoteMint === expectedQuoteMint) ?? null;
   return {
     poolAddress,
+    quoteMint: expectedQuoteMint,
     requestId,
     rawPayloadSha256: sha256(response.rawText),
     found: found !== null,
@@ -343,7 +385,7 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId) {
   };
 }
 
-function checkRpcAccounts(payload, requestId, expectedAddresses, expectedProgramIds = new Map()) {
+function checkRpcAccounts(payload, requestId, expectedAddresses, expectedPoolMetadata = new Map()) {
   if (!isRecord(payload) || payload.jsonrpc !== "2.0" || payload.id !== requestId ||
       !isRecord(payload.result) || !isRecord(payload.result.context) ||
       !Number.isSafeInteger(payload.result.context.slot) || payload.result.context.slot < 0 ||
@@ -384,11 +426,13 @@ function checkRpcAccounts(payload, requestId, expectedAddresses, expectedProgram
     const decodedTokenMints = decodedPool.status === "DECODED"
       ? [decodedPool.value.token0Mint, decodedPool.value.token1Mint]
       : null;
+    const expectedPool = expectedPoolMetadata.get(expectedAddresses[index]) ?? null;
+    const expectedProgramId = expectedPool?.programId ?? null;
     const hasExactOnChainMints = decodedTokenMints !== null &&
       new Set(decodedTokenMints).size === 2 &&
-      decodedTokenMints.includes(SOL_MINT) &&
-      decodedTokenMints.includes(USDC_MINT);
-    const expectedProgramId = expectedProgramIds.get(expectedAddresses[index]) ?? null;
+      expectedPool !== null &&
+      decodedTokenMints.includes(expectedPool.baseMint) &&
+      decodedTokenMints.includes(expectedPool.quoteMint);
     const classification = expectedProgramId !== null && account.owner !== expectedProgramId
       ? "RAYDIUM_API_PROGRAM_ID_MISMATCH"
       : account.owner === RAYDIUM_CPMM_PROGRAM_ID
@@ -427,20 +471,79 @@ export async function discoverRaydiumCpmmCandidates({
   if (!RPC_REQUEST_ID_PATTERN.test(clientRequestId + "-rpc")) {
     throw codedError("DISCOVERY_REQUEST_ID_INVALID");
   }
-  const raydium = await fetchJson(fetchImpl, RAYDIUM_POOL_QUERY_URL, {
-    method: "GET",
-    headers: { accept: "application/json" }
-  }, "RAYDIUM_API");
-  const fetchedAt = now();
-  const raydiumPage = normalizeRaydiumPage(raydium.payload);
+
   const byAddress = new Map();
-  for (const pool of raydiumPage.pools) {
-    const normalized = normalizeRaydiumPool(pool);
-    if (normalized === null) continue;
-    const previous = byAddress.get(normalized.poolAddress);
-    if (!previous || (normalized.raydiumLiquidityUsd ?? -1) > (previous.raydiumLiquidityUsd ?? -1)) {
-      byAddress.set(normalized.poolAddress, normalized);
+  const raydiumPairResults = [];
+  let raydiumScanIncomplete = false;
+  for (const quoteAsset of APPROVED_QUOTE_ASSETS) {
+    const pairResult = {
+      quoteAssetSymbol: quoteAsset.symbol,
+      quoteMint: quoteAsset.mint,
+      pages: [],
+      poolRecordsObserved: 0,
+      reportedResultCount: null,
+      paginationKnown: true,
+      paginationTerminal: false
+    };
+
+    for (let pageNumber = 1; pageNumber <= MAX_RAYDIUM_PAGES_PER_QUOTE; pageNumber += 1) {
+      const raydium = await fetchJson(
+        fetchImpl,
+        buildRaydiumPoolQueryUrl(quoteAsset.mint, pageNumber),
+        { method: "GET", headers: { accept: "application/json" } },
+        "RAYDIUM_API"
+      );
+      const retrievedAt = now();
+      const page = normalizeRaydiumPage(raydium.payload, {
+        pageNumber,
+        pageSize: RAYDIUM_POOL_PAGE_SIZE
+      });
+      pairResult.poolRecordsObserved += page.pools.length;
+      if (page.count !== null) {
+        pairResult.reportedResultCount = Math.max(pairResult.reportedResultCount ?? 0, page.count);
+      }
+      pairResult.pages.push({
+        pageNumber,
+        responseShape: page.responseShape,
+        rawPayloadSha256: sha256(raydium.rawText),
+        retrievedAt,
+        resultCount: page.count,
+        hasNextPage: page.hasNextPage,
+        paginationKnown: page.paginationKnown,
+        paginationSignal: page.paginationSignal,
+        responseDiagnostics: page.responseDiagnostics
+      });
+
+      for (const pool of page.pools) {
+        const normalized = normalizeRaydiumPool(pool);
+        if (normalized === null || normalized.quoteMint !== quoteAsset.mint) continue;
+        const previous = byAddress.get(normalized.poolAddress);
+        if (!previous || (normalized.raydiumLiquidityUsd ?? -1) > (previous.raydiumLiquidityUsd ?? -1)) {
+          byAddress.set(normalized.poolAddress, normalized);
+        }
+      }
+
+      if (page.hasNextPage === false) {
+        pairResult.paginationTerminal = true;
+        break;
+      }
+      if (page.hasNextPage !== true) {
+        pairResult.paginationKnown = false;
+        raydiumScanIncomplete = true;
+        break;
+      }
+      if (pageNumber === MAX_RAYDIUM_PAGES_PER_QUOTE) {
+        raydiumScanIncomplete = true;
+        break;
+      }
     }
+
+    if (!pairResult.paginationTerminal) raydiumScanIncomplete = true;
+    if (pairResult.reportedResultCount !== null &&
+        pairResult.poolRecordsObserved < pairResult.reportedResultCount) {
+      raydiumScanIncomplete = true;
+    }
+    raydiumPairResults.push(pairResult);
   }
 
   const exactPairs = [...byAddress.values()].sort((a, b) =>
@@ -474,11 +577,19 @@ export async function discoverRaydiumCpmmCandidates({
       },
       body: rpcBody
     }, "RPC");
+    const expectedPoolMetadata = new Map(selected.map((candidate) => [
+      candidate.poolAddress,
+      {
+        programId: candidate.raydiumProgramId,
+        baseMint: candidate.baseMint,
+        quoteMint: candidate.quoteMint
+      }
+    ]));
     const checked = checkRpcAccounts(
       rpc.payload,
       rpcRequestId,
       selected.map((candidate) => candidate.poolAddress),
-      new Map(selected.map((candidate) => [candidate.poolAddress, candidate.raydiumProgramId]))
+      expectedPoolMetadata
     );
     classifications = checked.classified;
     rpcEvidence = {
@@ -524,9 +635,15 @@ export async function discoverRaydiumCpmmCandidates({
   for (let index = 0; index < candidatesToCrossCheck.length; index += 1) {
     const candidate = candidatesToCrossCheck[index];
     const dexRequestId = clientRequestId + "-dex-" + String(index + 1);
-    const checked = await lookupDexScreenerPair(fetchImpl, candidate.poolAddress, dexRequestId);
+    const checked = await lookupDexScreenerPair(
+      fetchImpl,
+      candidate.poolAddress,
+      dexRequestId,
+      candidate.quoteMint
+    );
     dexScreenerEvidence.push({
       poolAddress: checked.poolAddress,
+      quoteMint: checked.quoteMint,
       requestId: checked.requestId,
       rawPayloadSha256: checked.rawPayloadSha256,
       found: checked.found
@@ -537,6 +654,7 @@ export async function discoverRaydiumCpmmCandidates({
   const enrichedCandidates = cpmmCandidates.map((candidate) => {
     const dexPair = dexByAddress.get(candidate.poolAddress) ?? null;
     const dexMeetsThresholds = dexPair !== null &&
+      dexPair.quoteMint === candidate.quoteMint &&
       dexPair.liquidityUsd !== null &&
       dexPair.volume24hUsd !== null &&
       dexPair.liquidityUsd >= minimumLiquidityUsd &&
@@ -548,6 +666,7 @@ export async function discoverRaydiumCpmmCandidates({
         liquidityUsd: dexPair.liquidityUsd,
         volume24hUsd: dexPair.volume24hUsd,
         priceUsd: dexPair.priceUsd,
+        priceUsdMint: dexPair.priceUsdMint,
         buys24h: dexPair.buys24h,
         sells24h: dexPair.sells24h,
         dexId: dexPair.dexId
@@ -561,17 +680,15 @@ export async function discoverRaydiumCpmmCandidates({
   const qualifying = enrichedCandidates.filter((candidate) =>
     candidate.meetsLiquidityAndVolumeThresholds && candidate.dexScreenerPairFound);
   const scanIncomplete =
-    !raydiumPage.paginationKnown ||
-    raydiumPage.hasNextPage === true ||
-    (raydiumPage.count !== null && raydiumPage.count > raydiumPage.pools.length) ||
+    raydiumScanIncomplete ||
     selected.length < exactPairs.length ||
     candidatesToCrossCheck.length < cpmmCandidates.length;
   const displayCandidates = enrichedCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
 
   return {
-    schemaVersion: "ata.phase6.cpmm-candidate-discovery.v2",
+    schemaVersion: "ata.phase6.cpmm-candidate-discovery.v3",
     generatedAt: now(),
-    scope: "READ_ONLY_SOL_USDC_RAYDIUM_CPMM_CANDIDATE_DISCOVERY",
+    scope: "READ_ONLY_SOL_ALLOWLISTED_STABLECOIN_RAYDIUM_CPMM_CANDIDATE_DISCOVERY",
     status: scanIncomplete
       ? qualifying.length > 0 ? "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN" : "INCOMPLETE_DISCOVERY_SCAN"
       : qualifying.length > 0 ? "QUALIFYING_CPMM_CANDIDATES_FOUND"
@@ -580,17 +697,11 @@ export async function discoverRaydiumCpmmCandidates({
     sources: {
       raydiumApi: {
         providerId: RAYDIUM_API_PROVIDER_ID,
-        responseShape: raydiumPage.responseShape,
         endpointClass: "pools/info/mint",
         clientRequestId,
-        rawPayloadSha256: sha256(raydium.rawText),
-        retrievedAt: fetchedAt,
         freshness: "UNKNOWN",
-        resultCount: raydiumPage.count,
-        hasNextPage: raydiumPage.hasNextPage,
-        paginationKnown: raydiumPage.paginationKnown,
-        paginationSignal: raydiumPage.paginationSignal,
-        responseDiagnostics: raydiumPage.responseDiagnostics
+        approvedQuotePairQueries: raydiumPairResults,
+        complete: !raydiumScanIncomplete
       },
       dexScreener: {
         providerId: "dex-screener",
@@ -603,20 +714,17 @@ export async function discoverRaydiumCpmmCandidates({
     rpcEvidence,
     selectionPolicy: {
       exactBaseMint: SOL_MINT,
-      exactQuoteMint: USDC_MINT,
+      approvedQuoteAssets: APPROVED_QUOTE_ASSETS,
       requiredOnChainPoolOwner: RAYDIUM_CPMM_PROGRAM_ID,
       minimumLiquidityUsd,
       minimumVolume24hUsd,
       liquidityVolumeThresholdRequiresBothIndexedSources: true,
       maxPoolAccountsChecked: MAX_POOL_ACCOUNTS,
       raydiumPageSize: RAYDIUM_POOL_PAGE_SIZE,
-      raydiumPageNumber: 1,
+      raydiumMaxPagesPerQuote: MAX_RAYDIUM_PAGES_PER_QUOTE,
       poolAccountsChecked: selected.length,
       exactRaydiumPoolCount: exactPairs.length,
       truncatedByRpcAccountCap: selected.length < exactPairs.length,
-      raydiumApiHasNextPage: raydiumPage.hasNextPage,
-      raydiumPaginationKnown: raydiumPage.paginationKnown,
-      raydiumPaginationSignal: raydiumPage.paginationSignal,
       scanIncomplete,
       candidateCount: cpmmCandidates.length,
       dexScreenerCrossCheckCap: MAX_DISPLAY_CANDIDATES,
@@ -638,14 +746,14 @@ export async function discoverRaydiumCpmmCandidates({
     reportLimitations: [
       "This report is a discovery shortlist, not a trading recommendation or token-safety approval.",
       "Raydium API liquidity/volume and DEX Screener liquidity/volume are both indexed observations, not independent on-chain reserve verification.",
-      "The report requires a matching exact pool/mint identity from DEX Screener and on-chain CPMM PoolState decoding before recommending a follow-up.",
+      "The report requires a matching exact pool/approved quote mint identity from DEX Screener and on-chain CPMM PoolState decoding before recommending a follow-up.",
       "Source freshness remains UNKNOWN because neither indexed mapping provides an approved market-event freshness signal here.",
       "Liquidity and volume thresholds are triage settings, not an approved trading policy.",
+      "USDC and USDT are a research-only allowlist; this report does not approve their use as production quote assets.",
       "A CPMM candidate must pass the full identity workflow, same-slot reserve reconciliation, independent market-data review, token-safety review, and fallback gates before any later decision."
     ]
   };
 }
-
 async function main() {
   const report = await discoverRaydiumCpmmCandidates();
   process.stdout.write(JSON.stringify(report, null, 2) + "\n");
