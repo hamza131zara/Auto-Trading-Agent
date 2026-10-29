@@ -3,11 +3,11 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 2.7  
+**Register version:** 2.8  
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `adf06fbef00a5f80fa4e4a5cae63cdbbafa1ecdb`  
+**Source snapshot before this register refresh:** `ba97b83dde3b63d64fa7a67891f2f32040e48559`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -31,7 +31,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Coverage/status | Git blob SHA | Bytes |
 |---|---|---|---:|
-| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `6d7975a836bf73b2ece7a86c3a5345927e46b590` | 7160 |
+| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `51516cbb24ed8278771398d9a7b078e041261468` | 7484 |
 | `README.md` | Project overview, frozen roadmap, Phase 5 active status and current gates | `9ab805e29cffbd9a00d6563abf44385ce4f3f4d2` | 6787 |
 | `SECURITY.md` | Project-specific supported-branch and responsible vulnerability-reporting policy | `7c80c6cc4717412380050f53e5bf095d64f03e6b` | 2688 |
 
@@ -148,7 +148,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-5/README.md` | Closed Phase 5 foundation handoff; main-push/PR CI evidence and owner-confirmed repository settings | `4f757ba9ee3441d2db3fdb7ece716fd7dbc9f238` | 4975 |
+| `docs/phase-5/README.md` | Closed Phase 5 foundation handoff; main-push/PR CI evidence and owner-confirmed repository settings | `48304ef5adad73a998b97eb3529f8d71098358fb` | 5157 |
 | `docs/phase-5/01-repository-structure-and-conventions.md` | Monorepo structure, workspace boundaries and conventions | `5668e0b8b3bcc3e1524aedf639630401f3b71e1c` | 3521 |
 | `docs/phase-5/02-environments-and-configuration.md` | Environment isolation and safe configuration policy | `883a4c9137504975a0fa2a0b217673c22f1da473` | 3496 |
 | `docs/phase-5/03-ci-cd-and-security-checks.md` | Current full-SHA action pins, CI security checks and owner-side dependency/protection gates | `adb9598d667ba61fbc9fb68a314669f987cb5335` | 3940 |
@@ -189,7 +189,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-6/README.md` | Phase 6 scope, provider-neutral boundary and provider-selection gate | `047bf10c569eb2b2b1fb5ffbbfc214fead969d55` | 3156 |
+| `docs/phase-6/README.md` | Phase 6 scope, provider-neutral boundary and provider-selection gate | `9900a8b5f3713911f418369354e4f5e7fc035fc6` | 4042 |
 | `docs/phase-6/01-canonical-observation-schema.md` | Versioned canonical observation schema, units, validation and versioning | `45b1fb3b99b5bb5e777de09c668e620fd78850a5` | 2743 |
 | `docs/phase-6/02-adapter-contract-and-provider-boundaries.md` | Provider-neutral adapter interface and bounded failure/retry boundary | `522a6c5662353c76bc025132eaa1a90349e56524` | 2882 |
 | `docs/phase-6/03-provenance-freshness-and-provider-health.md` | Separate data freshness and provider health semantics | `e1d0e227bc4f2a41b51c0fffa26d9357eb02a81f` | 2391 |
@@ -230,21 +230,23 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 ## Phase 5 status
 - Phase 5 is closed for engineering-foundation handoff on 29 October 2026 by owner confirmation of repository security settings.
-- Latest main-push CI for commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6` passed install, repository validation, typecheck, build/tests, npm audit and Gitleaks: https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814464474
+- Phase 5 closeout main-push CI for commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6` passed install, repository validation, typecheck, build/tests, npm audit and Gitleaks: https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814464474
+- The Phase 6 merge commit also passed the same main-push quality/security workflow: https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816041202
 - Phase 5 PR CI evidence includes passing quality and full-history secret-scan jobs for PR #5, #6, #7, #8 and #9. The connected GitHub integration could not read the classic branch-protection endpoint; branch protections are recorded as owner-confirmed.
 - The Dependency Review Action has been reintroduced in Phase 6 PR #10 and passed run 40815728124; npm audit remains active.
 - Current full-SHA action pins are checkout 7.0.1, setup-node 7.1.0 and Gitleaks v3.0.0. The project-specific root SECURITY.md and Dependabot cleanup are committed.
 - No trading, signing, customer portal or payment implementation is part of Phase 5. Mainnet remains unauthorized; numeric-risk and security blockers remain.
 
 ## Phase 6 status
-- Phase 6 is active. The first provider-neutral market-data slice adds a canonical observation schema, exact decimal/unit validation, Solana public-key syntax checks, deterministic freshness states, provider-health transitions and synthetic replay fixtures.
-- The initial slice is under PR #10; current CI evidence must be taken from the run on its latest head SHA before merge.
-- No production RPC/indexed-market provider is selected. Account plans, current endpoint versions/terms, freshness thresholds, provider disagreement rules and fallback behavior remain open.
-- No live data credentials, wallet/signer access or trade execution is introduced; mainnet remains unauthorized.
+- Phase 6 is active. The provider-neutral market-data slice merged through PR #10 into main commit `2ba2bdd357257d2d01799f8f7a80bc7439a942ec`.
+- Main-push CI (repository validation, typecheck, build/tests, npm audit and Gitleaks) passed: [run 40816041202](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816041202). Dependency Review passed on PR #10: [run 40815954105](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815954105); the optional AI code scan passed: [run 40815955521](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815955521).
+- CodeQL analysis on the merge commit was still in progress at publication: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698). Do not treat a pending result as a pass.
+- The first slice validates canonical snapshots, explicit decimal units/nulls, Solana public-key syntax, deterministic freshness states, provider-health transitions and synthetic replay fixtures. No production RPC/indexed-market provider is selected.
+- Account plans, current endpoint versions/terms, source-specific freshness thresholds, provider disagreement rules and fallback behavior remain open. No live credentials, wallet/signer access or trade execution is introduced; mainnet remains unauthorized.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source tree `adf06fbef00a5f80fa4e4a5cae63cdbbafa1ecdb`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source tree `ba97b83dde3b63d64fa7a67891f2f32040e48559`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
