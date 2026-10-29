@@ -130,7 +130,7 @@ function canonicalDecimal(value: unknown): string | null {
   if (DECIMAL_PATTERN.test(value)) return value;
 
   // Expand a valid exponent-form numeric lexeme exactly; never route through Number.
-  const match = value.match(/^(0|[1-9][0-9]*)(?:\\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
+  const match = value.match(/^(0|[1-9][0-9]*)(?:\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
   if (match === null) return null;
   const exponent = Number(match[3]);
   if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 64) return null;
