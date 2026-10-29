@@ -26,6 +26,7 @@
 6. [DEX Screener read-only reference adapter](06-dexscreener-reference-adapter.md)
 7. [Provider agreement and fail-closed fallback policy](07-provider-agreement-and-fallback-policy.md)
 8. [On-chain identity evidence contract](08-on-chain-identity-evidence-contract.md)
+9. [Read-only Solana RPC account reader](09-solana-rpc-account-reader.md)
 
 ## Initial implementation boundary
 
@@ -45,6 +46,10 @@ A read-only DEX Screener reference adapter is included for evaluation. Its fixtu
 ## Provider-selection gate
 
 Candidates remain those in the owner-approved provider matrix (Solana RPC, Helius, DEX Screener, Birdeye and other reviewed sources as appropriate). This phase must not turn the research shortlist or earlier dated pricing snapshot into an implied vendor commitment. A provider adapter may be considered production-ready only after endpoint/version and terms review, quota/budget selection, schema validation, timeout/retry/circuit-breaker behavior, fallback/disagreement tests, and deterministic fixtures pass.
+
+## Read-only RPC transport
+
+A bounded, read-only `getMultipleAccounts` transport is implemented in [Phase 6.9](09-solana-rpc-account-reader.md). It preserves the response context slot and account order, hashes the response, marks injected-fetch results synthetic, and never makes an RPC call in CI. It deliberately returns raw base64 account data only; pool/mint/vault decoding and production provider selection remain separate gates.
 
 ## On-chain identity evidence boundary
 
