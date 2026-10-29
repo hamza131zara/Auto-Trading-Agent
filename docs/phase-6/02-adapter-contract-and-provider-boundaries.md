@@ -19,7 +19,7 @@ The shared contract defines:
 - an explicit normalization function that yields validated canonical observations plus structured validation errors;
 - bounded operational failure classes (timeout, rate-limit, network, HTTP, authentication, parse and unknown), without raw credentials or unbounded provider error bodies.
 
-The first implementation defines the interface only. No vendor endpoint, SDK, API key scheme or paid plan is chosen.
+The initial provider-neutral interface is implemented. A fixture-tested read-only DEX Screener candidate adapter has also been added for evaluation only; its presence is not a production vendor selection. No SDK, plan, account or production quota has been approved.
 
 ## Retry and degraded behavior
 
@@ -41,3 +41,18 @@ The current provider matrix is a shortlist only. Before any concrete adapter shi
 - schema fixtures for success, missing fields, malformed data, rate limits, stale responses and provider disagreement.
 
 No live or paid provider call is made by the Phase 6 provider-neutral package.
+
+
+## DEX Screener candidate adapter (evaluation only)
+
+A read-only reference adapter targets the documented pair lookup route `GET /latest/dex/pairs/{chainId}/{pairId}` on `https://api.dexscreener.com` for the requested Solana pair address. See the [official API reference](https://docs.dexscreener.com/api/reference). It only queries an explicitly requested pool; it does not discover arbitrary pools from a base mint and silently pick one.
+
+- Only `mainnet-beta` requests are supported by this indexed-market adapter. Devnet/testnet requests fail before a network call.
+- The adapter requires the returned chain, pair address, base mint and quote mint to match the request exactly.
+- It normalizes `priceUsd` as `USD_PER_BASE`, `liquidity.usd` and `volume.h24` as USD measures, and 24-hour buy/sell counts only when they are valid safe integers.
+- JSON numeric tokens are captured as strings before normalization. Exponent notation is expanded using string arithmetic; values do not pass through JavaScript floating-point numbers before canonical storage.
+- The API response does not establish when the price observation itself occurred. Therefore `observedAt` and `sourceEventAt` remain null and freshness is `UNKNOWN`, even when retrieval is recent. Pair creation time is not substituted for an observation timestamp.
+- Only a SHA-256 digest of the exact response text is retained as provenance. Raw provider bodies and credentials are not logged or included in the canonical observation.
+- The adapter is read-only and never calls Solana RPC, evaluates token safety, submits transactions or authorizes trades. Unit tests use a mocked fetch and synthetic response fixtures; CI does not call the external API.
+
+Before any production use, re-check the official endpoint/schema, terms, quota and rate-limit bucket, and define independent on-chain confirmation and provider fallback/disagreement behavior. A syntactically valid indexed observation is not proof that a pool is authentic or that any market measure is safe to trade on.
