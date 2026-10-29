@@ -1,6 +1,6 @@
 # Phase 6.20 — Local review of pinned Raydium reference-build evidence
 
-**Status:** Implemented on review branch; CI review pending. This tool is an offline consistency check for a completed Phase 6.19 build artifact. It does not generate the build or contact Solana RPC. Phase 6 remains active, and trading remains unauthorized.
+**Status:** Implemented and CI-verified in [PR #32](https://github.com/hamza131zara/Auto-Trading-Agent/pull/32). [CI #238](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40959057478) passed 224/224 tests, repository validation, typecheck/build, dependency audit and Gitleaks; [Dependency Review #239](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40959057546) passed. This tool is an offline consistency check for a completed Phase 6.19 build artifact. It does not generate the build or contact Solana RPC. Phase 6 remains active, and trading remains unauthorized.
 
 ## Purpose
 
@@ -12,13 +12,13 @@ The Phase 6.19 workflow emits a JSON manifest and two raydium_cp_swap.so files. 
 2. Download and extract the raydium-cpmm-reference-build-evidence artifact from that run. Preserve the original ZIP and workflow-run URL as operator-controlled provenance.
 3. Inspect the manifest and build logs, then run the reviewer locally from the repository root, substituting the actual extracted paths:
 
-\`\`\`sh
+```sh
 node scripts/review-raydium-build-evidence.mjs \\
   --manifest ./raydium-build-evidence/raydium-reference-build-evidence.json \\
   --artifact-a ./raydium-build-evidence/artifacts/raydium_cp_swap-build-a.so \\
   --artifact-b ./raydium-build-evidence/artifacts/raydium_cp_swap-build-b.so \\
   --output ./raydium-build-evidence/review-report.json
-\`\`\`
+```
 
 4. Review the review-report.json, original CI logs, manifest, artifact checksums, source repository/commit/tree, pinned CLI digest, and build-input hashes before deciding whether the evidence is suitable for the next explicit gate. Preserve both the original build artifact and the review report.
 
