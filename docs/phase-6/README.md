@@ -30,6 +30,7 @@
 10. [SPL Token base-state decoder](10-spl-token-base-state-decoder.md)
 11. [Token-2022 extension TLV structure inspector](11-token2022-extension-tlv-inspector.md)
 12. [Raydium CPMM candidate pool decoder](12-raydium-cpmm-candidate-decoder.md)
+13. [Explicit live-source validation runner](13-live-source-validation-runner.md)
 
 ## Initial implementation boundary
 
@@ -53,6 +54,10 @@ Candidates remain those in the owner-approved provider matrix (Solana RPC, Heliu
 ## Protocol-specific candidate decoder
 
 The Raydium CPMM candidate decoder in [Phase 6.12](12-raydium-cpmm-candidate-decoder.md) now connects the bounded account reader to decoded PoolState, AMM config, LP mint, mint/vault state, and PDA/authority checks. Tests are synthetic only; this is not production provider selection or live-source validation.
+
+## Explicit live-source validation runner
+
+Phase 6.13 adds a CLI that can run the pinned Raydium candidate against a real read-only mainnet RPC endpoint only after explicit operator acknowledgements, a reviewed non-synthetic indexed-source snapshot, provider separation, and current terms/quota/budget review. It rejects replay fixtures before network access, writes only redacted identity evidence, and hard-codes Phase 6 completion, production-provider approval, and trading authorization to false. **The runner is implemented but has not been executed against live data; Phase 6 remains ACTIVE.** See [Phase 6.13](13-live-source-validation-runner.md).
 
 ## Token-2022 extension TLV structure and semantic policy
 
