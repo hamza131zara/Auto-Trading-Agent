@@ -272,6 +272,7 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
 
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
+  private readonly synthetic: boolean;
 
   constructor(fetchImpl: typeof fetch = fetch, timeoutMs = 5_000) {
     if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 60_000) {
@@ -279,6 +280,8 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
     }
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
+    // Injected fetch implementations are for tests/fixtures and can never yield live evidence.
+    this.synthetic = fetchImpl !== fetch;
   }
 
   async fetchRaw(request: MarketDataRequest, signal: AbortSignal): Promise<unknown> {
@@ -342,7 +345,7 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
       requested: request,
       payload,
       rawPayloadSha256,
-      synthetic: false
+      synthetic: this.synthetic
     } satisfies DexScreenerPayloadEnvelope;
   }
 
