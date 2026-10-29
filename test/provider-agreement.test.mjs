@@ -15,6 +15,7 @@ const original = fixture.cases.find((item) => item.caseId === "fresh-source").sn
 const policy = {
   nowAt: "2026-10-29T00:01:00.000Z",
   maxAgeMs: 60_000,
+  maxHealthAgeMs: 60_000,
   allowSyntheticFixtures: true
 };
 
@@ -170,10 +171,24 @@ test("missing required market measures are insufficient evidence, not zero", () 
   assert.deepEqual(assessment.reasonCodes, ["REQUIRED_MEASURE_MISSING"]);
 });
 
+test("a stale provider-health snapshot is rejected even when the observation itself is fresh", () => {
+  const staleHealth = {
+    ...healthyHealth("provider-stale-health"),
+    lastSuccessAt: "2026-10-28T23:00:00.000Z",
+    lastRequestAt: "2026-10-28T23:00:00.000Z"
+  };
+  const assessment = assessProviderAgreement([
+    candidate("provider-stale-health", 0, snapshotFor("provider-stale-health"), staleHealth)
+  ], policy);
+  assert.equal(assessment.status, "NO_ACCEPTABLE_PROVIDER");
+  assert.ok(assessment.rejectedProviders[0].reasonCodes.includes("PROVIDER_HEALTH_STALE"));
+});
+
 test("synthetic observations are rejected by default", () => {
   const assessment = assessProviderAgreement(twoAgreeingCandidates(), {
     nowAt: policy.nowAt,
-    maxAgeMs: policy.maxAgeMs
+    maxAgeMs: policy.maxAgeMs,
+    maxHealthAgeMs: policy.maxHealthAgeMs
   });
   assert.equal(assessment.status, "NO_ACCEPTABLE_PROVIDER");
   assert.ok(assessment.rejectedProviders.every((item) =>
@@ -222,7 +237,8 @@ test("provider provenance cannot be relabeled to make another source appear auth
 test("invalid policy fails closed", () => {
   const assessment = assessProviderAgreement(twoAgreeingCandidates(), {
     nowAt: policy.nowAt,
-    maxAgeMs: -1
+    maxAgeMs: -1,
+    maxHealthAgeMs: policy.maxHealthAgeMs
   });
   assert.equal(assessment.status, "INVALID_INPUT");
   assert.equal(assessment.tradingAuthorized, false);
