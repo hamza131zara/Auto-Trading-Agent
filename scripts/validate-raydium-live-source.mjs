@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { DexScreenerPairsAdapter } from "@ata/market-data/providers/dex-screener";
 import {
   RAYDIUM_CPMM_DECODER_ID,
   RAYDIUM_CPMM_DECODER_VERSION,
@@ -21,6 +22,7 @@ const TARGET_APPROVAL = "INDEPENDENT_INDEXED_SOURCE_REVIEWED";
 const PROVIDER_APPROVAL = "TERMS_QUOTA_AND_BUDGET_REVIEWED";
 const UPGRADEABLE_LOADER_PROGRAM_ID = "BPFLoaderUpgradeab1e11111111111111111111111";
 const REQUEST_ID_PREFIX = "live-raydium";
+const INDEXER_REQUEST_PREFIX = "live-dexscreener";
 const SAFE_PROVIDER_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_INTEGER_TEXT = /^(?:0|[1-9][0-9]*)$/;
 
@@ -36,6 +38,9 @@ function usage() {
     "",
     "Usage:",
     "  node scripts/validate-raydium-live-source.mjs --target <canonical-snapshot.json> [--output <new-report.json>]",
+    "  node scripts/validate-raydium-live-source.mjs --pool-address <pair> --base-mint <mint> --quote-mint <mint> [--output <new-report.json>]",
+    "",
+    "The second mode fetches the explicitly named pair from DEX Screener before the read-only RPC check."
     "",
     "Required environment variables:",
     "  ATA_LIVE_SOURCE_APPROVAL=APPROVED_READ_ONLY_MAINNET_RPC",
@@ -112,26 +117,93 @@ export function validateLiveTargetSnapshot(target, rpcProviderId) {
   return target;
 }
 
-function parseArgs(argv) {
-  const parsed = { target: null, output: null, help: false };
+export function parseArgs(argv) {
+  const parsed = {
+    target: null,
+    output: null,
+    poolAddress: null,
+    baseMint: null,
+    quoteMint: null,
+    help: false
+  };
+  const options = new Map([
+    ["--target", "target"],
+    ["--output", "output"],
+    ["--pool-address", "poolAddress"],
+    ["--base-mint", "baseMint"],
+    ["--quote-mint", "quoteMint"]
+  ]);
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") {
       parsed.help = true;
-    } else if (arg === "--target" || arg === "--output") {
-      const value = argv[index + 1];
-      if (typeof value !== "string" || value.startsWith("--") || value.length === 0) {
-        throw codedError(arg === "--target" ? "TARGET_PATH_REQUIRED" : "OUTPUT_PATH_REQUIRED");
-      }
-      if (arg === "--target") parsed.target = value;
-      else parsed.output = value;
-      index += 1;
-    } else {
-      throw codedError("UNKNOWN_ARGUMENT");
+      continue;
+    }
+    const field = options.get(arg);
+    if (field === undefined) throw codedError("UNKNOWN_ARGUMENT");
+    const value = argv[index + 1];
+    if (typeof value !== "string" || value.startsWith("--") || value.length === 0) {
+      const errorCode = field === "target" ? "TARGET_PATH_REQUIRED" :
+        field === "output" ? "OUTPUT_PATH_REQUIRED" : "PAIR_IDENTITY_ARGUMENT_REQUIRED";
+      throw codedError(errorCode);
+    }
+    if (parsed[field] !== null) throw codedError("DUPLICATE_ARGUMENT");
+    parsed[field] = value;
+    index += 1;
+  }
+
+  if (!parsed.help) {
+    const liveFields = [parsed.poolAddress, parsed.baseMint, parsed.quoteMint];
+    const hasAnyLiveField = liveFields.some((value) => value !== null);
+    const hasAllLiveFields = liveFields.every((value) => value !== null);
+    if (parsed.target !== null && hasAnyLiveField) throw codedError("TARGET_MODE_ARGUMENT_CONFLICT");
+    if (parsed.target === null && !hasAllLiveFields) {
+      throw codedError(hasAnyLiveField ? "PAIR_IDENTITY_ARGUMENTS_INCOMPLETE" : "TARGET_PATH_REQUIRED");
     }
   }
-  if (!parsed.help && parsed.target === null) throw codedError("TARGET_PATH_REQUIRED");
   return parsed;
+}
+
+/**
+ * Fetch the exact pair named by the operator through the existing read-only DEX Screener adapter.
+ * The adapter marks any injected/mock fetch as synthetic, so test doubles cannot become live evidence.
+ */
+export async function buildTargetSnapshotFromDexScreener({
+  poolAddress,
+  baseMint,
+  quoteMint,
+  rpcProviderId,
+  adapter = new DexScreenerPairsAdapter(),
+  now = () => new Date().toISOString(),
+  requestId = INDEXER_REQUEST_PREFIX + "-" + Date.now().toString(36)
+}) {
+  const requestedAt = now();
+  const request = {
+    cluster: "mainnet-beta",
+    baseMint,
+    quoteMint,
+    poolAddress,
+    requestedAt
+  };
+  let raw;
+  try {
+    raw = await adapter.fetchRaw(request, new AbortController().signal);
+  } catch (error) {
+    // Pass through only the adapter's stable code; never log the URL or remote body.
+    if (typeof error?.code === "string" && /^[A-Z0-9_]{1,48}$/.test(error.code)) {
+      throw codedError("INDEXED_API_" + error.code);
+    }
+    throw codedError("INDEXED_API_REQUEST_FAILED");
+  }
+  const retrievedAt = now();
+  const normalized = adapter.normalize(raw, { requestedAt, retrievedAt, requestId });
+  if (normalized.errors.length > 0 || normalized.observations.length !== 1) {
+    const detail = String(normalized.errors[0] ?? "OBSERVATION_COUNT")
+      .replace(/[^A-Z0-9_]/g, "_")
+      .slice(0, 48);
+    throw codedError("INDEXED_TARGET_" + detail);
+  }
+  return validateLiveTargetSnapshot(normalized.observations[0], rpcProviderId);
 }
 
 function readOperatorConfiguration(env) {
@@ -250,17 +322,28 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     return 0;
   }
 
+  // Validate the approval and RPC configuration before making any provider call.
   const config = readOperatorConfiguration(env);
-  const targetPath = resolve(args.target);
   let target;
-  try {
-    target = JSON.parse(readFileSync(targetPath, "utf8"));
-  } catch {
-    throw codedError("TARGET_JSON_INVALID_OR_UNREADABLE");
+  let targetPath = null;
+  if (args.target !== null) {
+    targetPath = resolve(args.target);
+    try {
+      target = JSON.parse(readFileSync(targetPath, "utf8"));
+    } catch {
+      throw codedError("TARGET_JSON_INVALID_OR_UNREADABLE");
+    }
+    validateLiveTargetSnapshot(target, config.providerId);
+  } else {
+    target = await buildTargetSnapshotFromDexScreener({
+      poolAddress: args.poolAddress,
+      baseMint: args.baseMint,
+      quoteMint: args.quoteMint,
+      rpcProviderId: config.providerId
+    });
   }
-  validateLiveTargetSnapshot(target, config.providerId);
 
-  if (args.output !== null && resolve(args.output) === targetPath) {
+  if (args.output !== null && targetPath !== null && resolve(args.output) === targetPath) {
     throw codedError("REPORT_MUST_NOT_OVERWRITE_TARGET");
   }
 
