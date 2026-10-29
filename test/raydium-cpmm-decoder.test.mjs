@@ -4,12 +4,17 @@ import test from "node:test";
 import {
   RAYDIUM_CPMM_DECODER_ID,
   RAYDIUM_CPMM_DECODER_VERSION,
+  RAYDIUM_CPMM_AMM_CONFIG_LENGTH,
   RAYDIUM_CPMM_POOL_STATE_LENGTH,
   RAYDIUM_CPMM_PROGRAM_ID,
   SPL_TOKEN_PROGRAM_ID,
   assessRaydiumCpmmIdentityEvidence,
+  decodeRaydiumCpmmAmmConfig,
   decodeRaydiumCpmmPool,
+  deriveRaydiumCpmmAmmConfigPda,
   deriveRaydiumCpmmAuthorityPda,
+  deriveRaydiumCpmmLpMintPda,
+  deriveRaydiumCpmmObservationPda,
   deriveRaydiumCpmmPoolPda,
   deriveRaydiumCpmmVaultPda,
   findSolanaProgramAddress,
@@ -87,6 +92,19 @@ function writeCOptionPubkeyNone(bytes, offset) {
   bytes[offset + 1] = 0;
   bytes[offset + 2] = 0;
   bytes[offset + 3] = 0;
+}
+
+function ammConfigData(index, bump) {
+  const bytes = new Uint8Array(RAYDIUM_CPMM_AMM_CONFIG_LENGTH);
+  bytes.set([0xda, 0xf4, 0x21, 0x68, 0xcb, 0xcb, 0x2b, 0x6f], 0);
+  bytes[8] = bump;
+  bytes[9] = 0;
+  bytes[10] = index & 0xff;
+  bytes[11] = (index >>> 8) & 0xff;
+  writePubkey(bytes, 44, makeKey(41));
+  writePubkey(bytes, 76, makeKey(42));
+  for (const offset of [12, 20, 28, 36, 108, 116]) writeU64(bytes, offset, "0");
+  return bytes;
 }
 
 function mintData(decimals) {
@@ -173,29 +191,35 @@ async function makeFixture() {
   const orderedMints = [baseMint, quoteMint].sort((a, b) => Buffer.compare(decode58(a), decode58(b)));
   const token0Mint = orderedMints[0];
   const token1Mint = orderedMints[1];
-  const ammConfig = makeKey(31);
+  const configPda = await deriveRaydiumCpmmAmmConfigPda(7);
+  const ammConfig = configPda.address;
   const pool = await deriveRaydiumCpmmPoolPda(ammConfig, token0Mint, token1Mint);
   const authority = await deriveRaydiumCpmmAuthorityPda();
   const token0Vault = await deriveRaydiumCpmmVaultPda(pool.address, token0Mint);
   const token1Vault = await deriveRaydiumCpmmVaultPda(pool.address, token1Mint);
+  const lpMint = await deriveRaydiumCpmmLpMintPda(pool.address);
+  const observation = await deriveRaydiumCpmmObservationPda(pool.address);
   const state = poolStateBytes({
     ammConfig,
     poolCreator: makeKey(32),
     token0Vault: token0Vault.address,
     token1Vault: token1Vault.address,
-    lpMint: makeKey(33),
+    lpMint: lpMint.address,
     token0Mint,
     token1Mint,
-    observationKey: makeKey(34),
+    observationKey: observation.address,
     authBump: authority.bump
   });
   const rawAccounts = new Map([
     [pool.address, rawAccount(pool.address, RAYDIUM_CPMM_PROGRAM_ID, state)],
     [RAYDIUM_CPMM_PROGRAM_ID, rawAccount(RAYDIUM_CPMM_PROGRAM_ID, loaderProgramId, new Uint8Array([1, 2, 3]), true)],
+    [ammConfig, rawAccount(ammConfig, RAYDIUM_CPMM_PROGRAM_ID, ammConfigData(7, configPda.bump))],
+    [lpMint.address, rawAccount(lpMint.address, SPL_TOKEN_PROGRAM_ID, mintData(9))],
     [baseMint, rawAccount(baseMint, tokenProgramId, mintData(6))],
     [quoteMint, rawAccount(quoteMint, tokenProgramId, mintData(9))],
     [token0Vault.address, rawAccount(token0Vault.address, tokenProgramId, tokenAccountData(token0Mint, authority.address))],
-    [token1Vault.address, rawAccount(token1Vault.address, tokenProgramId, tokenAccountData(token1Mint, authority.address))]
+    [token1Vault.address, rawAccount(token1Vault.address, tokenProgramId, tokenAccountData(token1Mint, authority.address))],
+    [observation.address, rawAccount(observation.address, RAYDIUM_CPMM_PROGRAM_ID, new Uint8Array([9, 8, 7]))]
   ]);
   const target = structuredClone(original);
   target.cluster = "mainnet-beta";
@@ -205,7 +229,10 @@ async function makeFixture() {
   // This target is deliberately synthetic. The integrated gate must never call it a live match.
   target.provenance.sourceKind = "REPLAY_FIXTURE";
   target.provenance.synthetic = true;
-  return { target, pool, state, rawAccounts, token0Mint, token1Mint, authority, token0Vault, token1Vault };
+  return {
+    target, pool, state, rawAccounts, token0Mint, token1Mint, authority,
+    token0Vault, token1Vault, lpMint, observation, configPda
+  };
 }
 
 function policy() {
