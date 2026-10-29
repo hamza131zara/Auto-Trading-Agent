@@ -19,9 +19,21 @@
         "poolAddress": "11111111111111111111111111111111",
         "dexProgramAddress": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
         "tokenProgramAddress": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-        "price": { "value": "0.012345", "unit": "QUOTE_PER_BASE", "assetId": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-        "liquidity": { "value": "250000", "unit": "USD", "assetId": null },
-        "volume24h": { "value": "1000.25", "unit": "USD", "assetId": null },
+        "price": {
+          "value": "0.012345",
+          "unit": "QUOTE_PER_BASE",
+          "assetId": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        "liquidity": {
+          "value": "250000",
+          "unit": "USD",
+          "assetId": null
+        },
+        "volume24h": {
+          "value": "1000.25",
+          "unit": "USD",
+          "assetId": null
+        },
         "buys24h": 35,
         "sells24h": 22,
         "observedAt": "2026-10-29T00:00:50.000Z",
@@ -38,7 +50,8 @@
           "rawPayloadSha256": null,
           "synthetic": true
         }
-      }
+      },
+      "expectedValid": true
     },
     {
       "caseId": "stale-retrieval",
@@ -74,7 +87,8 @@
           "rawPayloadSha256": null,
           "synthetic": true
         }
-      }
+      },
+      "expectedValid": true
     },
     {
       "caseId": "stale-source-event",
@@ -91,8 +105,16 @@
         "poolAddress": null,
         "dexProgramAddress": null,
         "tokenProgramAddress": null,
-        "price": { "value": "0.012", "unit": "QUOTE_PER_BASE", "assetId": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" },
-        "liquidity": { "value": "0", "unit": "USD", "assetId": null },
+        "price": {
+          "value": "0.012",
+          "unit": "QUOTE_PER_BASE",
+          "assetId": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+        },
+        "liquidity": {
+          "value": "0",
+          "unit": "USD",
+          "assetId": null
+        },
         "volume24h": null,
         "buys24h": null,
         "sells24h": null,
@@ -110,7 +132,8 @@
           "rawPayloadSha256": null,
           "synthetic": true
         }
-      }
+      },
+      "expectedValid": true
     },
     {
       "caseId": "unknown-source-time",
@@ -146,7 +169,8 @@
           "rawPayloadSha256": null,
           "synthetic": true
         }
-      }
+      },
+      "expectedValid": true
     },
     {
       "caseId": "future-source-time",
@@ -183,7 +207,45 @@
           "rawPayloadSha256": null,
           "synthetic": true
         }
-      }
+      },
+      "expectedValid": true
+    },
+    {
+      "caseId": "invalid-address",
+      "expectedFreshness": "INVALID",
+      "nowAt": "2026-10-29T00:01:00.000Z",
+      "maxAgeMs": 60000,
+      "snapshot": {
+        "schemaVersion": "ata.market-data.v1",
+        "observationId": "synthetic-invalid-address-001",
+        "chain": "solana",
+        "cluster": "devnet",
+        "baseMint": "0OIl-not-base58",
+        "quoteMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "poolAddress": null,
+        "dexProgramAddress": null,
+        "tokenProgramAddress": null,
+        "price": null,
+        "liquidity": null,
+        "volume24h": null,
+        "buys24h": null,
+        "sells24h": null,
+        "observedAt": null,
+        "sourceEventAt": null,
+        "retrievedAt": "2026-10-29T00:00:55.000Z",
+        "slot": null,
+        "provenance": {
+          "providerId": "replay-fixture",
+          "sourceKind": "REPLAY_FIXTURE",
+          "adapterVersion": "0.1.0",
+          "schemaVersion": "ata.market-data.v1",
+          "requestId": "case-invalid-address-001",
+          "sourceEventId": null,
+          "rawPayloadSha256": null,
+          "synthetic": true
+        }
+      },
+      "expectedValid": false
     }
   ]
 }
