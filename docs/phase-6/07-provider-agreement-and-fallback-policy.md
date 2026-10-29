@@ -11,6 +11,7 @@ A provider fallback is not permission to trust a single unverified response. Thi
 Every candidate contains:
 
 - a unique safe provider ID;
+- a safe `independenceGroupId` identifying the upstream vendor/source family (two adapter aliases to the same underlying source cannot count as independent);
 - a unique integer priority, where `0` is preferred and larger values are fallback positions;
 - the provider-health snapshot for that same ID;
 - either a canonical observation or explicit `null` when the provider did not produce one.
@@ -34,7 +35,7 @@ A fallback is marked as used when no priority-`0` candidate is eligible but one 
 ## Comparability rules
 
 - Chain, cluster, base mint, quote mint and pool address must match exactly.
-- Observations must have the same source-observation/event timestamp to be compared. Because no approved maximum source-time skew exists yet, different source timestamps return `INSUFFICIENT_EVIDENCE`; the evaluator does not guess whether the observations are close enough in time.
+- Observations must have the same source-observation/event instant to be compared. UTC timestamp strings are compared as parsed instants, so equivalent representations such as `...:50Z` and `...:50.000Z` are equivalent. Because no approved maximum source-time skew exists yet, different source instants return `INSUFFICIENT_EVIDENCE`; the evaluator does not guess whether observations are close enough in time.
 - Price, liquidity and 24-hour volume must all be present. Their units and asset IDs must match. Decimal strings are compared numerically using string operations (so `250000`, `250000.0` and `250000.0000` are equivalent); no IEEE-754 conversion or tolerance is applied.
 - Buy and sell counts must be present and equal. A missing measure/count remains missing; it is never changed to zero.
 - Any comparable identity/value disagreement blocks the entire candidate set. No majority vote, implicit weighting, or automatic provider switching around a conflict exists.
