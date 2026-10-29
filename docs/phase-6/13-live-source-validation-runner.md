@@ -26,7 +26,7 @@ The acknowledgements record the operator's approval to make this specific read-o
 
 ## Target snapshot
 
-The target file supplied with --target must be one valid ata.market-data.v1 JSON snapshot from the reviewed indexed API. It must describe Solana mainnet-beta, include the exact pool address and base/quote mint addresses, be marked provenance.synthetic: false, use provenance.sourceKind: INDEXED_API, include the source request ID and SHA-256 response digest, and use a provider ID different from the RPC provider. Replay fixtures and incomplete-provenance snapshots are rejected before an RPC request.
+The optional target file supplied with --target must be one valid ata.market-data.v1 JSON snapshot from the reviewed indexed API. It must describe Solana mainnet-beta, include the exact pool address and base/quote mint addresses, be marked provenance.synthetic: false, use provenance.sourceKind: INDEXED_API, include the source request ID and SHA-256 response digest, and use a provider ID different from the RPC provider. Replay fixtures and incomplete-provenance snapshots are rejected before an RPC request. Alternatively, pass --pool-address, --base-mint, and --quote-mint; the runner fetches that exact pair through the existing DEX Screener adapter, then applies the same provenance/identity requirements. Injected/mock fetch responses are marked synthetic and cannot pass the live target gate.
 
 The snapshot should be saved as an untracked local file, for example ./local-evidence/raydium-target.json. Do not fabricate source metadata or label a synthetic sample as real. The indexed source timestamp may remain unknown; this runner validates account identity, not market-observation freshness. Where a target snapshot explicitly claims a DEX program address, that address must match the pinned Raydium CPMM candidate.
 
@@ -61,7 +61,7 @@ node scripts/validate-raydium-live-source.mjs --target .\local-evidence\raydium-
 
 The example slot and retrieval-age values are command examples only; choose values for the actual run and record the rationale. Avoid committing the target or report by adding the local evidence folder to the local/global Git ignore configuration first. The report output path must not already exist; the script uses exclusive creation to avoid overwriting an existing artifact. The RPC endpoint is not recorded in the report.
 
-The process exits with code **0** only for a non-synthetic MATCH that passes the identity gate; **1** means the identity evidence did not pass; **2** means configuration, transport, or execution stopped safely. Diagnostic output exposes only stable error codes, not the endpoint or account bytes.
+The process exits with code **0** only for a non-synthetic MATCH that passes the identity gate; **1** means the identity evidence did not pass; **2** means configuration, transport, or execution stopped safely. Diagnostic output exposes only stable error codes, not the endpoint or account bytes. DEX Screener's current mapping has no trustworthy source-event timestamp, so a successful account-identity check still does not satisfy market-data freshness.
 
 ## Evidence report
 
