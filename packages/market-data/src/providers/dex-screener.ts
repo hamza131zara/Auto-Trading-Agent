@@ -178,8 +178,8 @@ function parseCount(value: unknown): number | null | "INVALID" {
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : "INVALID";
 }
 
-function sha256Hex(bytes: Uint8Array): Promise<string> {
-  return globalThis.crypto.subtle.digest("SHA-256", bytes).then((digest) =>
+function sha256Hex(text: string): Promise<string> {
+  return globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then((digest) =>
     Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("")
   );
 }
@@ -281,7 +281,7 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
 
     let rawPayloadSha256: string;
     try {
-      rawPayloadSha256 = await sha256Hex(new TextEncoder().encode(text));
+      rawPayloadSha256 = await sha256Hex(text);
     } catch {
       throw new DexScreenerAdapterError("UNKNOWN", false);
     }
