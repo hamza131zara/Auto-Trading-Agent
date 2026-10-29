@@ -435,7 +435,9 @@ test("keeps full numbered page incomplete when pagination signals are absent", a
   assert.equal(usdcQuery.paginationTerminal, false);
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
-  assert.equal(report.status, "INCOMPLETE_DISCOVERY_SCAN");
+  // The separate SOL/USDT scan returns a qualifying fixture, but the overall
+  // report remains partial because this SOL/USDC page has unknown pagination.
+  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
   assert.equal(usdcQuery.pages[0].responseDiagnostics.pageHasNextPageType, "undefined");
   assert.equal(usdcQuery.pages[0].responseDiagnostics.poolArrayLength, 100);
 });
