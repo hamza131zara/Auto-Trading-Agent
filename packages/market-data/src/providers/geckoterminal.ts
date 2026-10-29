@@ -208,6 +208,226 @@ function normalizeEnvelope(value: unknown): GeckoTerminalPayloadEnvelope | null 
   return value as unknown as GeckoTerminalPayloadEnvelope;
 }
 
+
+export interface GeckoTerminalOhlcvPriceEnvelope {
+  readonly providerId: "geckoterminal";
+  readonly requested: MarketDataRequest;
+  readonly payload: unknown;
+  readonly rawPayloadSha256: string;
+  readonly synthetic: boolean;
+}
+
+export interface GeckoTerminalOhlcvPriceObservation {
+  readonly providerId: "geckoterminal";
+  readonly poolAddress: string;
+  readonly baseMint: string;
+  readonly quoteMint: string;
+  readonly priceUsdPerBase: string;
+  /** Timestamp of the one-minute candle's opening boundary, not the time of a specific trade. */
+  readonly candleStartAt: string;
+  readonly retrievedAt: string;
+  readonly timeframe: "minute";
+  readonly aggregate: 1;
+  readonly requestId: string | null;
+  readonly rawPayloadSha256: string;
+  readonly synthetic: boolean;
+}
+
+export interface GeckoTerminalOhlcvNormalizationResult {
+  readonly observation: GeckoTerminalOhlcvPriceObservation | null;
+  readonly errors: readonly string[];
+}
+
+function expandJsonNumberDecimal(value: unknown): string | null {
+  if (typeof value === "string") return canonicalDecimal(value);
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  const text = String(value);
+  if (DECIMAL_PATTERN.test(text)) return text;
+  const match = /^([0-9]+(?:\.[0-9]+)?)[eE]([+-]?[0-9]+)$/.exec(text);
+  if (match === null) return null;
+  const exponent = Number(match[2]);
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 100) return null;
+  const [integerPart, fractionPart = ""] = match[1]!.split(".");
+  const digits = integerPart + fractionPart;
+  const point = integerPart.length + exponent;
+  const expanded = point <= 0
+    ? "0." + "0".repeat(-point) + digits
+    : point >= digits.length
+      ? digits + "0".repeat(point - digits.length)
+      : digits.slice(0, point) + "." + digits.slice(point);
+  return DECIMAL_PATTERN.test(expanded) ? expanded : null;
+}
+
+/**
+ * Read-only timestamped price observation from GeckoTerminal's exact-pool one-minute OHLCV
+ * endpoint. The returned timestamp is the candle-start boundary, not a transaction event time.
+ * Freshness is assessed later against explicit policy; cached candles can be STALE.
+ */
+export class GeckoTerminalOhlcvPriceAdapter {
+  readonly providerId = PROVIDER_ID;
+  readonly adapterVersion = ADAPTER_VERSION;
+  private readonly fetchImpl: typeof fetch;
+  private readonly timeoutMs: number;
+  private readonly synthetic: boolean;
+
+  constructor(fetchImpl: typeof fetch = fetch, timeoutMs = 5_000) {
+    if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 60_000) {
+      throw new RangeError("timeoutMs must be an integer between 100 and 60000.");
+    }
+    this.fetchImpl = fetchImpl;
+    this.timeoutMs = timeoutMs;
+    this.synthetic = this.fetchImpl !== fetch;
+  }
+
+  async fetchRaw(request: MarketDataRequest, signal: AbortSignal): Promise<unknown> {
+    validateRequest(request);
+    if (!this.synthetic) {
+      const pacing = assessGeckoTerminalRequestPacing(Date.now(), nextLiveRequestAllowedAtMs);
+      if (!pacing.canStartRequest) throw new GeckoTerminalAdapterError("RATE_LIMIT", true);
+      nextLiveRequestAllowedAtMs = pacing.nextAllowedAtMs;
+    }
+    const url = new URL(
+      "/api/v2/networks/solana/pools/" + encodeURIComponent(request.poolAddress!) + "/ohlcv/minute",
+      API_BASE_URL
+    );
+    url.searchParams.set("aggregate", "1");
+    url.searchParams.set("limit", "5");
+    url.searchParams.set("currency", "usd");
+    url.searchParams.set("token", "base");
+
+    const timeoutSignal = AbortSignal.timeout(this.timeoutMs);
+    const combinedSignal = AbortSignal.any([signal, timeoutSignal]);
+    let response: Response;
+    try {
+      response = await this.fetchImpl(url, {
+        method: "GET",
+        headers: { accept: "application/json;version=" + API_VERSION },
+        redirect: "error",
+        signal: combinedSignal
+      });
+    } catch {
+      if (timeoutSignal.aborted) throw new GeckoTerminalAdapterError("TIMEOUT", true);
+      if (signal.aborted) throw new GeckoTerminalAdapterError("UNKNOWN", false);
+      throw new GeckoTerminalAdapterError("NETWORK", true);
+    }
+
+    if (!response.ok) {
+      if (response.status === 429) throw new GeckoTerminalAdapterError("RATE_LIMIT", true, 429);
+      if (response.status === 408) throw new GeckoTerminalAdapterError("TIMEOUT", true, 408);
+      if (response.status === 401 || response.status === 403) {
+        throw new GeckoTerminalAdapterError("AUTH", false, response.status);
+      }
+      throw new GeckoTerminalAdapterError("HTTP", response.status >= 500, response.status);
+    }
+
+    let text: string;
+    try {
+      text = await readBoundedResponseText(response);
+    } catch (error) {
+      if (error instanceof GeckoTerminalAdapterError) throw error;
+      if (timeoutSignal.aborted) throw new GeckoTerminalAdapterError("TIMEOUT", true);
+      if (signal.aborted) throw new GeckoTerminalAdapterError("UNKNOWN", false);
+      throw new GeckoTerminalAdapterError("NETWORK", true);
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(text) as unknown;
+    } catch {
+      throw new GeckoTerminalAdapterError("PARSE", false);
+    }
+    let rawPayloadSha256: string;
+    try {
+      rawPayloadSha256 = await sha256Hex(text);
+    } catch {
+      throw new GeckoTerminalAdapterError("UNKNOWN", false);
+    }
+    return {
+      providerId: PROVIDER_ID,
+      requested: request,
+      payload,
+      rawPayloadSha256,
+      synthetic: this.synthetic
+    } satisfies GeckoTerminalOhlcvPriceEnvelope;
+  }
+
+  normalize(
+    rawPayload: unknown,
+    context: { readonly requestedAt: string; readonly retrievedAt: string; readonly requestId: string | null }
+  ): GeckoTerminalOhlcvNormalizationResult {
+    const fail = (code: string): GeckoTerminalOhlcvNormalizationResult => ({
+      observation: null,
+      errors: [code]
+    });
+    if (!isRecord(rawPayload) ||
+        rawPayload.providerId !== PROVIDER_ID ||
+        !isRecord(rawPayload.requested) ||
+        !/^[a-f0-9]{64}$/.test(String(rawPayload.rawPayloadSha256)) ||
+        typeof rawPayload.synthetic !== "boolean" ||
+        !("payload" in rawPayload)) return fail("INVALID_OHLCV_ENVELOPE");
+
+    const request = rawPayload.requested as unknown as MarketDataRequest;
+    try {
+      validateRequest(request);
+    } catch {
+      return fail("INVALID_OHLCV_REQUEST");
+    }
+    if (!isUtcTimestamp(context.requestedAt) ||
+        !isUtcTimestamp(context.retrievedAt) ||
+        context.requestedAt !== request.requestedAt) return fail("INVALID_OHLCV_CONTEXT");
+
+    const body = getRecord(rawPayload.payload);
+    const data = getRecord(body?.data);
+    const attributes = getRecord(data?.attributes);
+    const meta = getRecord(body?.meta);
+    const base = getRecord(meta?.base);
+    const quote = getRecord(meta?.quote);
+    if (base?.address !== request.baseMint || quote?.address !== request.quoteMint) {
+      return fail("OHLCV_MINT_IDENTITY_MISMATCH");
+    }
+    const list = attributes?.ohlcv_list;
+    if (!Array.isArray(list) || list.length === 0 || list.length > 1000) {
+      return fail("OHLCV_CANDLE_LIST_INVALID");
+    }
+
+    const validCandles: Array<{ timestampSeconds: number; close: string }> = [];
+    for (const row of list as unknown[]) {
+      if (!Array.isArray(row) || row.length < 6 ||
+          !Number.isSafeInteger(row[0]) || (row[0] as number) < 0) {
+        return fail("OHLCV_CANDLE_INVALID");
+      }
+      const close = expandJsonNumberDecimal(row[4]);
+      if (close === null || !/[1-9]/.test(close)) return fail("OHLCV_CLOSE_INVALID");
+      const date = new Date((row[0] as number) * 1000);
+      if (!Number.isFinite(date.getTime())) return fail("OHLCV_TIMESTAMP_INVALID");
+      validCandles.push({ timestampSeconds: row[0] as number, close });
+    }
+    validCandles.sort((left, right) => right.timestampSeconds - left.timestampSeconds);
+    const newest = validCandles[0];
+    if (newest === undefined) return fail("OHLCV_CANDLE_LIST_INVALID");
+    if (validCandles.length > 1 && validCandles[1]!.timestampSeconds === newest.timestampSeconds &&
+        validCandles[1]!.close !== newest.close) return fail("OHLCV_DUPLICATE_LATEST_CANDLE");
+
+    return {
+      observation: {
+        providerId: PROVIDER_ID,
+        poolAddress: request.poolAddress!,
+        baseMint: request.baseMint,
+        quoteMint: request.quoteMint,
+        priceUsdPerBase: newest.close,
+        candleStartAt: new Date(newest.timestampSeconds * 1000).toISOString(),
+        retrievedAt: context.retrievedAt,
+        timeframe: "minute",
+        aggregate: 1,
+        requestId: context.requestId,
+        rawPayloadSha256: String(rawPayload.rawPayloadSha256),
+        synthetic: rawPayload.synthetic
+      },
+      errors: []
+    };
+  }
+}
+
 /**
  * Read-only exact-pool GeckoTerminal adapter. The public endpoint is beta and the provider
  * documents one-minute caching. Pool creation time is never promoted to an observation timestamp.
