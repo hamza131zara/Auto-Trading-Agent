@@ -28,6 +28,10 @@ const INDEXER_REQUEST_PREFIX = "live-dexscreener";
 const SAFE_PROVIDER_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_INTEGER_TEXT = /^(?:0|[1-9][0-9]*)$/;
 
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function codedError(code) {
   const error = new Error(code);
   error.code = code;
