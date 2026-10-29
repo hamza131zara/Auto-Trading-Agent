@@ -125,7 +125,7 @@ test("rejects invalid terminators and non-zero content after terminator", () => 
     "INVALID_TLV_TERMINATOR"
   );
 
-  const bytes = mintExtended(8);
+  const bytes = mintExtended(12);
   let offset = putTlv(bytes, 166, 3, new Uint8Array(0));
   bytes.set([0, 0, 0, 0, 9, 0, 0, 0], offset);
   assert.equal(
