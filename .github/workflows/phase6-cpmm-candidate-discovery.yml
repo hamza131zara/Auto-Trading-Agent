@@ -1,0 +1,82 @@
+name: Phase 6 Raydium CPMM candidate discovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      minimum_liquidity_usd:
+        description: Minimum indexed liquidity USD for candidate qualification (triage only)
+        required: true
+        type: string
+        default: "100000"
+      minimum_volume_24h_usd:
+        description: Minimum indexed 24-hour volume USD for candidate qualification (triage only)
+        required: true
+        type: string
+        default: "10000"
+      confirm_read_only_rpc:
+        description: I approve a one-off read-only lookup against Solana's shared Mainnet RPC
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_dexscreener_terms_budget:
+        description: I reviewed current DEX Screener terms, quota, public logs, and one-off usage budget
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase6-cpmm-discovery-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Read-only SOL/USDC CPMM candidate shortlist
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install from the lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        run: npm run build
+
+      - name: Require explicit acknowledgements before network calls
+        env:
+          CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}
+          CONFIRM_DEXSCREENER_TERMS_BUDGET: ${{ inputs.confirm_dexscreener_terms_budget }}
+        run: |
+          if [[ "$CONFIRM_READ_ONLY_RPC" != "yes" ]]; then
+            echo "::error::Read-only mainnet RPC approval was not confirmed."
+            exit 2
+          fi
+          if [[ "$CONFIRM_DEXSCREENER_TERMS_BUDGET" != "yes" ]]; then
+            echo "::error::DEX Screener terms/quota/usage-budget review was not confirmed."
+            exit 2
+          fi
+
+      - name: Discover and classify SOL/USDC pools
+        env:
+          ATA_CPMM_DISCOVERY_RPC_APPROVAL: APPROVED_READ_ONLY_MAINNET_DISCOVERY
+          ATA_CPMM_DISCOVERY_PROVIDER_APPROVAL: DEXSCREENER_TERMS_AND_BUDGET_REVIEWED
+          ATA_CPMM_DISCOVERY_MIN_LIQUIDITY_USD: ${{ inputs.minimum_liquidity_usd }}
+          ATA_CPMM_DISCOVERY_MIN_VOLUME_24H_USD: ${{ inputs.minimum_volume_24h_usd }}
+        run: node scripts/discover-raydium-cpmm-candidates.mjs
