@@ -205,6 +205,14 @@ test("classifies HTTP rate limit without leaking response body", async () => {
   );
 });
 
+test("rejects invalid UTF-8 instead of hashing a replacement-decoded payload", async () => {
+  const adapter = new DexScreenerPairsAdapter(async () => new Response(new Uint8Array([0xff])));
+  await assert.rejects(
+    adapter.fetchRaw(request, new AbortController().signal),
+    (error) => error instanceof DexScreenerAdapterError && error.code === "PARSE"
+  );
+});
+
 test("cancels an oversized response stream once the byte limit is exceeded", async () => {
   let cancelled = false;
   let chunksEmitted = 0;
