@@ -611,10 +611,13 @@ function isValidAgreementPolicy(policy: ProviderAgreementPolicy): boolean {
 /** Compares canonical non-negative decimals numerically, without binary floating-point conversion. */
 function decimalStringsEqual(left: string, right: string): boolean {
   const normalize = (value: string): string => {
-    const [integerPart = "0", fractionalPart] = value.split(".");
-    const integer = integerPart.replace(/^0+(?=[0-9])/, "");
-    if (fractionalPart === undefined) return integer;
-    const fraction = fractionalPart.replace(/0+$/, "");
+    const point = value.indexOf(".");
+    const integer = point < 0 ? value : value.slice(0, point);
+    if (point < 0) return integer;
+    const originalFraction = value.slice(point + 1);
+    let end = originalFraction.length;
+    while (end > 0 && originalFraction[end - 1] === "0") end -= 1;
+    const fraction = originalFraction.slice(0, end);
     return fraction.length === 0 ? integer : integer + "." + fraction;
   };
   return normalize(left) === normalize(right);
