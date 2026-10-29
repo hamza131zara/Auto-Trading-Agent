@@ -11,6 +11,8 @@ import {
   RAYDIUM_CPMM_PROGRAM_ID,
   SPL_TOKEN_PROGRAM_ID,
   SPL_TOKEN_2022_PROGRAM_ID,
+  decodeSplTokenAccount,
+  decodeSplTokenMint,
   SolanaRpcAccountReader,
   assessRaydiumCpmmIdentityEvidence,
   readRaydiumCpmmIdentityBundle,
@@ -25,6 +27,10 @@ const REQUEST_ID_PREFIX = "live-raydium";
 const INDEXER_REQUEST_PREFIX = "live-dexscreener";
 const SAFE_PROVIDER_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_INTEGER_TEXT = /^(?:0|[1-9][0-9]*)$/;
+
+function isRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function codedError(code) {
   const error = new Error(code);
@@ -255,6 +261,173 @@ export function buildMarketDataReportSection(target) {
   };
 }
 
+function formatExactTokenAmount(rawAmount, decimals) {
+  if (typeof rawAmount !== "string" || !/^(?:0|[1-9][0-9]*)$/.test(rawAmount) ||
+      !Number.isSafeInteger(decimals) || decimals < 0 || decimals > 255) {
+    return null;
+  }
+  const amount = BigInt(rawAmount);
+  const scale = 10n ** BigInt(decimals);
+  const whole = (amount / scale).toString();
+  if (decimals === 0) return whole;
+  const fractional = (amount % scale).toString().padStart(decimals, "0").replace(/0+$/, "");
+  return fractional.length === 0 ? whole : whole + "." + fractional;
+}
+
+function formatReserveRatioQuotePerBase(baseRaw, quoteRaw, baseDecimals, quoteDecimals) {
+  if (!/^(?:0|[1-9][0-9]*)$/.test(baseRaw) ||
+      !/^(?:0|[1-9][0-9]*)$/.test(quoteRaw) ||
+      !Number.isSafeInteger(baseDecimals) || baseDecimals < 0 || baseDecimals > 255 ||
+      !Number.isSafeInteger(quoteDecimals) || quoteDecimals < 0 || quoteDecimals > 255) {
+    return null;
+  }
+  const baseAmount = BigInt(baseRaw);
+  const quoteAmount = BigInt(quoteRaw);
+  if (baseAmount === 0n) return null;
+  const numerator = quoteAmount * (10n ** BigInt(baseDecimals));
+  const denominator = baseAmount * (10n ** BigInt(quoteDecimals));
+  const precision = 18n;
+  const scale = 10n ** precision;
+  const scaled = (numerator * scale) / denominator;
+  const whole = (scaled / scale).toString();
+  const fractional = (scaled % scale).toString().padStart(Number(precision), "0").replace(/0+$/, "");
+  return fractional.length === 0 ? whole : whole + "." + fractional;
+}
+
+export function buildOnChainReserveEvidence(target, bundle, pool) {
+  const unavailable = (state, reasonCodes) => ({
+    state,
+    reasonCodes,
+    contextSlot: isRecord(bundle?.source) ? bundle.source.contextSlot ?? null : null,
+    baseMint: target?.baseMint ?? null,
+    quoteMint: target?.quoteMint ?? null,
+    baseVaultAddress: null,
+    quoteVaultAddress: null,
+    baseVaultAmountRaw: null,
+    quoteVaultAmountRaw: null,
+    baseReserveAmount: null,
+    quoteReserveAmount: null,
+    reserveRatioQuotePerBase: null
+  });
+
+  if (!isRecord(target) || !isRecord(bundle) || !Array.isArray(bundle.accounts) || !isRecord(pool)) {
+    return unavailable("NOT_AVAILABLE", ["POOL_OR_ACCOUNT_BUNDLE_NOT_AVAILABLE"]);
+  }
+  const baseVaultAddress = pool.token0Mint === target.baseMint
+    ? pool.token0Vault
+    : pool.token1Mint === target.baseMint ? pool.token1Vault : null;
+  const quoteVaultAddress = pool.token0Mint === target.quoteMint
+    ? pool.token0Vault
+    : pool.token1Mint === target.quoteMint ? pool.token1Vault : null;
+  if (baseVaultAddress === null || quoteVaultAddress === null ||
+      typeof baseVaultAddress !== "string" || typeof quoteVaultAddress !== "string") {
+    return unavailable("MISMATCH", ["POOL_MINTS_DO_NOT_MATCH_TARGET"]);
+  }
+
+  const byAddress = new Map(bundle.accounts.map((account) => [account.address, account]));
+  const baseMintRaw = byAddress.get(target.baseMint);
+  const quoteMintRaw = byAddress.get(target.quoteMint);
+  const baseVaultRaw = byAddress.get(baseVaultAddress);
+  const quoteVaultRaw = byAddress.get(quoteVaultAddress);
+  if (!baseMintRaw || !quoteMintRaw || !baseVaultRaw || !quoteVaultRaw) {
+    return {
+      ...unavailable("NOT_AVAILABLE", ["RESERVE_EVIDENCE_ACCOUNT_MISSING"]),
+      baseVaultAddress,
+      quoteVaultAddress
+    };
+  }
+
+  const baseMint = decodeSplTokenMint(baseMintRaw);
+  const quoteMint = decodeSplTokenMint(quoteMintRaw);
+  const baseVault = decodeSplTokenAccount(baseVaultRaw);
+  const quoteVault = decodeSplTokenAccount(quoteVaultRaw);
+  const decodeFailures = [];
+  if (baseMint.status !== "DECODED") decodeFailures.push("BASE_MINT_" + (baseMint.errorCode ?? baseMint.status));
+  if (quoteMint.status !== "DECODED") decodeFailures.push("QUOTE_MINT_" + (quoteMint.errorCode ?? quoteMint.status));
+  if (baseVault.status !== "DECODED") decodeFailures.push("BASE_VAULT_" + (baseVault.errorCode ?? baseVault.status));
+  if (quoteVault.status !== "DECODED") decodeFailures.push("QUOTE_VAULT_" + (quoteVault.errorCode ?? quoteVault.status));
+  if (decodeFailures.length > 0) {
+    return {
+      ...unavailable("BLOCKED", decodeFailures),
+      baseVaultAddress,
+      quoteVaultAddress
+    };
+  }
+
+  if (baseVault.value.mint !== target.baseMint) {
+    return {
+      ...unavailable("MISMATCH", ["BASE_VAULT_MINT_MISMATCH"]),
+      baseVaultAddress,
+      quoteVaultAddress
+    };
+  }
+  if (quoteVault.value.mint !== target.quoteMint) {
+    return {
+      ...unavailable("MISMATCH", ["QUOTE_VAULT_MINT_MISMATCH"]),
+      baseVaultAddress,
+      quoteVaultAddress
+    };
+  }
+  if (baseVault.value.state !== "INITIALIZED" || quoteVault.value.state !== "INITIALIZED") {
+    return {
+      ...unavailable("MISMATCH", ["VAULT_NOT_INITIALIZED"]),
+      baseVaultAddress,
+      quoteVaultAddress
+    };
+  }
+
+  const baseVaultAmountRaw = baseVault.value.amount;
+  const quoteVaultAmountRaw = quoteVault.value.amount;
+  const baseReserveAmount = formatExactTokenAmount(baseVaultAmountRaw, baseMint.value.decimals);
+  const quoteReserveAmount = formatExactTokenAmount(quoteVaultAmountRaw, quoteMint.value.decimals);
+  if (baseReserveAmount === null || quoteReserveAmount === null) {
+    return {
+      ...unavailable("INVALID", ["RESERVE_AMOUNT_FORMAT_INVALID"]),
+      baseVaultAddress,
+      quoteVaultAddress
+    };
+  }
+
+  const baseAmountIsZero = BigInt(baseVaultAmountRaw) === 0n;
+  const quoteAmountIsZero = BigInt(quoteVaultAmountRaw) === 0n;
+  const reserveRatioQuotePerBase = baseAmountIsZero
+    ? null
+    : formatReserveRatioQuotePerBase(
+        baseVaultAmountRaw,
+        quoteVaultAmountRaw,
+        baseMint.value.decimals,
+        quoteMint.value.decimals
+      );
+
+  return {
+    state: baseAmountIsZero || quoteAmountIsZero ? "EMPTY_RESERVE_SIDE" : "DECODED",
+    reasonCodes: baseAmountIsZero || quoteAmountIsZero ? ["ONE_OR_MORE_VAULT_RESERVES_ZERO"] : [],
+    providerId: bundle.source.providerId,
+    commitment: bundle.source.commitment,
+    contextSlot: bundle.source.contextSlot,
+    rpcRequestId: bundle.source.requestId,
+    rpcRawPayloadSha256: bundle.source.rawPayloadSha256,
+    baseMint: target.baseMint,
+    quoteMint: target.quoteMint,
+    baseMintDecimals: baseMint.value.decimals,
+    quoteMintDecimals: quoteMint.value.decimals,
+    baseVaultAddress,
+    quoteVaultAddress,
+    baseVaultMint: baseVault.value.mint,
+    quoteVaultMint: quoteVault.value.mint,
+    baseVaultAmountRaw,
+    quoteVaultAmountRaw,
+    baseReserveAmount,
+    quoteReserveAmount,
+    reserveRatioQuotePerBase,
+    reserveRatioUnit: "QUOTE_PER_BASE",
+    reserveRatioPrecisionDecimalPlaces: 18,
+    interpretation: "Decoded on-chain vault balances from the same finalized account bundle. Reserve ratio is a pool-state ratio, not an executable swap quote or a USD valuation.",
+    independentComparisonStatus: "NOT_ASSESSED",
+    independentComparisonReason: "Requires an independent quote-asset USD value, source-specific freshness policy, and owner-approved comparison tolerance."
+  };
+}
+
 function buildReport({ target, bundle, assessment, config, generatedAt }) {
   const pool = assessment.pool;
   return {
@@ -290,6 +463,7 @@ function buildReport({ target, bundle, assessment, config, generatedAt }) {
       indexedDexProgramAddress: target.dexProgramAddress
     },
     marketData: buildMarketDataReportSection(target),
+    onChainReserves: buildOnChainReserveEvidence(target, bundle, pool),
     rpcEvidence: {
       providerId: bundle.source.providerId,
       commitment: bundle.source.commitment,

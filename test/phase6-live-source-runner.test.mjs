@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildMarketDataReportSection,
+  buildOnChainReserveEvidence,
   buildTargetSnapshotFromDexScreener,
   parseArgs,
   validateLiveTargetSnapshot,
@@ -26,6 +27,126 @@ baseTarget.provenance = {
   rawPayloadSha256: "a".repeat(64),
   synthetic: false
 };
+
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const BASE58_INDEX = new Map(Array.from(BASE58_ALPHABET, (character, index) => [character, BigInt(index)]));
+function decode58(text) {
+  let value = 0n;
+  for (const character of text) {
+    const digit = BASE58_INDEX.get(character);
+    assert.notEqual(digit, undefined);
+    value = value * 58n + digit;
+  }
+  const bodyBytes = [];
+  while (value > 0n) {
+    bodyBytes.unshift(Number(value & 0xffn));
+    value >>= 8n;
+  }
+  let leading = 0;
+  while (leading < text.length && text[leading] === "1") leading += 1;
+  return Buffer.concat([Buffer.alloc(leading), Buffer.from(bodyBytes)]);
+}
+function writePubkey(bytes, offset, address) {
+  const decoded = decode58(address);
+  assert.equal(decoded.length, 32);
+  decoded.copy(bytes, offset);
+}
+function writeU64(bytes, offset, amount) {
+  let value = BigInt(amount);
+  for (let index = 0; index < 8; index += 1) {
+    bytes[offset + index] = Number(value & 0xffn);
+    value >>= 8n;
+  }
+}
+function mintAccount(address, decimals) {
+  const bytes = Buffer.alloc(82);
+  bytes.writeBigUInt64LE(1_000_000n, 36);
+  bytes[44] = decimals;
+  bytes[45] = 1;
+  return rawAccount(address, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", bytes);
+}
+function tokenVault(address, mint, rawAmount) {
+  const bytes = Buffer.alloc(165);
+  writePubkey(bytes, 0, mint);
+  writePubkey(bytes, 32, "11111111111111111111111111111111");
+  writeU64(bytes, 64, rawAmount);
+  bytes[108] = 1;
+  return rawAccount(address, "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", bytes);
+}
+function rawAccount(address, ownerProgramId, data) {
+  return {
+    address,
+    exists: true,
+    ownerProgramId,
+    executable: false,
+    dataBase64: Buffer.from(data).toString("base64"),
+    space: data.length
+  };
+}
+
+test("on-chain reserve report derives exact vault amounts and quote-per-base ratio at the RPC context slot", () => {
+  const baseVaultAddress = "7VLUXrnSSDo9BfCa4NWaQs68g7ddDY1sdXBKW6Xswj9Y";
+  const quoteVaultAddress = "3rzbbW5Q8MA7sCaowf28hNgACNPecdS2zceWy7Ptzua9";
+  const baseMint = "So11111111111111111111111111111111111111112";
+  const quoteMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const pool = {
+    token0Mint: baseMint,
+    token1Mint: quoteMint,
+    token0Vault: baseVaultAddress,
+    token1Vault: quoteVaultAddress
+  };
+  const target = { baseMint, quoteMint };
+  const bundle = {
+    source: {
+      providerId: "solana-public-shared",
+      commitment: "finalized",
+      contextSlot: 462900001,
+      requestId: "unit-rpc-reserves",
+      rawPayloadSha256: "b".repeat(64)
+    },
+    accounts: [
+      mintAccount(baseMint, 9),
+      mintAccount(quoteMint, 6),
+      tokenVault(baseVaultAddress, baseMint, "123456789000"),
+      tokenVault(quoteVaultAddress, quoteMint, "12345678900")
+    ]
+  };
+  const report = buildOnChainReserveEvidence(target, bundle, pool);
+  assert.equal(report.state, "DECODED");
+  assert.equal(report.contextSlot, 462900001);
+  assert.equal(report.baseReserveAmount, "123.456789");
+  assert.equal(report.quoteReserveAmount, "12345.6789");
+  assert.equal(report.baseVaultAmountRaw, "123456789000");
+  assert.equal(report.quoteVaultAmountRaw, "12345678900");
+  assert.equal(report.reserveRatioQuotePerBase, "100");
+  assert.equal(report.independentComparisonStatus, "NOT_ASSESSED");
+});
+
+test("on-chain reserve report rejects a vault whose decoded mint does not match the target", () => {
+  const baseVaultAddress = "7VLUXrnSSDo9BfCa4NWaQs68g7ddDY1sdXBKW6Xswj9Y";
+  const quoteVaultAddress = "3rzbbW5Q8MA7sCaowf28hNgACNPecdS2zceWy7Ptzua9";
+  const baseMint = "So11111111111111111111111111111111111111112";
+  const quoteMint = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+  const pool = {
+    token0Mint: baseMint,
+    token1Mint: quoteMint,
+    token0Vault: baseVaultAddress,
+    token1Vault: quoteVaultAddress
+  };
+  const bundle = {
+    source: { providerId: "rpc-test", commitment: "finalized", contextSlot: 5 },
+    accounts: [
+      mintAccount(baseMint, 9),
+      mintAccount(quoteMint, 6),
+      tokenVault(baseVaultAddress, quoteMint, "123456789000"),
+      tokenVault(quoteVaultAddress, quoteMint, "12345678900")
+    ]
+  };
+  const report = buildOnChainReserveEvidence({ baseMint, quoteMint }, bundle, pool);
+  assert.equal(report.state, "MISMATCH");
+  assert.deepEqual(report.reasonCodes, ["BASE_VAULT_MINT_MISMATCH"]);
+  assert.equal(report.reserveRatioQuotePerBase, null);
+});
 
 test("live market-data report preserves provider measures and marks absent source time UNKNOWN", () => {
   const target = structuredClone(baseTarget);

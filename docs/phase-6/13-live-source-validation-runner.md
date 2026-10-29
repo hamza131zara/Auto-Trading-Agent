@@ -87,6 +87,12 @@ The decoded pool records `canonicalPoolPdaMatches: true`, `statusFlags: 0`, and 
 
 The report correctly retained `phase6Complete: false`, `productionProviderApprovedByThisReport: false`, and `tradingAuthorized: false`. The first two operator acknowledgements and the terms/budget acknowledgement applied only to this one-off run; they do not constitute blanket production authorization.
 
+## On-chain reserve evidence in the report
+
+The full live identity report now decodes the base and quote SPL mint and vault accounts from the same finalized nine-account RPC bundle. If those accounts are eligible for base-state decoding, the report includes exact raw integer balances, human-readable reserve amounts using the decoded mint decimals, and a quote-per-base reserve ratio truncated to 18 decimal places. It also verifies each vault's decoded mint matches its expected target mint and keeps the bundle's finalized context slot and response hash alongside the reserve fields.
+
+The ratio is a reserve-state ratio, not a guaranteed executable swap price: it does not apply pool fees, slippage, routing, transfer fees, or external quote-asset/USD valuation. The report therefore leaves `independentComparisonStatus: NOT_ASSESSED` until an independent quote-asset valuation, source-specific freshness policy, and owner-approved numeric tolerance exist. A reserve ratio is useful independent evidence but is not on its own market-data approval.
+
 ## Market-data fields in the report
 
 Each future report includes the indexed provider's `price`, `liquidity`, `volume24h`, `buys24h`, and `sells24h` values exactly as normalized, including explicit nulls and units, along with retrieval/observation/source-event timestamps. These fields are source observations, not independent validation.
