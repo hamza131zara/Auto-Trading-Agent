@@ -1,16 +1,16 @@
 # Phase 6.13 — Explicit Live-Source Validation Runner
 
-**Status:** Runner implemented; real-source validation is **NOT RUN** until an owner-approved RPC endpoint, an independently sourced target snapshot, current provider terms/quota/budget review, and explicit operator acknowledgements are supplied. This document does not select a production provider or close Phase 6.
+**Status:** End-to-end runner and manual-only workflow implemented; real-source validation is **NOT RUN**. The workflow uses Solana's shared public Mainnet RPC for one read-only check and DEX Screener for the explicitly named indexed pair. The public RPC is not a production provider selection and has no production SLA. Terms/rate-limit/usage review and explicit operator acknowledgements are required before starting it. Phase 6 remains active.
 
 ## Purpose
 
-The Phase 6.9–6.12 engineering tests are synthetic and mocked. This runner provides a controlled, repeatable way to execute the integrated pinned Raydium CPMM decoder against a real Solana mainnet RPC source after the owner has reviewed the endpoint and selected an independent indexed source. It performs only getMultipleAccounts reads; it cannot sign, create transactions, submit orders, or enable live trading.
+The Phase 6.9–6.12 engineering tests are synthetic and mocked. The runner now supports an end-to-end path: it requests the exact pool address supplied by the operator from the existing DEX Screener pair adapter, validates the returned base/quote mints and response provenance, then runs the pinned Raydium CPMM decoder using read-only Solana mainnet RPC. It performs only the adapter's HTTPS GET and Solana getMultipleAccounts reads; it cannot sign, create transactions, submit orders, or enable live trading. The DEX Screener adapter never selects an arbitrary 'best pair' for you.
 
 A successful MATCH means the pool, program, mint, vault, LP-mint, AMM-config and observation identities were internally consistent at the reported finalized context slot under the pinned decoder and explicit account-program policy. It is **not** proof of provider honesty, token safety, source-price freshness, production provider approval, or Phase 6 completion.
 
 ## Inputs and safeguards
 
-The command requires all of the following. Values are supplied locally and must never be committed to the repository.
+The command requires all of the following. Values are supplied locally and must never be committed to the repository. The manual GitHub Actions workflow supplies the official shared endpoint `https://api.mainnet.solana.com` and provider label `solana-public-shared`; this endpoint is rate-limited and is for one-off validation only, not production.
 
 | Environment variable | Required value / meaning |
 |---|---|
@@ -53,6 +53,9 @@ $env:ATA_SOLANA_RPC_PROVIDER_ID = "your-approved-rpc-provider"
 $env:ATA_LIVE_MIN_CONTEXT_SLOT = "1"
 $env:ATA_LIVE_MAX_RETRIEVAL_AGE_MS = "30000"
 
+node scripts/validate-raydium-live-source.mjs --pool-address "<reviewed-pair-address>" --base-mint "<exact-base-mint>" --quote-mint "<exact-quote-mint>" --output .\local-evidence\raydium-live-report.json
+
+# Alternative: reuse a saved canonical snapshot instead of fetching DEX Screener in this invocation.
 node scripts/validate-raydium-live-source.mjs --target .\local-evidence\raydium-target.json --output .\local-evidence\raydium-live-report.json
 ~~~
 
@@ -76,3 +79,18 @@ A successful report still records phase6Complete: false, productionProviderAppro
 - [ ] Independent critical market-data checks and selected-provider fallback/degraded-mode tests are completed.
 
 A non-match, unavailable account, unresolved Token-2022 extension, insufficient context slot, unknown provenance, or transport failure leaves the gate open. Do not relax the decoder or allowlist just to obtain a match. Phase 7 token safety, transaction signing and live trading remain outside this runner.
+
+## Run from GitHub Actions (manual-only)
+
+A dedicated workflow is registered as `.github/workflows/phase6-live-source-validation.yml`. It is separate from CI and never runs automatically on pushes or pull requests. To start one one-off validation:
+
+1. Open the repository's **Actions** tab and select **Phase 6 read-only live-source validation**.
+2. Click **Run workflow** on the `main` branch.
+3. Enter the exact pair address plus the base and quote mint addresses as they appear in the reviewed DEX Screener pair response. The on-chain decoder will reject a pool that is not owned by the pinned Raydium CPMM program.
+4. Supply the explicit finalized context-slot floor and RPC evidence max age for this run.
+5. Change all three acknowledgements from `no` to `yes` only after approving this read-only check, reviewing the specific indexed target/source independence, and checking current API terms/rate limits/retention and your one-off usage budget.
+6. Start the workflow and review the JSON report in the run logs. The RPC endpoint and raw account bytes are not logged.
+
+The workflow requires no API key for the current DEX Screener pair GET or the Solana public RPC endpoint. Public RPC is shared and rate-limited; Solana advises using a private RPC provider for production infrastructure. This workflow does not select or approve a production RPC provider. If any approval is not confirmed, the provider network step does not execute.
+
+The workflow is manual-only so routine CI stays deterministic and does not depend on external APIs. The current ChatGPT execution environment has no outbound DNS/network access to the APIs, so I have not claimed a live run from this session; use the manual workflow to execute the actual request from GitHub Actions after selecting the exact pool and approving the provider usage.
