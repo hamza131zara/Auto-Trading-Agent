@@ -121,7 +121,10 @@ export function inspectUpgradeableProgramAccount(
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  // Copy into an explicitly allocated ArrayBuffer for WebCrypto's BufferSource typing.
+  const input = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(input).set(bytes);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", input);
   return Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
 }
 
