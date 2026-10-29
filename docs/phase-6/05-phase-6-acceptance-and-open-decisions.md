@@ -4,12 +4,12 @@
 
 ## Acceptance checklist
 
-- [ ] Canonical Solana market-observation schema is versioned, strictly validated and preserves explicit units/nulls/provenance.
-- [ ] Solana public-key encoding, non-negative decimal strings, counts, slots, units and UTC timestamps have passing positive/negative tests.
-- [ ] Freshness assessment is deterministic under an injected clock and returns distinct FRESH, STALE, UNKNOWN and INVALID states.
-- [ ] Provider health is distinct from freshness/data quality and has tested success, retryable failure, threshold/circuit-open, auth/config failure and recovery paths.
-- [ ] Synthetic fixtures cover fresh, stale, missing timestamp, future clock, malformed ID/unit and provider failure cases.
-- [ ] Replay tests run without external network access, production credentials or non-deterministic clocks.
+- [x] Canonical Solana market-observation schema is versioned, strictly validated and preserves explicit units/nulls/provenance in `@ata/market-data`.
+- [x] Solana public-key encoding, non-negative decimal strings, counts, slots, units and UTC timestamps have positive/negative tests.
+- [x] Freshness assessment is deterministic under an injected clock and returns distinct FRESH, STALE, UNKNOWN and INVALID states.
+- [x] Provider health is distinct from freshness/data quality and has tested success, retryable failure, threshold/circuit-open, auth/config failure and recovery paths.
+- [x] Synthetic fixtures cover fresh, stale retrieval, stale source event, missing timestamp, future source time and invalid address; unit tests cover malformed decimal/unit and provider failure/recovery paths.
+- [x] Replay tests run without external network access, production credentials or non-deterministic clocks.
 - [ ] A concrete provider adapter is not approved until official documentation, plan/quota, terms and fallback/disagreement behavior are reviewed.
 - [ ] Production use stays disabled until selected adapters are tested against the chosen plan and critical fields have independent validation paths.
 
