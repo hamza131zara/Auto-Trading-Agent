@@ -207,7 +207,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `test/market-data.test.mjs` | Runtime schema, freshness, provider-health and deterministic replay tests | `3b1930a53f233872edaaeb9d796650d32dc11182` | 8285 |
 | `test/fixtures/market-data/replay-v1.json` | Synthetic replay fixtures for fresh/stale/unknown/future/invalid observations | `627f1f637489d1ab1aa647fe4d2964a75fea5b62` | 8394 |
 | `test/provider-agreement.test.mjs` | Deterministic tests for independent-source agreement, fallback, stale/unknown data, disagreement and fail-closed outcomes | `7b527d76bd18f24c3f61831b21a42ddc0a00b00d` | 10277 |
-| `test/dex-screener.test.mjs` | Mocked adapter tests: identity, units/precision, timestamps, HTTP failures, streaming bounds and timeout cases | `602fe7a47467320c857bde6cebe863146a934a7` | 10281 |
+| `test/dex-screener.test.mjs` | Mocked adapter tests: identity, units/precision, timestamps, HTTP failures, streaming bounds and timeout cases | `602fe7a47467320c857bde6cebe863146a9347fd` | 10281 |
 | `test/fixtures/market-data/dexscreener-pair-v1.json` | Synthetic DEX Screener pair payload preserving source numeric precision | `e02910c2610b949582e8b7cee99fb1486aa14173` | 909 |
 | `.github/workflows/dependency-review.yml` | PR dependency review failing on high/critical findings | `20a8689e5ccf553b6463dbd39d5f78082342c9e4` | 393 |
 
