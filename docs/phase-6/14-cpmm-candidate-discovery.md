@@ -1,46 +1,47 @@
 # Phase 6.14 — Read-only Raydium CPMM candidate discovery
 
-**Status:** Discovery tooling implemented; no discovery run is claimed until the manual workflow returns a real, non-synthetic report. This step finds candidate pools only. It does not approve a token for trading or complete Phase 6.
+**Status:** Broader discovery implementation is under review; no result from the revised workflow is claimed until its manual run completes. This step finds candidate pools only. It does not approve a token for trading or complete Phase 6.
 
 ## Why this exists
 
-The first live identity run succeeded for pool `7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny`, but the DEX Screener page reviewed during that run showed approximately USD $86 liquidity and USD $2 in 24-hour volume. That pool is retained as identity-test evidence only; it is not a trading candidate.
+The first manual discovery run succeeded technically but returned `NO_CPMM_CANDIDATES_FOUND`: DEX Screener's token-pair listing exposed five exact SOL/USDC Raydium pairs, which the on-chain check classified as one AMM v4 pool and four CLMM pools. That result described the five pairs exposed by that endpoint; it did **not** prove that no suitable CPMM pool exists elsewhere in Raydium's own pool index. [First discovery run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40846125384).
 
-This workflow requests the SOL/USDC pools indexed by DEX Screener, filters exact Wrapped SOL and canonical USDC mint pairs, and ranks by indexed liquidity. It then asks Solana's shared public mainnet RPC for the pool accounts at `finalized` commitment and retains as CPMM candidates only accounts whose on-chain owner equals:
+The revised implementation now queries Raydium API v3's pool-by-mint endpoint for the exact canonical Wrapped SOL / USDC mint pair, sorted by indexed liquidity. Raydium's SDK uses the `/pools/info/mint` route with the `Standard` pool-type filter and a liquidity sort. We then request the returned pool accounts through the shared Solana public Mainnet RPC at `finalized` commitment, decode the pinned CPMM `PoolState`, require exact on-chain SOL/USDC mints, and require the on-chain owner to agree with Raydium API's reported program ID.
 
-`CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`
-
-This owner check is important because DEX Screener's `raydium` label alone is not sufficient to distinguish CPMM from AMM v4 or CLMM. For a CPMM-owned account, the workflow also invokes the pinned PoolState decoder and checks that the decoded token0/token1 mints are exactly the canonical Wrapped SOL and USDC mints (in either orientation). A wrong layout, discriminator or mint pair is excluded from the shortlist.
+Only on-chain CPMM candidates are then cross-checked by exact pool address against DEX Screener's pair endpoint. A candidate qualifies for the shortlist only when it meets the configured liquidity and 24-hour volume thresholds in **both** indexed sources. This cross-check does not replace an independent on-chain reserve calculation; the full identity workflow has a same-slot vault reserve report for that next step.
 
 ## Default triage thresholds
 
 - Minimum indexed liquidity: USD $100,000.
 - Minimum indexed 24-hour volume: USD $10,000.
 
-These are discovery filters only, not an approved trading policy. The workflow reports candidates below the thresholds as well but will only nominate a follow-up pool from the threshold-qualified CPMM subset. If nothing meets the filters, do not lower thresholds merely to force a result; review the output and decide whether the requirements or pair should change.
+These are discovery filters only, not an approved trading policy. A missing metric is not treated as zero or as a pass. Source freshness remains `UNKNOWN` because these lookups do not provide a validated source-event timestamp for the freshness policy.
 
 ## Run it
 
 1. Open **Actions → Phase 6 Raydium CPMM candidate discovery** on `main`.
 2. Keep the default thresholds for the first pass.
-3. Leave both acknowledgements at `no` until you have reviewed the specific read-only RPC request, DEX Screener's current API terms/quota, and the fact that workflow logs are public in this repository.
-4. After approving both statements for this one-off discovery, set them to `yes` and click **Run workflow**.
-5. Share the JSON report or the workflow link. Review the top CPMM candidates and their on-chain owner/context evidence before choosing one for the existing full identity runner.
+3. Review and approve the three acknowledgements separately: (a) one read-only RPC account lookup, (b) Raydium API usage/policy and public workflow-log visibility, and (c) DEX Screener terms/quota/usage budget and public workflow-log visibility. Leave each choice at `no` unless you have reviewed and accepted the corresponding statement.
+4. After approving all three statements for this one-off run, set them to `yes` and click **Run workflow**.
+5. Share the JSON report or workflow link. Review the top verified CPMM candidates and their source agreement before choosing one for the existing full identity workflow.
 
-The workflow is manual-only; regular CI does not call DEX Screener or Solana RPC. It uses no wallet, signer, transaction, or order-placement method. It outputs a bounded shortlist and hashes of the exact provider responses, not raw API bodies or account bytes.
+The workflow is manual-only; regular CI does not call Raydium, DEX Screener or Solana RPC. It uses no wallet, signer, transaction, or order-placement method. It outputs a bounded shortlist and response hashes, not raw provider bodies or raw account bytes.
 
 ## Report interpretation
 
-- `onChainProgram: RAYDIUM_CPMM` means the candidate pool account was returned at the reported finalized RPC context, its owner and 637-byte PoolState layout decoded under the pinned decoder, and its decoded token0/token1 mints matched the canonical pair.
-- `meetsLiquidityAndVolumeThresholds: true` means the one indexed response met the run's triage filters. It is not independent confirmation of liquidity or volume.
-- `sourceFreshness: UNKNOWN` is deliberate. DEX Screener's pair mapping used by this project does not provide a trustworthy market-event timestamp.
-- `recommendedFollowUpPoolAddress` is only the highest indexed-liquidity pool that passed these filters and the CPMM owner check. It is a candidate for further validation, not a trading recommendation.
+- `onChainProgram: RAYDIUM_CPMM` means the account owner matched the pinned CPMM program, the account was decoded with the pinned 637-byte PoolState layout/discriminator, and decoded token mints matched the canonical SOL/USDC pair.
+- `RAYDIUM_API_PROGRAM_ID_MISMATCH` means Raydium's indexed program ID disagreed with the actual account owner. Such a pool is excluded.
+- `meetsLiquidityAndVolumeThresholds: true` means both Raydium API and DEX Screener reported metrics at or above the run's thresholds for the same exact pool. The metrics are still indexed observations, not independently verified dollar value.
+- `dexScreenerPairFound: true` means the exact candidate pool address and token mints were found through DEX Screener's pair endpoint.
+- `sourceFreshness: UNKNOWN` is deliberate. Retrieval time is not substituted for market-event time.
+- `scanIncomplete: true` or status `*_PARTIAL_SCAN` means the report must not recommend a pool; the API reported another page or the account cap prevented a complete scan.
+- `recommendedFollowUpPoolAddress` is only the top candidate that passed both indexed thresholds, the exact pair check and the on-chain CPMM identity check in a complete scan. It is a candidate for further validation, not a trading recommendation.
 
 ## Next gates after discovery
 
-1. Run the existing full identity workflow for the chosen pool and exact mint identities.
-2. Capture same-slot on-chain vault balances and derive a base/quote reserve ratio using exact integer amounts and mint decimals.
-3. Reconcile that ratio with indexed price data, quote-asset valuation, and an independently sourced price feed using an explicitly approved tolerance; do not infer freshness from retrieval time.
+1. Run the full identity workflow for the selected pool and exact mint identities.
+2. Review the new same-slot vault balances and reserve ratio from the live identity report.
+3. Reconcile the reserve ratio with independent quote-asset valuation and DEX Screener's indexed price using an approved freshness policy and numeric tolerance; don't assume a reserve ratio is an executable swap quote.
 4. Verify the deployed ProgramData binary against a reproducible build from the pinned source revision.
 5. Exercise a real fallback/degraded-mode case and finish provider terms, retention, budget and production-provider decisions.
 
