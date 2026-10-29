@@ -2,7 +2,11 @@
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
-import { isSolanaPublicKey, RAYDIUM_CPMM_PROGRAM_ID } from "../packages/market-data/dist/index.js";
+import {
+  decodeRaydiumCpmmPool,
+  isSolanaPublicKey,
+  RAYDIUM_CPMM_PROGRAM_ID
+} from "../packages/market-data/dist/index.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
@@ -198,25 +202,39 @@ function checkRpcAccounts(payload, requestId, expectedAddresses) {
         typeof account.data[0] !== "string" || account.data[1] !== "base64") {
       throw codedError("RPC_ACCOUNT_SHAPE_INVALID");
     }
+    const decodedPool = decodeRaydiumCpmmPool({
+      address: expectedAddresses[index],
+      exists: true,
+      ownerProgramId: account.owner,
+      executable: account.executable,
+      dataBase64: account.data[0],
+      space: account.space
+    });
+    const decodedTokenMints = decodedPool.status === "DECODED"
+      ? [decodedPool.value.token0Mint, decodedPool.value.token1Mint]
+      : null;
+    const hasExactOnChainMints = decodedTokenMints !== null &&
+      new Set(decodedTokenMints).size === 2 &&
+      decodedTokenMints.includes(SOL_MINT) &&
+      decodedTokenMints.includes(USDC_MINT);
+    const classification = account.owner === RAYDIUM_CPMM_PROGRAM_ID
+      ? decodedPool.status !== "DECODED"
+        ? "RAYDIUM_CPMM_DECODE_FAILED"
+        : hasExactOnChainMints ? "RAYDIUM_CPMM" : "RAYDIUM_CPMM_MINT_IDENTITY_MISMATCH"
+      : account.owner === "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+        ? "RAYDIUM_AMM_V4"
+        : account.owner === "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
+          ? "RAYDIUM_CLMM"
+          : "OTHER_PROGRAM";
     classified.push({
       poolAddress: expectedAddresses[index],
       ownerProgramId: account.owner,
-      classification: account.owner === RAYDIUM_CPMM_PROGRAM_ID
-        ? (!account.executable &&
-            account.space === 637 &&
-            account.data[0].length === Math.ceil(account.space / 3) * 4 &&
-            Buffer.from(account.data[0], "base64").length === 637 &&
-            [0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46]
-              .every((byte, byteIndex) => Buffer.from(account.data[0], "base64")[byteIndex] === byte)
-              ? "RAYDIUM_CPMM"
-              : "RAYDIUM_CPMM_ACCOUNT_SHAPE_MISMATCH")
-        : account.owner === "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-          ? "RAYDIUM_AMM_V4"
-          : account.owner === "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK"
-            ? "RAYDIUM_CLMM"
-            : "OTHER_PROGRAM",
+      classification,
       executable: account.executable,
-      space: account.space
+      space: account.space,
+      poolDecodeErrorCode: decodedPool.status === "ERROR" ? decodedPool.errorCode : null,
+      token0Mint: decodedTokenMints?.[0] ?? null,
+      token1Mint: decodedTokenMints?.[1] ?? null
     });
   }
   return { contextSlot, classified };
@@ -316,6 +334,9 @@ export async function discoverRaydiumCpmmCandidates({
       ...candidate,
       onChainProgram: onChain.classification,
       onChainOwnerProgramId: onChain.ownerProgramId,
+      onChainToken0Mint: onChain.token0Mint ?? null,
+      onChainToken1Mint: onChain.token1Mint ?? null,
+      poolDecodeErrorCode: onChain.poolDecodeErrorCode ?? null,
       meetsLiquidityAndVolumeThresholds: meetsThresholds,
       sourceFreshness: "UNKNOWN",
       freshnessReason: "DEX Screener pair mapping provides no trustworthy market-event timestamp."
@@ -357,6 +378,10 @@ export async function discoverRaydiumCpmmCandidates({
       truncatedByRpcAccountCap: exactPairs.length > MAX_POOL_ACCOUNTS,
       candidateCount: cpmmCandidates.length,
       thresholdQualifiedCount: qualifying.length,
+      poolClassificationSummary: classifications.reduce((summary, item) => {
+        summary[item.classification] = (summary[item.classification] ?? 0) + 1;
+        return summary;
+      }, {}),
       recommendedFollowUpPoolAddress: qualifying[0]?.poolAddress ?? null
     },
     candidates: displayCandidates,
