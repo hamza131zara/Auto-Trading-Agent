@@ -181,6 +181,48 @@ function parseCount(value: unknown): number | null | "INVALID" {
   return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : "INVALID";
 }
 
+async function readBoundedResponseText(response: Response): Promise<string> {
+  const contentLength = response.headers.get("content-length");
+  if (contentLength !== null && /^\\d+$/.test(contentLength) &&
+      Number(contentLength) > MAX_RESPONSE_BYTES) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new DexScreenerAdapterError("PARSE", false);
+  }
+
+  if (response.body === null) {
+    const text = await response.text();
+    if (new TextEncoder().encode(text).byteLength > MAX_RESPONSE_BYTES) {
+      throw new DexScreenerAdapterError("PARSE", false);
+    }
+    return text;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const chunks: string[] = [];
+  let receivedBytes = 0;
+
+  try {
+    while (true) {
+      const result = await reader.read();
+      if (result.done) break;
+      receivedBytes += result.value.byteLength;
+      if (receivedBytes > MAX_RESPONSE_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new DexScreenerAdapterError("PARSE", false);
+      }
+      chunks.push(decoder.decode(result.value, { stream: true }));
+    }
+    chunks.push(decoder.decode());
+    return chunks.join("");
+  } catch (error) {
+    if (error instanceof DexScreenerAdapterError) throw error;
+    throw new DexScreenerAdapterError("NETWORK", true);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 function sha256Hex(text: string): Promise<string> {
   return globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then((digest) =>
     Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("")
@@ -265,15 +307,7 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
       throw new DexScreenerAdapterError("HTTP", response.status >= 500, response.status);
     }
 
-    let text: string;
-    try {
-      text = await response.text();
-    } catch {
-      throw new DexScreenerAdapterError("NETWORK", true);
-    }
-    if (new TextEncoder().encode(text).byteLength > MAX_RESPONSE_BYTES) {
-      throw new DexScreenerAdapterError("PARSE", false);
-    }
+    const text = await readBoundedResponseText(response);
 
     let payload: unknown;
     try {
