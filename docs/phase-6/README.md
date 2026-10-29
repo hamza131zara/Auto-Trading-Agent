@@ -22,10 +22,11 @@
 3. [Provenance, freshness and provider health](03-provenance-freshness-and-provider-health.md)
 4. [Deterministic replay fixtures](04-deterministic-replay-fixtures.md)
 5. [Acceptance criteria and open decisions](05-phase-6-acceptance-and-open-decisions.md)
+6. [DEX Screener read-only reference adapter](06-dexscreener-reference-adapter.md)
 
 ## Initial implementation boundary
 
-The shared contract package performs validation, freshness assessment, provider-health transitions and fixture replay. A read-only DEX Screener candidate adapter exists for evaluation and can only query an explicitly requested Solana mainnet pair. The adapter is not selected for production and CI uses a mocked fetch, with no external API calls or provider credentials. It does not select a market route, assert token safety, calculate a trade, authorize an entry, sign a transaction or place an order.
+The shared contract package performs validation, freshness assessment, provider-health transitions and fixture replay. A read-only DEX Screener candidate adapter exists for evaluation and can only query an explicitly requested Solana mainnet pair. The adapter is not selected for production; adapter tests use a mocked fetch and do not call the external API. The adapter does not select a market route, assert token safety, calculate a trade, authorize an entry, sign a transaction or place an order.
 
 ## Initial implementation validation
 
@@ -36,7 +37,7 @@ The shared contract package performs validation, freshness assessment, provider-
 
 ## Candidate adapter in the current slice
 
-The DEX Screener adapter is covered by synthetic fixtures and mocked-network tests. It uses only documented USD price/liquidity/volume fields and keeps the source observation timestamp unknown where the API does not supply one. Its existence does not close provider selection or production data-readiness gates. See [the DEX Screener reference adapter note](06-dexscreener-reference-adapter.md).
+A read-only DEX Screener reference adapter is included for evaluation. Its fixture and mocked-fetch tests are part of the active branch/CI evidence; its existence does not close provider selection or production data-readiness gates. It uses a USD-per-base price measure and explicit USD liquidity/volume measures. Because the response lacks a trustworthy source-observation timestamp, it retains null observation/event timestamps and freshness remains `UNKNOWN`. See [the DEX Screener reference adapter note](06-dexscreener-reference-adapter.md).
 
 ## Provider-selection gate
 
