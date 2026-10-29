@@ -20,6 +20,8 @@ function targetSnapshot(synthetic = false) {
   const target = structuredClone(original);
   target.cluster = "mainnet-beta";
   target.poolAddress = poolAddress;
+  target.provenance.sourceKind = synthetic ? "REPLAY_FIXTURE" : "INDEXED_API";
+  target.provenance.providerId = synthetic ? original.provenance.providerId : "test-indexed";
   target.provenance.synthetic = synthetic;
   return target;
 }
