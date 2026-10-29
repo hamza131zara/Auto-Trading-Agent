@@ -52,7 +52,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: phase6-live-source-validation-\${{ github.ref }}
+  group: phase6-live-source-validation-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -79,9 +79,9 @@ jobs:
 
       - name: Require explicit operator acknowledgements before network calls
         env:
-          CONFIRM_READ_ONLY_RPC: \${{ inputs.confirm_read_only_rpc }}
-          CONFIRM_INDEXED_SOURCE_REVIEW: \${{ inputs.confirm_indexed_source_review }}
-          CONFIRM_PROVIDER_TERMS_BUDGET: \${{ inputs.confirm_provider_terms_budget }}
+          CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}
+          CONFIRM_INDEXED_SOURCE_REVIEW: ${{ inputs.confirm_indexed_source_review }}
+          CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
         run: |
           if [[ "$CONFIRM_READ_ONLY_RPC" != "yes" ]]; then
             echo "::error::Read-only mainnet RPC approval was not confirmed."
@@ -98,16 +98,16 @@ jobs:
 
       - name: Run one explicit live-source identity validation
         env:
-          POOL_ADDRESS: \${{ inputs.pool_address }}
-          BASE_MINT: \${{ inputs.base_mint }}
-          QUOTE_MINT: \${{ inputs.quote_mint }}
+          POOL_ADDRESS: ${{ inputs.pool_address }}
+          BASE_MINT: ${{ inputs.base_mint }}
+          QUOTE_MINT: ${{ inputs.quote_mint }}
           ATA_LIVE_SOURCE_APPROVAL: APPROVED_READ_ONLY_MAINNET_RPC
           ATA_LIVE_TARGET_SOURCE_APPROVAL: INDEPENDENT_INDEXED_SOURCE_REVIEWED
           ATA_LIVE_PROVIDER_TERMS_APPROVAL: TERMS_QUOTA_AND_BUDGET_REVIEWED
           ATA_SOLANA_RPC_URL: https://api.mainnet.solana.com
           ATA_SOLANA_RPC_PROVIDER_ID: solana-public-shared
-          ATA_LIVE_MIN_CONTEXT_SLOT: \${{ inputs.minimum_context_slot }}
-          ATA_LIVE_MAX_RETRIEVAL_AGE_MS: \${{ inputs.max_retrieval_age_ms }}
+          ATA_LIVE_MIN_CONTEXT_SLOT: ${{ inputs.minimum_context_slot }}
+          ATA_LIVE_MAX_RETRIEVAL_AGE_MS: ${{ inputs.max_retrieval_age_ms }}
         run: |
           node scripts/validate-raydium-live-source.mjs \
             --pool-address "$POOL_ADDRESS" \
