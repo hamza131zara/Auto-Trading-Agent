@@ -69,6 +69,10 @@ function twoLiveAgreeingCandidates() {
   return twoAgreeingCandidates().map((item) => {
     const snapshot = structuredClone(item.snapshot);
     snapshot.provenance.synthetic = false;
+    snapshot.provenance.sourceKind = "INDEXED_API";
+    snapshot.provenance.requestId = item.providerId + "-request";
+    snapshot.provenance.rawPayloadSha256 = "a".repeat(64);
+    assert.equal(validateCanonicalMarketSnapshot(snapshot).valid, true);
     return { ...item, snapshot };
   });
 }
@@ -81,7 +85,30 @@ function independentPriceInput(overrides = {}) {
     maxRetrievalAgeMs: 30_000,
     maxReferenceTimestampSkewMs: 10_000,
     maxFutureSkewMs: 0,
-    maxDeviationBps: 10
+    maxDeviationBps: 10,
+    ...(overrides.policy ?? {})
+  };
+  const baseUsd = {
+    assetId: "So11111111111111111111111111111111111111112",
+    feedId: "sol-usd-feed",
+    providerId: "oracle-reference",
+    independenceGroupId: "oracle-network",
+    priceUsd: "99.98",
+    publishedAt: "2026-10-29T12:44:50.000Z",
+    retrievedAt: "2026-10-29T12:44:55.000Z",
+    synthetic: false,
+    ...(overrides.baseUsd ?? {})
+  };
+  const quoteUsd = {
+    assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    feedId: "usdc-usd-feed",
+    providerId: "oracle-reference",
+    independenceGroupId: "oracle-network",
+    priceUsd: "1.0000",
+    publishedAt: "2026-10-29T12:44:50.000Z",
+    retrievedAt: "2026-10-29T12:44:55.000Z",
+    synthetic: false,
+    ...(overrides.quoteUsd ?? {})
   };
   return {
     baseMint: "So11111111111111111111111111111111111111112",
@@ -93,51 +120,13 @@ function independentPriceInput(overrides = {}) {
     indexedSourceEventAt: "2026-10-29T12:44:50.000Z",
     indexedRetrievedAt: "2026-10-29T12:44:55.000Z",
     indexedSynthetic: false,
-    baseUsd: {
-      assetId: "So11111111111111111111111111111111111111112",
-      feedId: "sol-usd-feed",
-      providerId: "oracle-reference",
-      independenceGroupId: "oracle-network",
-      priceUsd: "99.98",
-      publishedAt: "2026-10-29T12:44:50.000Z",
-      retrievedAt: "2026-10-29T12:44:55.000Z",
-      synthetic: false
-    },
-    quoteUsd: {
-      assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      feedId: "usdc-usd-feed",
-      providerId: "oracle-reference",
-      independenceGroupId: "oracle-network",
-      priceUsd: "1.0000",
-      publishedAt: "2026-10-29T12:44:50.000Z",
-      retrievedAt: "2026-10-29T12:44:55.000Z",
-      synthetic: false
-    },
+    baseUsd,
+    quoteUsd,
     policy,
     ...overrides,
-    policy: { ...policy, ...(overrides.policy ?? {}) },
-    baseUsd: { 
-      assetId: "So11111111111111111111111111111111111111112",
-      feedId: "sol-usd-feed",
-      providerId: "oracle-reference",
-      independenceGroupId: "oracle-network",
-      priceUsd: "99.98",
-      publishedAt: "2026-10-29T12:44:50.000Z",
-      retrievedAt: "2026-10-29T12:44:55.000Z",
-      synthetic: false,
-      ...(overrides.baseUsd ?? {})
-    },
-    quoteUsd: {
-      assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-      feedId: "usdc-usd-feed",
-      providerId: "oracle-reference",
-      independenceGroupId: "oracle-network",
-      priceUsd: "1.0000",
-      publishedAt: "2026-10-29T12:44:50.000Z",
-      retrievedAt: "2026-10-29T12:44:55.000Z",
-      synthetic: false,
-      ...(overrides.quoteUsd ?? {})
-    }
+    baseUsd,
+    quoteUsd,
+    policy
   };
 }
 
