@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — provider-neutral design and the first canonical data-contract/replay slice are being implemented. No production provider has been selected.
+**Status:** ACTIVE — the provider-neutral data-contract/replay slice is in PR #10 and its initial CI run passed; the final PR run must revalidate the small fixture follow-up. No production provider has been selected.
 **Started:** 29 October 2026.
 **Previous phase:** Phase 5 closed for engineering-foundation handoff; see [Phase 5 closeout](../phase-5/06-phase-5-closeout-and-phase-6-handoff.md).
 **Canonical roadmap:** Frozen Roadmap v1.0; phase order is unchanged.
