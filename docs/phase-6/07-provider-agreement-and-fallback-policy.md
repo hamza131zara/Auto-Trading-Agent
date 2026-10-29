@@ -1,6 +1,6 @@
 # Phase 6.7 — Provider Agreement and Fail-Closed Fallback Policy
 
-**Status:** Implemented as a deterministic, fixture-tested evidence gate. It is not production provider approval and does not authorize trading.
+**Status:** Provider agreement/fallback remains a deterministic, fixture-tested evidence gate. The provider-neutral `assessIndependentReservePriceAgreement` function has now been added to `@ata/market-data`; CI [run #187](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40877555420) passed 143 tests, typecheck/build, dependency audit, and Gitleaks. The comparator does not fetch prices, choose a vendor, set production thresholds, or authorize trading. Owner-approved independent feed IDs/provider family, freshness windows, and numeric tolerance remain open decisions.
 
 ## Purpose
 
@@ -42,11 +42,19 @@ A fallback is marked as used when no priority-`0` candidate is eligible but one 
 
 These strict rules are deliberately conservative. No numeric price/liquidity/volume tolerance, source-time window, provider weighting or quorum relaxation has been owner-approved, so this implementation does not invent one.
 
+## Independent on-chain reserve / USD price comparison
+
+`assessIndependentReservePriceAgreement` is a pure, provider-neutral evidence evaluator. It compares the decoded on-chain quote/base reserve ratio with the cross-rate implied by separately timestamped base/USD and quote/USD reference observations, and compares an indexed USD/base price only when that indexed source has a trustworthy event timestamp. It uses integer arithmetic over canonical decimal strings; no IEEE-754 conversion or rounded intermediate cross-rate is used.
+
+The policy has no production defaults. Callers must explicitly supply expected base/quote feed IDs, approved provider ID and independence group, source/retrieval age bounds, future-time skew, and maximum deviation in basis points. The reference provider and source family must differ from the indexed source. Missing indexed source time yields `NOT_ASSESSED`; stale reference data yields insufficient evidence; out-of-tolerance values return `DISAGREEMENT`; synthetic evidence cannot set `comparisonEvidenceComplete: true`. `tradingAuthorized` is always false.
+
+No live oracle adapter or provider has been selected by this code. A provider-specific feed adapter should be added only after official feed identifiers, access requirements, terms/quota, budget, and owner-approved freshness/tolerance policy are recorded.
+
 ## Safety boundary and remaining gates
 
 `canProceedToOnChainValidation` is only an evidence-gate result. On-chain pool/mint/program validation is a separate implementation step and has not been performed by this comparator. `tradingAuthorized` is hard-coded `false` for every result. No Phase 6 code can use this assessment as trade authorization.
 
-The DEX Screener candidate currently leaves source observation/event times null, so its recomputed freshness remains `UNKNOWN` and it is ineligible here. A primary plus independent, timestamped source (or sources) must be selected only after the official schema/terms/quota, budget and customer-distribution gates are resolved. Provider disagreement tolerances and fallback policy changes require a dated owner-approved decision.
+The DEX Screener candidate currently leaves source observation/event times null, so its recomputed freshness remains `UNKNOWN` and its indexed-price comparison is `NOT_ASSESSED`. The provider-neutral reserve comparator now exists, but no reference-feed adapter or provider is selected; the result remains insufficient until source identity, source/retrieval age bounds, and deviation tolerance are owner-approved and validated with fresh, non-synthetic observations.
 
 ## Tests
 

@@ -1,6 +1,6 @@
 # Phase 6.13 — Explicit Live-Source Validation Runner
 
-**Status:** The read-only full identity/reserve validation completed successfully in [live-source run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349). The exact SOL/USDC pool returned `MATCH`, zero identity mismatches, and decoded on-chain vault reserves at finalized context slot `462885519`. This is diagnostic evidence only: indexed market-data freshness remains `UNKNOWN`, independent reserve/price comparison remains `NOT_ASSESSED`, and the pool remains far below the qualification thresholds. The shared public Mainnet RPC is one-off validation only, not an approved production provider. Phase 6 remains active.
+**Status:** The read-only full identity/reserve validation completed successfully in [live-source run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349). The exact SOL/USDC pool returned `MATCH`, zero identity mismatches, and decoded on-chain vault reserves at finalized context slot `462885519`. The provider-neutral exact-decimal comparison evaluator is now implemented and passed [CI run #187](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40877555420) with 143 tests. This remains diagnostic evidence only: source freshness is `UNKNOWN`, independent comparison is `NOT_ASSESSED` until approved feed identities and policy values are supplied, and the pool is far below qualification thresholds. The shared public Mainnet RPC is one-off validation only, not an approved production provider. Phase 6 remains active.
 
 ## Purpose
 
@@ -115,7 +115,7 @@ The on-chain decoder confirmed the expected pool, token mint, vault, LP-mint, AM
 
 The full live identity report now decodes the base and quote SPL mint and vault accounts from the same finalized nine-account RPC bundle. If those accounts are eligible for base-state decoding, the report includes exact raw integer balances, human-readable reserve amounts using the decoded mint decimals, and a quote-per-base reserve ratio truncated to 18 decimal places. It also verifies each vault's decoded mint matches its expected target mint and keeps the bundle's finalized context slot and response hash alongside the reserve fields.
 
-The ratio is a reserve-state ratio, not a guaranteed executable swap price: it does not apply pool fees, slippage, routing, transfer fees, or external quote-asset/USD valuation. The report therefore leaves `independentComparisonStatus: NOT_ASSESSED` until an independent quote-asset valuation, source-specific freshness policy, and owner-approved numeric tolerance exist. A reserve ratio is useful independent evidence but is not on its own market-data approval.
+The ratio is a reserve-state ratio, not a guaranteed executable swap price: it does not apply pool fees, slippage, routing, transfer fees, or external quote-asset/USD valuation. The provider-neutral `assessIndependentReservePriceAgreement` evaluator now compares it to separate base/USD and quote/USD observations using exact decimal arithmetic, explicit feed identities, freshness limits and a supplied tolerance. The live report still leaves `independentComparisonStatus: NOT_ASSESSED` until a reference provider and feed IDs are owner-approved, fresh non-synthetic observations are supplied, and the policy values are set. A reserve ratio is useful independent evidence but is not on its own market-data approval.
 
 ## Market-data fields in the report
 
@@ -128,6 +128,10 @@ The report explicitly marks source freshness as `UNKNOWN` when both source times
 The JSON report retains the target provider/request/hash, RPC provider/commitment/time/context slot/request ID/raw-response hash, decoder ID/version, decoded public account identities, outcome reason codes and acknowledgements. It intentionally excludes the endpoint URL and raw base64 account payloads. Store the report outside the repository unless and until the owner decides where a redacted audit artifact belongs.
 
 A successful report still records phase6Complete: false, productionProviderApprovedByThisReport: false and tradingAuthorized: false. It is one required piece of evidence, not the whole Phase 6 exit gate.
+
+## Independent comparison contract — implemented, live policy open
+
+The pure `assessIndependentReservePriceAgreement` function and deterministic tests validate exact-decimal ratio comparison, feed/provider identity, independence from the indexed source, stale/future timestamps, missing indexed event timestamps, explicit deviation tolerance, and synthetic-evidence blocking. It makes no network calls and provides no vendor or trading approval. CI [run #187](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40877555420) passed 143 tests and all quality/security checks. Live use remains blocked until owner-approved feed IDs/provider family, freshness bounds, and tolerance are recorded.
 
 ## Acceptance criteria for the live run
 
