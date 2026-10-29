@@ -70,3 +70,15 @@ No provider plan is purchased or assumed. Pool thresholds and the diagnostic com
 - [ ] Review upgrade-authority findings and current deployment policy before production selection.
 
 No live ProgramData request has been made by this change. Missing reference hash remains NOT_ASSESSED; Phase 6 completion and trading authorization remain false.
+
+
+## Phase 6.19 — Pinned-source reference-build evidence
+
+- [x] Add a manual-only build workflow pinned to the exact Raydium source commit/tree, official Solana Verify CLI version and CLI binary SHA-256.
+- [x] Build two separate clean source copies with the controlled Docker-based verifier and capture build logs/artifacts without invoking Solana RPC.
+- [x] Generate a manifest requiring pinned source/tree, clean worktrees, expected Rust/Anchor/Solana declarations, source build-input digests, successful build exit codes, ELF magic, and identical artifact SHA-256 and byte length.
+- [x] Add deterministic tests for reproducible success and fail-closed handling of source drift, dirty/invalid metadata, build failure, wrong tool checksum, non-ELF artifacts and artifact hash/length divergence.
+- [ ] Run the manual build-only workflow after an operator intentionally selects its confirmation input; review artifact provenance and repeatability manifest.
+- [ ] Independently review build evidence, then decide whether to authorize the separate Phase 6.18 ProgramData request. The build workflow itself does not call RPC.
+
+The reference artifact is not yet accepted as the deployed program. The build workflow must not be described as an on-chain comparison, a production approval or trade authorization.

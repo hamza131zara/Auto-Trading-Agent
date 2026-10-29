@@ -1,0 +1,171 @@
+name: Phase 6 pinned Raydium CPMM reference build
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_source_build:
+        description: I authorize an offline-from-chain source build of the pinned public Raydium repository. This does not contact Solana RPC, read ProgramData, deploy or trade.
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase6-raydium-reference-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  reference-build:
+    name: Build pinned source twice and compare ELF artifacts
+    if: github.ref == 'refs/heads/main' && inputs.confirm_source_build == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      RAYDIUM_SOURCE_COMMIT: f4b9b26342afe9122d5ff67cd7a4f19ded4ac0a5
+      RAYDIUM_SOURCE_TREE: 060a556fc8b30bdaf04ada495819530b1dab6174
+      RAYDIUM_SOURCE_URL: https://github.com/raydium-io/raydium-cp-swap.git
+      RAYDIUM_LIBRARY_NAME: raydium_cp_swap
+      SOLANA_VERIFY_VERSION: 0.5.2
+      SOLANA_VERIFY_SHA256: b9d5ccce9634dc14269cab3e7a58649bc141b3306e7735a94478c936341f211f
+    steps:
+      - name: Checkout agent repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Require explicit build-only approval and Docker
+        run: |
+          if [[ "${{ inputs.confirm_source_build }}" != "yes" ]]; then
+            echo "::error::The explicit build-only confirmation was not supplied."
+            exit 2
+          fi
+          docker version
+          git --version
+          sha256sum --version
+
+      - name: Download checksum-pinned Solana Verify CLI
+        env:
+          TOOL_URL: https://github.com/solana-foundation/solana-verifiable-build/releases/download/v0.5.2/solana-verify-0.5.2-linux
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/raydium-build-evidence"
+          curl --fail --location --silent --show-error "$TOOL_URL" --output "${RUNNER_TEMP}/solana-verify"
+          printf '%s  %s\n' "$SOLANA_VERIFY_SHA256" "${RUNNER_TEMP}/solana-verify" | sha256sum --check -
+          chmod 0755 "${RUNNER_TEMP}/solana-verify"
+          "${RUNNER_TEMP}/solana-verify" --version
+          sha256sum "${RUNNER_TEMP}/solana-verify" > "${RUNNER_TEMP}/raydium-build-evidence/solana-verify.sha256"
+
+      - name: Checkout exact pinned Raydium source
+        run: |
+          set -euo pipefail
+          git clone "$RAYDIUM_SOURCE_URL" "${RUNNER_TEMP}/raydium-cp-swap-seed"
+          git -C "${RUNNER_TEMP}/raydium-cp-swap-seed" checkout --detach "$RAYDIUM_SOURCE_COMMIT"
+          ACTUAL_COMMIT="$(git -C "${RUNNER_TEMP}/raydium-cp-swap-seed" rev-parse HEAD)"
+          ACTUAL_TREE="$(git -C "${RUNNER_TEMP}/raydium-cp-swap-seed" rev-parse 'HEAD^{tree}')"
+          test "$ACTUAL_COMMIT" = "$RAYDIUM_SOURCE_COMMIT"
+          test "$ACTUAL_TREE" = "$RAYDIUM_SOURCE_TREE"
+          test -f "${RUNNER_TEMP}/raydium-cp-swap-seed/Cargo.lock"
+          test -f "${RUNNER_TEMP}/raydium-cp-swap-seed/Anchor.toml"
+          cp -a "${RUNNER_TEMP}/raydium-cp-swap-seed" "${RUNNER_TEMP}/raydium-build-a"
+          cp -a "${RUNNER_TEMP}/raydium-cp-swap-seed" "${RUNNER_TEMP}/raydium-build-b"
+          git -C "${RUNNER_TEMP}/raydium-build-a" status --porcelain
+          git -C "${RUNNER_TEMP}/raydium-build-b" status --porcelain
+
+      - name: Clean pinned-container build A
+        id: build_a
+        continue-on-error: true
+        run: |
+          set +e
+          cd "${RUNNER_TEMP}/raydium-build-a"
+          "${RUNNER_TEMP}/solana-verify" build --library-name "$RAYDIUM_LIBRARY_NAME" > "${RUNNER_TEMP}/raydium-build-evidence/build-a.log" 2>&1
+          BUILD_EXIT_CODE=$?
+          cat "${RUNNER_TEMP}/raydium-build-evidence/build-a.log"
+          if [[ "$BUILD_EXIT_CODE" -eq 0 && -f "target/deploy/${RAYDIUM_LIBRARY_NAME}.so" ]]; then
+            sha256sum "target/deploy/${RAYDIUM_LIBRARY_NAME}.so" > "${RUNNER_TEMP}/raydium-build-evidence/build-a.sha256"
+            wc -c < "target/deploy/${RAYDIUM_LIBRARY_NAME}.so" | tr -d ' ' > "${RUNNER_TEMP}/raydium-build-evidence/build-a.bytes"
+          elif [[ "$BUILD_EXIT_CODE" -eq 0 ]]; then
+            echo "Expected ELF artifact missing: target/deploy/${RAYDIUM_LIBRARY_NAME}.so" >> "${RUNNER_TEMP}/raydium-build-evidence/build-a.log"
+            BUILD_EXIT_CODE=1
+          fi
+          echo "exit_code=$BUILD_EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit "$BUILD_EXIT_CODE"
+
+      - name: Clean pinned-container build B
+        id: build_b
+        continue-on-error: true
+        run: |
+          set +e
+          cd "${RUNNER_TEMP}/raydium-build-b"
+          "${RUNNER_TEMP}/solana-verify" build --library-name "$RAYDIUM_LIBRARY_NAME" > "${RUNNER_TEMP}/raydium-build-evidence/build-b.log" 2>&1
+          BUILD_EXIT_CODE=$?
+          cat "${RUNNER_TEMP}/raydium-build-evidence/build-b.log"
+          if [[ "$BUILD_EXIT_CODE" -eq 0 && -f "target/deploy/${RAYDIUM_LIBRARY_NAME}.so" ]]; then
+            sha256sum "target/deploy/${RAYDIUM_LIBRARY_NAME}.so" > "${RUNNER_TEMP}/raydium-build-evidence/build-b.sha256"
+            wc -c < "target/deploy/${RAYDIUM_LIBRARY_NAME}.so" | tr -d ' ' > "${RUNNER_TEMP}/raydium-build-evidence/build-b.bytes"
+          elif [[ "$BUILD_EXIT_CODE" -eq 0 ]]; then
+            echo "Expected ELF artifact missing: target/deploy/${RAYDIUM_LIBRARY_NAME}.so" >> "${RUNNER_TEMP}/raydium-build-evidence/build-b.log"
+            BUILD_EXIT_CODE=1
+          fi
+          echo "exit_code=$BUILD_EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit "$BUILD_EXIT_CODE"
+
+      - name: Create hash-and-length evidence manifest
+        id: manifest
+        if: always()
+        continue-on-error: true
+        env:
+          BUILD_A_EXIT_CODE: ${{ steps.build_a.outputs.exit_code || '1' }}
+          BUILD_B_EXIT_CODE: ${{ steps.build_b.outputs.exit_code || '1' }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/raydium-build-evidence"
+          node scripts/create-raydium-build-evidence.mjs \
+            --source-a "${RUNNER_TEMP}/raydium-build-a" \
+            --source-b "${RUNNER_TEMP}/raydium-build-b" \
+            --artifact-a "${RUNNER_TEMP}/raydium-build-a/target/deploy/${RAYDIUM_LIBRARY_NAME}.so" \
+            --artifact-b "${RUNNER_TEMP}/raydium-build-b/target/deploy/${RAYDIUM_LIBRARY_NAME}.so" \
+            --build-a-exit "$BUILD_A_EXIT_CODE" \
+            --build-b-exit "$BUILD_B_EXIT_CODE" \
+            --solana-verify-binary "${RUNNER_TEMP}/solana-verify" \
+            --output "${RUNNER_TEMP}/raydium-build-evidence/raydium-reference-build-evidence.json"
+          echo "status=$(node -e 'const r=require(process.argv[1]);console.log(r.result.status)' "${RUNNER_TEMP}/raydium-build-evidence/raydium-reference-build-evidence.json")" >> "$GITHUB_OUTPUT"
+
+      - name: Copy built ELF artifacts for independent review
+        if: always()
+        run: |
+          mkdir -p "${RUNNER_TEMP}/raydium-build-evidence/artifacts"
+          if [[ -f "${RUNNER_TEMP}/raydium-build-a/target/deploy/${RAYDIUM_LIBRARY_NAME}.so" ]]; then
+            cp "${RUNNER_TEMP}/raydium-build-a/target/deploy/${RAYDIUM_LIBRARY_NAME}.so" "${RUNNER_TEMP}/raydium-build-evidence/artifacts/raydium_cp_swap-build-a.so"
+          fi
+          if [[ -f "${RUNNER_TEMP}/raydium-build-b/target/deploy/${RAYDIUM_LIBRARY_NAME}.so" ]]; then
+            cp "${RUNNER_TEMP}/raydium-build-b/target/deploy/${RAYDIUM_LIBRARY_NAME}.so" "${RUNNER_TEMP}/raydium-build-evidence/artifacts/raydium_cp_swap-build-b.so"
+          fi
+
+      - name: Upload build logs, manifest and artifacts
+        if: always()
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08
+        with:
+          name: raydium-cpmm-reference-build-evidence
+          path: ${{ runner.temp }}/raydium-build-evidence/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Require repeatable source build
+        if: always()
+        run: |
+          set -euo pipefail
+          MANIFEST="${RUNNER_TEMP}/raydium-build-evidence/raydium-reference-build-evidence.json"
+          if [[ ! -s "$MANIFEST" ]]; then
+            echo "::error::Build-evidence manifest is missing."
+            exit 1
+          fi
+          if ! node -e 'const fs=require("fs"); const r=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); if(r.result.status!=="PASS_REPRODUCIBLE_REFERENCE_BUILD" || r.result.rpcRequested !== false || r.result.tradingAuthorized !== false) process.exit(1);' "$MANIFEST"; then
+            echo "::error::The two pinned-source builds did not produce accepted reproducible evidence."
+            exit 1
+          fi

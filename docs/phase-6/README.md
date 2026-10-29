@@ -36,6 +36,7 @@
 16. [GeckoTerminal provider review and read-only adapter](16-geckoterminal-provider-review-and-adapter.md)
 17. [Timestamped indexed-price evidence in the manual reserve comparator](17-timestamped-indexed-price-comparison-runner.md)
 18. [Raydium CPMM deployed-program integrity evidence](18-raydium-program-deployment-integrity.md)
+19. [Pinned Raydium source build and reference hash evidence](19-raydium-reference-build-evidence.md)
 18. [Raydium CPMM deployed-program integrity evidence](18-raydium-program-deployment-integrity.md)
 
 ## Initial implementation boundary
@@ -95,3 +96,8 @@ The agreement evaluator requires at least two eligible independent providers; re
 ## Program deployment integrity
 
 Phase 6.18 adds an optional SHA-256 verification path for the Raydium CPMM ELF bytes stored in the loader-v3 ProgramData account. It requires the exact reference artifact byte length alongside the hash to handle allocation padding safely. Without both values, it remains NOT_ASSESSED and no additional ProgramData request occurs by default or in CI. CI [#234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764) passed 204/204 tests and all quality/security checks; the run was fixture-only and did not read live ProgramData. A matched hash is evidence of byte equality to that reference only and does not certify the build, permanently pin an upgradeable program, or authorize trading. See [Phase 6.18](18-raydium-program-deployment-integrity.md).
+
+
+## Pinned-source build evidence (Phase 6.19)
+
+The manual build workflow clones the pinned Raydium CPMM source commit, uses the checksum-pinned Solana Verify CLI and its Docker build environment, then performs two clean builds and compares exact ELF SHA-256 and byte length. The resulting manifest records the source commit/tree, critical build-input hashes, declared toolchain versions, binary checksum, both build outcomes and artifact digests. CI does not trigger this workflow and no RPC/network identity request is included. Run it manually from `main` only when the build-only confirmation is intentionally set to `yes`. The build manifest is candidate evidence, not proof that the deployed program currently matches; the separate Phase 6.18 ProgramData check remains an explicit operator-reviewed step.

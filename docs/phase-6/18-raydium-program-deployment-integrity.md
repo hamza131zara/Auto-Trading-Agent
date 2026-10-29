@@ -25,3 +25,8 @@ The manual workflow inputs expected_program_elf_sha256 and expected_program_elf_
 Synthetic unit tests cover ProgramData pointer decoding, hash match/mismatch, missing reference hash, synthetic-only evidence, wrong ProgramData address, malformed loader tags, context-slot ordering, zero-filled allocation padding and rejection of non-zero trailing bytes. The exact-length/padding regression passed in CI [#234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764). No real RPC request or transaction/signing capability was added.
 
 A successful comparison verifies byte equality with the supplied reference hash only. It does not establish source-build trust, pool eligibility, token safety, economic safety or trade authorization. Phase 7 review and all provider/freshness/fallback gates remain separate.
+
+
+## Next step: establish the reference artifact
+
+Phase 6.19 adds a separate manual-only [pinned source build evidence workflow](19-raydium-reference-build-evidence.md). It is designed to create and compare two clean builds from the exact pinned source revision before a reference hash and byte length are entered into this ProgramData comparison. It does not perform the ProgramData read and does not imply that the source is the currently deployed revision.
