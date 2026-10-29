@@ -1,6 +1,6 @@
 # Phase 6.17 — Timestamped indexed-price evidence in the manual reserve comparator
 
-**Status:** Implemented as an opt-in path; CI validation is pending for this commit. The workflow defaults to DEX Screener. GeckoTerminal API access is never initiated by CI or by default. No live GeckoTerminal request or paid-plan activation is part of this implementation.
+**Status:** Implemented and CI-verified in [run #229](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40934354059): 191/191 tests passed, with typecheck, build, repository validation, dependency audit and Gitleaks green. The workflow defaults to DEX Screener. GeckoTerminal API access is never initiated by CI or by default. No live GeckoTerminal request or paid-plan activation is part of this implementation.
 
 ## Purpose
 

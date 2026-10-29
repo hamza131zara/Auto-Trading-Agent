@@ -1,6 +1,6 @@
 # Phase 6.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active, not complete. Discovery checked 45 accounts and cross-checked 24 CPMM candidates; none met existing thresholds. The live Pyth comparison remains a 63-bps reserve/reference disagreement against a 10-bps diagnostic tolerance; DEX Screener source timestamps remain missing. GeckoTerminal has separate pool-details and timestamped OHLCV price-evidence paths: pool-details metrics remain freshness-unknown; the manual Pyth runner supports OHLCV price evidence as an explicit choice, defaults to DEX Screener, and requires separate default-no terms/budget and source-review approvals for GeckoTerminal. CI validation for this integration is pending; no live API request is part of CI or this implementation. Provider-use rights, attribution, effective quota and live fallback remain open; production approval and trading authorization remain false. See [Phase 6.17](17-timestamped-indexed-price-comparison-runner.md).
+**Status:** Active, not complete. Discovery checked 45 accounts and cross-checked 24 CPMM candidates; none met existing thresholds. The live Pyth comparison remains a 63-bps reserve/reference disagreement against a 10-bps diagnostic tolerance; DEX Screener source timestamps remain missing. GeckoTerminal has separate pool-details and timestamped OHLCV price-evidence paths: pool-details metrics remain freshness-unknown; the manual Pyth runner supports OHLCV price evidence as an explicit choice, defaults to DEX Screener, and requires separate default-no terms/budget and source-review approvals for GeckoTerminal. CI [run #229](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40934354059) passed 191/191 tests, typecheck, build, repository validation, dependency audit and Gitleaks. CI makes no provider API request, and no live GeckoTerminal request was made as part of this implementation. Provider-use rights, attribution, effective quota and live fallback remain open; production approval and trading authorization remain false. See [Phase 6.17](17-timestamped-indexed-price-comparison-runner.md).
 
 ## Acceptance checklist
 
@@ -53,7 +53,7 @@
 - [x] Keep DEX Screener as the unchanged default and identity lookup source; report the actual comparison-price provider separately.
 - [x] Gate GeckoTerminal behind two affirmative default-no workflow inputs and the same script preflight checks; missing approvals block before any request.
 - [x] Add deterministic resolver tests for default behavior, missing approval, timestamp-kind preservation, exact pool/mint propagation, and invalid-source rejection.
-- [ ] Re-run CI and record results.
+- [x] CI [run #229](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40934354059): 191/191 tests passed; typecheck, build, repository validation, dependency audit and Gitleaks passed.
 - [ ] Approve GeckoTerminal current use rights, attribution, storage, quota and budget for intended use; separately authorize any manual live request.
 
 No provider plan is purchased or assumed. Pool thresholds and the diagnostic comparison tolerance are unchanged. Phase 6 completion, production provider approval, and trading authorization remain false.
