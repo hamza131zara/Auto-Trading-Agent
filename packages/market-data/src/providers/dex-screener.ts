@@ -183,7 +183,7 @@ function parseCount(value: unknown): number | null | "INVALID" {
 
 async function readBoundedResponseText(response: Response): Promise<string> {
   const contentLength = response.headers.get("content-length");
-  if (contentLength !== null && /^\\d+$/.test(contentLength) &&
+  if (contentLength !== null && /^\d+$/.test(contentLength) &&
       Number(contentLength) > MAX_RESPONSE_BYTES) {
     await response.body?.cancel().catch(() => undefined);
     throw new DexScreenerAdapterError("PARSE", false);
