@@ -1,5 +1,4 @@
 import {
-  assessFreshness,
   isSolanaPublicKey,
   validateCanonicalMarketSnapshot
 } from "../index.js";
@@ -126,8 +125,35 @@ function isUtcTimestamp(value: unknown): value is string {
     Number.isFinite(Date.parse(value));
 }
 
-function isDecimal(value: unknown): value is string {
-  return typeof value === "string" && DECIMAL_PATTERN.test(value);
+function canonicalDecimal(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  if (DECIMAL_PATTERN.test(value)) return value;
+
+  // Expand a valid exponent-form numeric lexeme exactly; never route through Number.
+  const match = value.match(/^(0|[1-9][0-9]*)(?:\\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
+  if (match === null) return null;
+  const exponent = Number(match[3]);
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 64) return null;
+
+  const fraction = match[2] ?? "";
+  const digits = match[1] + fraction;
+  const decimalPosition = match[1].length + exponent;
+  let expanded: string;
+
+  if (decimalPosition <= 0) {
+    expanded = "0." + "0".repeat(-decimalPosition) + digits;
+  } else if (decimalPosition >= digits.length) {
+    expanded = digits + "0".repeat(decimalPosition - digits.length);
+  } else {
+    expanded = digits.slice(0, decimalPosition) + "." + digits.slice(decimalPosition);
+  }
+
+  const [integerPart, fractionalPart] = expanded.split(".");
+  const normalizedInteger = (integerPart ?? "0").replace(/^0+(?=[0-9])/, "");
+  const normalized = fractionalPart === undefined
+    ? normalizedInteger
+    : normalizedInteger + "." + fractionalPart;
+  return normalized.length <= 128 && DECIMAL_PATTERN.test(normalized) ? normalized : null;
 }
 
 function getOptionalRecord(record: Record<string, unknown>, key: string): Record<string, unknown> | null {
@@ -140,8 +166,9 @@ function parseMeasure(
   unit: "USD" | "USD_PER_BASE"
 ): DecimalMeasure | null | "INVALID" {
   if (value === undefined || value === null) return null;
-  if (!isDecimal(value)) return "INVALID";
-  return { value, unit, assetId: null };
+  const decimal = canonicalDecimal(value);
+  if (decimal === null) return "INVALID";
+  return { value: decimal, unit, assetId: null };
 }
 
 function parseCount(value: unknown): number | null | "INVALID" {
