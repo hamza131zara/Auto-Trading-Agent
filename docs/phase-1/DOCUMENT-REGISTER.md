@@ -3,11 +3,11 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 2.4  
-**Last refreshed:** 28 October 2026  
+**Register version:** 2.5  
+**Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `3869809946c9f8845546ed0b5e70c35119e63c74`  
+**Source snapshot before this register refresh:** `a78f5ef38f393f32863ea15b126e36afe7437993`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -31,8 +31,8 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Git blob SHA in pre-register snapshot | Bytes |
 |---|---|---:|
-| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 active; CI/security gates documented | `b9704df24b7cf68f11ffbefd26847bb0aa959316` | 6509 |
-| `README.md` | Project overview, Phase 5 active status and Phase 4 mockups/prototype | `7c1547544a49d72786ecdcbe168ff69918d1c5b6` | 6383 |
+| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `c17678839ddb02e1fd93aae4f90884a49d50bdaf` | 7058 |
+| `README.md` | Project overview, frozen roadmap, Phase 5 active status and current gates | `ff642a4ace7ac81c09e7b9f06a6993f94b97ed84` | 6678 |
 
 ## Phase 1 documents
 
@@ -147,12 +147,12 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-5/README.md` | Active engineering foundation; initial main push CI pass; PR and GitHub settings pending | `8eb913a9ef1fb3a1b3e232784413f32d0df8a7ee` | 3663 |
+| `docs/phase-5/README.md` | Active foundation; main-push baseline and PR CI evidence, current pins and owner-side gates | `9d4108cfd774763429aed56ed8cf7162f0c6a5e9` | 4636 |
 | `docs/phase-5/01-repository-structure-and-conventions.md` | Monorepo structure, workspace boundaries and conventions | `5668e0b8b3bcc3e1524aedf639630401f3b71e1c` | 3521 |
 | `docs/phase-5/02-environments-and-configuration.md` | Environment isolation and safe configuration policy | `883a4c9137504975a0fa2a0b217673c22f1da473` | 3496 |
-| `docs/phase-5/03-ci-cd-and-security-checks.md` | CI, npm audit, Gitleaks and dependency-graph gate | `e2628ec0d80d956037ab6db073c9f0d73a06fdad` | 2893 |
+| `docs/phase-5/03-ci-cd-and-security-checks.md` | Current full-SHA action pins, CI security checks and owner-side dependency/protection gates | `adb9598d667ba61fbc9fb68a314669f987cb5335` | 3940 |
 | `docs/phase-5/04-development-release-and-rollback-runbook.md` | Developer, dependency update, recovery and rollback runbook | `7a616ee2fe36be77cc066e54aecb7598449c1ae2` | 2886 |
-| `docs/phase-5/05-phase-5-acceptance-and-open-decisions.md` | Partial acceptance verified by main push CI; PR-specific checks and owner-side settings remain open | `c75cc80d6c27301549027a96d7be6479755033dc` | 3458 |
+| `docs/phase-5/05-phase-5-acceptance-and-open-decisions.md` | CI/PR acceptance evidence, type/config regression checks, and owner-side settings gates | `11fbde27b88b003ab9d24686865d1ba95130c3dc` | 4574 |
 
 ## Phase 5 foundation files
 
@@ -164,7 +164,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `.editorconfig` | Consistent text editing conventions | `192c070cf03df5d7af0521a1073c0919cb46f742` | 156 |
 | `.gitignore` | Local secrets and generated output exclusions | `ec2ae517f6fd44da1ad3cc8506cd11f7721fdfab` | 137 |
 | `.env.example` | Non-secret safe environment defaults; live trading false | `e3da7cd111de243720b72e2982f1146651416937` | 85 |
-| `package.json` | Private npm workspace root and quality scripts | `b1c1fbee8017705a723df2b6de5b36235630a1ae` | 772 |
+| `package.json` | Private npm workspace root with compile-time contract type tests in the typecheck script | `90f4b210b6232324cd33f44bc6254023e70adad7` | 835 |
 | `package-lock.json` | Lockfile v3 for exact TypeScript 7.0.2 dependency tree | `14e3b3070d3615458ab18a7e973c8c1e19bec5cf` | 13612 |
 | `tsconfig.base.json` | Strict shared TypeScript compiler options | `86b52b09aede81156dd12770bb317442712e5085` | 497 |
 | `apps/portal/package.json` | Reserved commercial portal workspace manifest | `9994efe44e192d18af67c245d0c3f6294669a416` | 89 |
@@ -172,14 +172,16 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `services/agent/package.json` | Reserved local agent workspace manifest | `fc7eab1b3d505157ba7f99f312ea70c704a91992` | 88 |
 | `packages/contracts/package.json` | Typed contract workspace manifest | `1ded068a0928ce0208cef6d1268cd4500f8e0e9a` | 305 |
 | `packages/contracts/tsconfig.json` | Contract workspace compiler settings | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
+| `packages/contracts/tsconfig.type-tests.json` | Compile-time-only contract regression test settings | `58fbc45587a3023ef471695a4ca452a6ba162f90` | 248 |
+| `packages/contracts/test/types.test.ts` | Exact status/outcome unions and rejection of execution-authorizing outcomes | `30e96811f794081d556cfc88ee57c3154cce86e3` | 1459 |
 | `packages/contracts/src/index.ts` | Shared status and decision outcome unions | `44fff01e2fc2faf186295be2b910e24f405b743e` | 383 |
 | `packages/config/package.json` | Configuration workspace manifest | `c9f982e5d4b63e225907c3753f7ce3ecc83c7d0c` | 302 |
 | `packages/config/tsconfig.json` | Configuration workspace compiler settings | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
 | `packages/config/src/index.ts` | Safe typed config parser; refuses live trading | `e087b80daa74ea5a344ac40470a61bb7e80872d1` | 1859 |
 | `scripts/validate-repository.mjs` | Workspace, env-default and common secret-pattern checks | `fea8112f8f8a1812922658911f97f73300c96fc8` | 4684 |
-| `test/config.test.mjs` | Node tests for config defaults and live-mode rejection | `0d07e08858de739bd92fb485675d3e5773e891c1` | 1662 |
-| `.github/workflows/ci.yml` | Push/PR quality pipeline with install, typecheck, build/test, npm audit and Gitleaks | `34f66bdab2c22afe130872ae738ab594bd5d4171` | 1521 |
-| `.github/dependabot.yml` | Weekly reviewable npm and GitHub Actions dependency updates | `3ce148c6e0fb80e493a1af84ffb920d9bdc7743f` | 358 |
+| `test/config.test.mjs` | Runtime config tests: defaults, strict booleans, immutability, no live trading and safe errors | `1c58d60e9a94dd6729d45c85c3fe63a0188ff16f` | 2383 |
+| `.github/workflows/ci.yml` | Push/PR CI with reviewed checkout/setup-node/Gitleaks full-SHA pins and full-history scan | `078cc62af33a1ab87a723086e828ee91e1dcc128` | 1521 |
+| `.github/dependabot.yml` | Weekly npm and GitHub Actions updates without undefined custom labels | `788d8cfa2830a8dbd2d8e3529f3a755dbd8a9f09` | 258 |
 
 ## Brand assets
 
@@ -206,15 +208,17 @@ Git blob SHA values below were refreshed from the main branch immediately before
 - The prototype uses illustrative data and has no backend, live data, wallet, payment or order endpoints. Browser/device and automated accessibility verification remain for implementation and QA.
 
 ## Phase 5 status
-- Phase 5 is active; npm workspace foundation, Node 24 baseline, TypeScript 7.0.2 lockfile, typed contracts/config parsing, safe defaults, tests, CI, npm audit, Gitleaks and Dependabot configuration are committed.
-- Main push CI run at commit `3869809946c9f8845546ed0b5e70c35119e63c74` passed install, repository validation, typecheck, build/tests, dependency audit and Gitleaks: https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40738716550
-- The separate Dependency Review Action is deferred because GitHub reported that the dependency graph is disabled for this repository. An authorized owner must enable it in Settings → Security before that gate is reintroduced; npm audit remains active.
-- GitHub branch protection/required checks remain owner-side settings and are not claimed enabled.
+- Phase 5 is active; the Node 24/npm workspace foundation, exact TypeScript 7.0.2 pin, typed contracts/config parser, compile-time contract regression tests, strict config tests, CI, npm audit, Gitleaks v3 and Dependabot configuration are committed.
+- Main-push baseline at commit `31ce3ea97efab31e003a7e0a49747118b0c7c5b4` passed install, repository validation, typecheck, build/tests, dependency audit and secret scan: https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40739952683
+- PR-specific CI evidence includes passing quality and full-history secret-scan jobs for PR #5 (run 40809400085), PR #6 (run 40809562729) and combined action refresh PR #7 (run 40809677560).
+- Current workflow action pins are checkout 7.0.1, setup-node 7.1.0 and Gitleaks v3.0.0, each pinned by a full commit SHA. The undefined Dependabot labels were removed.
+- The separate Dependency Review Action remains deferred because the GitHub dependency graph is not enabled. An authorized owner must enable it in Settings → Security before that gate is reintroduced; npm audit remains active.
+- GitHub branch protection/required checks/reviews remain owner-side settings and are not claimed enabled.
 - No trading, signing, provider, customer portal or payment implementation is part of this foundation. Mainnet remains unauthorized; numeric-risk and security blockers remain.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source tree `3869809946c9f8845546ed0b5e70c35119e63c74`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source tree `a78f5ef38f393f32863ea15b126e36afe7437993`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
