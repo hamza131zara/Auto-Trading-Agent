@@ -30,7 +30,7 @@ TypeScript 7.0.2 remains an exact engineering-bootstrap pin. Its successful CI c
 
 ## Verified CI evidence
 
-The latest main-push workflow completed successfully at commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6`: [run 40814464474](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814464474).
+The Phase 5 closeout main-push workflow completed successfully at commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6`: [run 40814464474](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40814464474). The next phase's merge commit also passed its main-push quality pipeline in [run 40816041202](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816041202).
 
 Pull-request CI runs also passed both the quality job and full-history secret scan:
 - [PR #5 — contract/config regression checks, run 40809400085](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809400085)
