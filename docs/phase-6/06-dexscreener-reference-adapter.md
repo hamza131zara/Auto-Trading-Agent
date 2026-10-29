@@ -56,7 +56,9 @@ Do not turn an unknown timestamp into a pass or freshness score. Until independe
 
 ## Test coverage
 
-The test suite uses a synthetic JSON fixture and an injected/mock `fetch`. It verifies:
+The test suite uses a synthetic JSON fixture and an injected/mock `fetch`. Any explicitly injected `fetch` implementation makes the returned payload envelope and normalized observation synthetic, even if the mock returns bytes copied from a real service. Only the adapter's default real network fetch can yield `synthetic: false`; tests cannot be upgraded to live evidence by relabelling fixture fields. The Phase 6.13 manual workflow uses the default adapter and the exact pair address explicitly supplied by the operator.
+
+The test suite verifies:
 - exact endpoint, GET method and absence of authorization headers;
 - exact pair/base/quote identity matching and rejection of another chain;
 - explicit USD-per-base versus absolute USD units;

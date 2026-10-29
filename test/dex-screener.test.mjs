@@ -71,7 +71,8 @@ test("fetches only the known Solana pair using a fixed read-only endpoint", asyn
   assert.equal(output.errors.length, 0);
   assert.equal(output.observations.length, 1);
   assert.equal(output.observations[0].provenance.providerId, "dex-screener");
-  assert.equal(output.observations[0].provenance.synthetic, false);
+  assert.equal(output.observations[0].provenance.sourceKind, "REPLAY_FIXTURE");
+  assert.equal(output.observations[0].provenance.synthetic, true);
 });
 
 test("rejects test clusters before making a provider request", async () => {
