@@ -1,6 +1,6 @@
 # Phase 6.13 — Explicit Live-Source Validation Runner
 
-**Status:** The read-only full identity/reserve validation completed successfully in [live-source run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349). The exact SOL/USDC pool returned `MATCH`, zero identity mismatches, and decoded on-chain vault reserves at finalized context slot `462885519`. The provider-neutral exact-decimal comparison evaluator is now implemented and passed [CI run #187](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40877555420) with 143 tests. This remains diagnostic evidence only: source freshness is `UNKNOWN`, independent comparison is `NOT_ASSESSED` until approved feed identities and policy values are supplied, and the pool is far below qualification thresholds. The shared public Mainnet RPC is one-off validation only, not an approved production provider. Phase 6 remains active.
+**Status:** The read-only full identity/reserve validation completed successfully in [live-source run #3](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40875718349). The exact SOL/USDC pool returned `MATCH`, zero identity mismatches, and decoded on-chain vault reserves at finalized context slot `462885519`. The exact-decimal comparator, Pyth Hermes SOL/USD + USDC/USD adapter, and manual-only validation workflow now pass CI [run #194](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40880232949) with 152 tests. This remains diagnostic plumbing only: no live Pyth request has been made; source freshness is `UNKNOWN`, independent comparison is `NOT_ASSESSED` until approved feed identities and policy values are supplied, and the pool is far below qualification thresholds. See [Phase 6.15](15-pyth-hermes-reference-adapter.md). Phase 6 remains active.
 
 ## Purpose
 
@@ -132,6 +132,10 @@ A successful report still records phase6Complete: false, productionProviderAppro
 ## Independent comparison contract — implemented, live policy open
 
 The pure `assessIndependentReservePriceAgreement` function and deterministic tests validate exact-decimal ratio comparison, feed/provider identity, independence from the indexed source, stale/future timestamps, missing indexed event timestamps, explicit deviation tolerance, and synthetic-evidence blocking. It makes no network calls and provides no vendor or trading approval. CI [run #187](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40877555420) passed 143 tests and all quality/security checks. Live use remains blocked until owner-approved feed IDs/provider family, freshness bounds, and tolerance are recorded.
+
+## Pyth Hermes reference adapter and manual comparison workflow
+
+Phase 6.15 adds a read-only Pyth Hermes adapter for the official Solana mainnet SOL/USD and USDC/USD feeds plus a manual-only workflow: [Pyth reference validation](https://github.com/hamza131zara/Auto-Trading-Agent/actions/workflows/phase6-pyth-reference-validation.yml). Official docs require a Pyth API key for Hermes after the August 26, 2026 Core upgrade; configure it as a GitHub Actions secret named `PYTH_API_KEY`, never in source or chat. The workflow has no defaults for the source age, retrieval age, reference-feed timestamp skew, future skew, or comparison tolerance. It requires separate approvals before any live request. See [Phase 6.15](15-pyth-hermes-reference-adapter.md) for feed IDs, official links, output fields and open gates. CI is mocked and makes no Pyth calls.
 
 ## Acceptance criteria for the live run
 
