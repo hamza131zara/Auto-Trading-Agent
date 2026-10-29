@@ -541,6 +541,10 @@ export function decodeRaydiumCpmmPool(account: SolanaRpcRawAccount): RaydiumCpmm
   return { status: "DECODED", value, errorCode: null };
 }
 
+function failAmmConfigDecode(errorCode: RaydiumCpmmPoolDecodeErrorCode): RaydiumCpmmAmmConfigDecodeResult {
+  return { status: "ERROR", value: null, errorCode };
+}
+
 export function decodeRaydiumCpmmAmmConfig(account: SolanaRpcRawAccount): RaydiumCpmmAmmConfigDecodeResult {
   if (!isRecord(account) ||
       typeof account.address !== "string" ||
@@ -550,22 +554,22 @@ export function decodeRaydiumCpmmAmmConfig(account: SolanaRpcRawAccount): Raydiu
       (account.executable !== null && typeof account.executable !== "boolean") ||
       (account.dataBase64 !== null && typeof account.dataBase64 !== "string") ||
       (account.space !== null && typeof account.space !== "number")) {
-    return failDecode("INVALID_ACCOUNT_ENVELOPE");
+    return failAmmConfigDecode("INVALID_ACCOUNT_ENVELOPE");
   }
-  if (!account.exists) return failDecode("POOL_ACCOUNT_MISSING");
-  if (account.ownerProgramId !== RAYDIUM_CPMM_PROGRAM_ID) return failDecode("WRONG_POOL_PROGRAM_OWNER");
-  if (account.executable !== false) return failDecode("POOL_ACCOUNT_EXECUTABLE");
-  if (typeof account.dataBase64 !== "string") return failDecode("INVALID_ACCOUNT_ENVELOPE");
+  if (!account.exists) return failAmmConfigDecode("POOL_ACCOUNT_MISSING");
+  if (account.ownerProgramId !== RAYDIUM_CPMM_PROGRAM_ID) return failAmmConfigDecode("WRONG_POOL_PROGRAM_OWNER");
+  if (account.executable !== false) return failAmmConfigDecode("POOL_ACCOUNT_EXECUTABLE");
+  if (typeof account.dataBase64 !== "string") return failAmmConfigDecode("INVALID_ACCOUNT_ENVELOPE");
   const bytes = decodeBase64Strict(account.dataBase64);
-  if (bytes === null) return failDecode("INVALID_BASE64");
-  if (account.space !== bytes.length) return failDecode("ACCOUNT_SPACE_MISMATCH");
-  if (bytes.length !== RAYDIUM_CPMM_AMM_CONFIG_LENGTH) return failDecode("INVALID_DATA_LENGTH");
+  if (bytes === null) return failAmmConfigDecode("INVALID_BASE64");
+  if (account.space !== bytes.length) return failAmmConfigDecode("ACCOUNT_SPACE_MISMATCH");
+  if (bytes.length !== RAYDIUM_CPMM_AMM_CONFIG_LENGTH) return failAmmConfigDecode("INVALID_DATA_LENGTH");
   for (let index = 0; index < AMM_CONFIG_DISCRIMINATOR.length; index += 1) {
-    if (bytes[index] !== AMM_CONFIG_DISCRIMINATOR[index]) return failDecode("INVALID_POOL_DISCRIMINATOR");
+    if (bytes[index] !== AMM_CONFIG_DISCRIMINATOR[index]) return failAmmConfigDecode("INVALID_POOL_DISCRIMINATOR");
   }
 
   const disableCreatePool = bytes[9]!;
-  if (disableCreatePool !== 0 && disableCreatePool !== 1) return failDecode("INVALID_BOOLEAN");
+  if (disableCreatePool !== 0 && disableCreatePool !== 1) return failAmmConfigDecode("INVALID_BOOLEAN");
   const index = readU16LE(bytes, 10);
   const protocolOwner = publicKeyFromBytes(bytes, 44);
   const fundOwner = publicKeyFromBytes(bytes, 76);
@@ -579,7 +583,7 @@ export function decodeRaydiumCpmmAmmConfig(account: SolanaRpcRawAccount): Raydiu
       tradeFeeRate === null || protocolFeeRate === null ||
       fundFeeRate === null || createPoolFee === null ||
       creatorFeeRate === null || creatorFeeShareRate === null) {
-    return failDecode("INVALID_DATA_LENGTH");
+    return failAmmConfigDecode("INVALID_DATA_LENGTH");
   }
   return {
     status: "DECODED",
