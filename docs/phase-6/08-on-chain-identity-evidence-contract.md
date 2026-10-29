@@ -1,6 +1,6 @@
 # Phase 6.8 — On-Chain Identity Evidence Contract
 
-**Status:** The deterministic evidence-bundle checker, generic read-only JSON-RPC transport and classic/Token-2022 base-state decoder are implemented with synthetic/mock tests. A DEX-specific pool decoder and Token-2022 TLV extension parser are not implemented, and no production RPC provider is selected. This contract must not be described as completed live on-chain verification.
+**Status:** The deterministic evidence-bundle checker, generic read-only JSON-RPC transport and classic/Token-2022 base-state decoder are implemented with synthetic/mock tests. A DEX-specific pool decoder and reviewed Token-2022 extension-semantic policy are not implemented, and no production RPC provider is selected. Structural TLV framing is inspected, but extension-bearing token state remains ineligible for identity evidence. This contract must not be described as completed live on-chain verification.
 
 ## Why this is a separate gate
 
