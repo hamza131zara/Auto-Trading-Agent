@@ -188,6 +188,39 @@ test("rejects unsupported chain, invalid measures, and unsafe counts instead of 
   });
 });
 
+test("classifies a fetch-stage timeout as retryable", async () => {
+  const adapter = new DexScreenerPairsAdapter((_input, init) => new Promise((_resolve, reject) => {
+    const signal = init?.signal;
+    if (!signal || signal.aborted) {
+      reject(new Error("aborted"));
+      return;
+    }
+    signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+  }), 100);
+
+  await assert.rejects(
+    adapter.fetchRaw(request, new AbortController().signal),
+    (error) => error instanceof DexScreenerAdapterError && error.code === "TIMEOUT" && error.retryable
+  );
+});
+
+test("classifies a response-body timeout as retryable TIMEOUT", async () => {
+  const adapter = new DexScreenerPairsAdapter(async (_input, init) => {
+    const signal = init?.signal;
+    const body = new ReadableStream({
+      start(controller) {
+        signal?.addEventListener("abort", () => controller.error(new Error("aborted")), { once: true });
+      }
+    }, { highWaterMark: 0 });
+    return new Response(body);
+  }, 100);
+
+  await assert.rejects(
+    adapter.fetchRaw(request, new AbortController().signal),
+    (error) => error instanceof DexScreenerAdapterError && error.code === "TIMEOUT" && error.retryable
+  );
+});
+
 test("classifies HTTP rate limit without leaking response body", async () => {
   const adapter = new DexScreenerPairsAdapter(async () =>
     new Response("sensitive-provider-response-body", { status: 429 })
