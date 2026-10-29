@@ -220,17 +220,30 @@ function normalizeRaydiumPool(pool) {
 }
 
 function normalizeRaydiumPage(payload) {
-  if (!isRecord(payload) || payload.success !== true || !isRecord(payload.data) ||
-      !Array.isArray(payload.data.data) ||
-      typeof payload.data.hasNextPage !== "boolean" ||
-      !Number.isSafeInteger(payload.data.count) || payload.data.count < 0) {
+  if (!isRecord(payload)) {
     throw codedError("RAYDIUM_API_RESPONSE_SHAPE_INVALID");
   }
-  const pools = payload.data.data;
+
+  // The pinned Raydium SDK's PoolsApiReturn type is the page object itself:
+  // { count, hasNextPage, data: Pool[] }. Some HTTP surfaces may wrap that
+  // page in { success: true, data: page }; accept both shapes explicitly.
+  let page = payload;
+  if (payload.success === true && isRecord(payload.data) && !Array.isArray(payload.data)) {
+    page = payload.data;
+  } else if (payload.success === false) {
+    throw codedError("RAYDIUM_API_REPORTED_FAILURE");
+  }
+
+  if (!Array.isArray(page.data) ||
+      typeof page.hasNextPage !== "boolean" ||
+      !Number.isSafeInteger(page.count) || page.count < 0) {
+    throw codedError("RAYDIUM_API_RESPONSE_SHAPE_INVALID");
+  }
+
   return {
-    count: payload.data.count,
-    hasNextPage: payload.data.hasNextPage,
-    pools
+    count: page.count,
+    hasNextPage: page.hasNextPage,
+    pools: page.data
   };
 }
 
