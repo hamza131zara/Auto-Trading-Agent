@@ -12,7 +12,7 @@ const baseVault = "11111111111111111111111111111112";
 const quoteVault = "11111111111111111111111111111113";
 const baseAuthority = "11111111111111111111111111111114";
 const quoteAuthority = "11111111111111111111111111111115";
-const dexProgramId = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const dexProgramId = "11111111111111111111111111111117";
 const tokenProgramId = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const loaderProgramId = "BPFLoaderUpgradeab1e11111111111111111111111";
 
@@ -248,6 +248,8 @@ test("empty/duplicate allowlists and malformed evidence fail closed", () => {
   emptyPrograms.approvedPoolDecoders = [];
   const duplicatePrograms = validPolicy();
   duplicatePrograms.allowedTokenProgramIds.push(tokenProgramId);
+  const crossRolePrograms = validPolicy();
+  crossRolePrograms.approvedPoolDecoders[0].programId = tokenProgramId;
   const malformedEvidence = validEvidence();
   malformedEvidence.source.contextSlot = -1;
   assert.equal(
@@ -256,6 +258,10 @@ test("empty/duplicate allowlists and malformed evidence fail closed", () => {
   );
   assert.equal(
     assessOnChainIdentityEvidence(targetSnapshot(), validEvidence(), duplicatePrograms).status,
+    "INVALID_INPUT"
+  );
+  assert.equal(
+    assessOnChainIdentityEvidence(targetSnapshot(), validEvidence(), crossRolePrograms).status,
     "INVALID_INPUT"
   );
   assert.equal(
