@@ -323,15 +323,13 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId) {
     headers: { accept: "application/json" }
   }, "DEX_SCREENER_PAIR");
   if (!isRecord(response.payload) ||
-      !(Array.isArray(response.payload.pairs) ||
-        response.payload.pairs === null ||
-        response.payload.pairs === undefined)) {
+      !(Array.isArray(response.payload.pairs) || response.payload.pairs === null)) {
     throw codedError("DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID");
   }
 
-  // DEX Screener documents `pairs` as nullable/optional. A null or omitted
-  // list means this address is not indexed there; it is not evidence of a
-  // qualifying pair and must not fail the whole discovery report.
+  // DEX Screener's pair response allows a null pair list. This means the
+  // address is not indexed there; it is not evidence of a qualifying pair.
+  // An omitted/unexpected field still fails closed as a response-shape error.
   const indexedPairs = Array.isArray(response.payload.pairs) ? response.payload.pairs : [];
   const found = indexedPairs
     .map(normalizeExactPair)
