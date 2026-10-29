@@ -302,6 +302,33 @@ test("continues to reject malformed or missing DEX Screener pairs fields", async
   }
 });
 
+test("does not cross-qualify a pool when DEX Screener returns the same address under a different allowlisted quote mint", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const mismatchedQuoteFetch = async (input, init = {}) => {
+    if (String(input).startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
+      return new Response(JSON.stringify(pairResponse([
+        makePair(HIGH_CPMM, 500_000, 75_000, "raydium", USDT)
+      ])), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return fetchImpl(input, init);
+  };
+
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: mismatchedQuoteFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+
+  assert.equal(report.selectionPolicy.scanIncomplete, false);
+  assert.equal(report.selectionPolicy.thresholdQualifiedCount, 0);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.ok(report.candidates.every((candidate) => candidate.dexScreenerPairFound === false));
+  assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds === false));
+});
+
 test("accepts Raydium SDK page shape and supported HTTP envelope forms", async () => {
   for (const wrapped of ["none", "success", "data"]) {
     const { fetchImpl } = mockFetchFactory();
@@ -373,8 +400,11 @@ test("uses nextPageId cursor and refuses to recommend from a partial page", asyn
     fetchImpl: cursorFetch,
     now: () => "2026-10-29T09:00:00.000Z"
   });
-  assert.equal(report.selectionPolicy.raydiumPaginationKnown, true);
-  assert.equal(report.selectionPolicy.raydiumPaginationSignal, "NEXT_PAGE_CURSOR_PRESENT");
+  const usdcQuery = report.sources.raydiumApi.approvedQuotePairQueries.find((query) => query.quoteMint === USDC);
+  assert.equal(usdcQuery.paginationKnown, true);
+  assert.equal(usdcQuery.paginationTerminal, false);
+  assert.equal(usdcQuery.pages[0].paginationSignal, "NEXT_PAGE_CURSOR_PRESENT");
+  assert.equal(usdcQuery.pages.length, 10);
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
