@@ -15,6 +15,12 @@ It requests only the explicitly supplied pair address. It does not pick a pool i
 
 The reference adapter only accepts a `mainnet-beta` request because the indexed data is for Solana mainnet. It rejects devnet/testnet requests before sending any request. This is a read-only market-data request; no transaction or wallet method is exposed.
 
+## Official-source review snapshot — 2026-10-29
+
+- The [official API reference](https://docs.dexscreener.com/api/reference) lists the pair-lookup endpoint at a rate limit of 300 requests per minute. This published endpoint limit is not a contractual availability commitment, an account-specific quota confirmation, or permission to run at the limit. No production request budget is approved by this note.
+- The [API terms](https://docs.dexscreener.com/api/api-terms-and-conditions) describe commercial use as subject to their restrictions, limit making the API services or portions available to third parties, and state that users do not acquire ownership of data obtained through the API. The intended distribution model for this project is licensed, self-hosted customer software, so legal/licensing compatibility and any restrictions on redistributing derived data must be resolved before bundling this provider into a commercial release.
+- This is a dated engineering evidence snapshot, not legal advice or an owner approval. Recheck the live official documentation and terms at the time of any provider-selection or release decision.
+
 ## Normalized fields
 
 | Provider field | Canonical field | Treatment |
