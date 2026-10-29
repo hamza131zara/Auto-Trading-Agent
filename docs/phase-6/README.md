@@ -60,15 +60,15 @@ The structural inspector and fail-closed semantic registry in [Phase 6.11](11-to
 
 ## SPL Token base-state decoder
 
-The decoder in [Phase 6.10](10-spl-token-base-state-decoder.md) parses the classic 82-byte mint and 165-byte token-account base layouts and can parse only the base prefix of Token-2022 data. Any extended Token-2022 account is explicitly flagged `EXTENSIONS_UNINSPECTED` and cannot pass the identity-evidence parsing gate. Extension TLV interpretation is still outstanding.
+The decoder in [Phase 6.10](10-spl-token-base-state-decoder.md) parses the classic 82-byte mint and 165-byte token-account base layouts and validates the base prefix of Token-2022 data. Extended Token-2022 accounts are flagged `EXTENSIONS_UNINSPECTED` by the base decoder; the separate [Phase 6.11 inspector/policy](11-token2022-extension-tlv-inspector.md) inspects TLV structure and routes known, unknown and scope-invalid types conservatively. Extension-bearing accounts remain ineligible for identity evidence pending the actual token-safety review in Phase 7.
 
 ## Read-only RPC transport
 
-A bounded, read-only `getMultipleAccounts` transport is implemented in [Phase 6.9](09-solana-rpc-account-reader.md). It preserves the response context slot and account order, hashes the response, marks injected-fetch results synthetic, and never makes an RPC call in CI. It deliberately returns raw base64 account data only; pool/mint/vault decoding and production provider selection remain separate gates.
+A bounded, read-only `getMultipleAccounts` transport is implemented in [Phase 6.9](09-solana-rpc-account-reader.md). It preserves the response context slot and account order, hashes the response, marks injected-fetch results synthetic, and never makes an RPC call in CI. It returns raw base64 account data only; [Phase 6.12](12-raydium-cpmm-candidate-decoder.md) now consumes that transport for a pinned-source Raydium CPMM candidate. Provider selection and real-source validation remain separate gates.
 
 ## On-chain identity evidence boundary
 
-The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry with disjoint DEX/token/loader roles. It does not fetch RPC data or decode raw account bytes. The read-only `getMultipleAccounts` reader and protocol-specific decoder are still required before any live identity result may be claimed.
+The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry with disjoint DEX/token/loader roles. It does not fetch RPC data or decode raw account bytes. The generic reader and a pinned-source Raydium CPMM candidate decoder now exist, but only mocked/synthetic tests have run; no live identity result may be claimed until independent real-source verification and owner-approved provider selection.
 
 ## Provider agreement and fallback safeguards
 
