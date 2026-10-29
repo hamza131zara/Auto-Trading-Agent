@@ -3,9 +3,12 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  buildTargetSnapshotFromDexScreener,
+  parseArgs,
   validateLiveTargetSnapshot,
   validateRpcEndpoint
 } from "../scripts/validate-raydium-live-source.mjs";
+import { DexScreenerPairsAdapter } from "../packages/market-data/dist/providers/dex-screener.js";
 
 const replay = JSON.parse(
   readFileSync(new URL("./fixtures/market-data/replay-v1.json", import.meta.url), "utf8")
@@ -94,4 +97,72 @@ test("CLI refuses to proceed without explicit read-only mainnet approval", () =>
   assert.equal(result.status, 2);
   assert.match(result.stderr, /READ_ONLY_MAINNET_APPROVAL_REQUIRED/);
   assert.doesNotMatch(result.stderr, /127\.0\.0\.1|never-contacted/);
+});
+
+
+test("live mode requires the exact pair and both mint addresses; it never auto-selects a pair", () => {
+  assert.deepEqual(
+    parseArgs(["--pool-address", baseTarget.poolAddress, "--base-mint", baseTarget.baseMint, "--quote-mint", baseTarget.quoteMint]),
+    {
+      target: null,
+      output: null,
+      poolAddress: baseTarget.poolAddress,
+      baseMint: baseTarget.baseMint,
+      quoteMint: baseTarget.quoteMint,
+      help: false
+    }
+  );
+  assert.throws(
+    () => parseArgs(["--pool-address", baseTarget.poolAddress]),
+    { code: "PAIR_IDENTITY_ARGUMENTS_INCOMPLETE" }
+  );
+  assert.throws(
+    () => parseArgs(["--target", "snapshot.json", "--pool-address", baseTarget.poolAddress, "--base-mint", baseTarget.baseMint, "--quote-mint", baseTarget.quoteMint]),
+    { code: "TARGET_MODE_ARGUMENT_CONFLICT" }
+  );
+});
+
+test("mocked DEX Screener adapter data cannot become an eligible live target", async () => {
+  const fixtureText = readFileSync(
+    new URL("./fixtures/market-data/dexscreener-pair-v1.json", import.meta.url),
+    "utf8"
+  );
+  const adapter = new DexScreenerPairsAdapter(async () =>
+    new Response(fixtureText, { status: 200, headers: { "content-type": "application/json" } })
+  );
+  const times = ["2026-10-29T00:00:00.000Z", "2026-10-29T00:00:02.000Z"];
+  await assert.rejects(
+    buildTargetSnapshotFromDexScreener({
+      poolAddress: baseTarget.poolAddress,
+      baseMint: baseTarget.baseMint,
+      quoteMint: baseTarget.quoteMint,
+      rpcProviderId: "approved-rpc",
+      adapter,
+      now: () => times.shift()
+    }),
+    { code: "TARGET_MUST_BE_REAL_INDEXED_SOURCE_EVIDENCE" }
+  );
+});
+
+test("CLI checks operator approvals before attempting live indexed API or RPC access", () => {
+  const result = spawnSync(process.execPath, [
+    "scripts/validate-raydium-live-source.mjs",
+    "--pool-address", baseTarget.poolAddress,
+    "--base-mint", baseTarget.baseMint,
+    "--quote-mint", baseTarget.quoteMint
+  ], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ATA_SOLANA_RPC_URL: "https://api.mainnet.solana.com",
+      ATA_SOLANA_RPC_PROVIDER_ID: "solana-public-shared",
+      ATA_LIVE_SOURCE_APPROVAL: "",
+      ATA_LIVE_TARGET_SOURCE_APPROVAL: "",
+      ATA_LIVE_PROVIDER_TERMS_APPROVAL: ""
+    }
+  });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /READ_ONLY_MAINNET_APPROVAL_REQUIRED/);
+  assert.doesNotMatch(result.stderr, /api\.dexscreener\.com|api\.mainnet\.solana\.com/);
 });
