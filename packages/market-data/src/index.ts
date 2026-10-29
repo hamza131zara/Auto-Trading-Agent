@@ -1369,3 +1369,26 @@ export type {
   Token2022ExtensionPolicyEntry,
   Token2022ExtensionPolicyResult
 } from "./solana-token-account-decoder.js";
+
+
+export {
+  RAYDIUM_CPMM_DECODER_ID,
+  RAYDIUM_CPMM_DECODER_VERSION,
+  RAYDIUM_CPMM_POOL_STATE_LENGTH,
+  RAYDIUM_CPMM_PROGRAM_ID,
+  assessRaydiumCpmmIdentityEvidence,
+  decodeRaydiumCpmmPool,
+  deriveRaydiumCpmmAuthorityPda,
+  deriveRaydiumCpmmPoolPda,
+  deriveRaydiumCpmmVaultPda,
+  findSolanaProgramAddress,
+  readRaydiumCpmmIdentityBundle
+} from "./raydium-cpmm-decoder.js";
+export type {
+  RaydiumCpmmIdentityAssessment,
+  RaydiumCpmmIdentityReadRequest,
+  RaydiumCpmmIdentityStatus,
+  RaydiumCpmmPoolDecodeErrorCode,
+  RaydiumCpmmPoolDecodeResult,
+  RaydiumCpmmPoolState
+} from "./raydium-cpmm-decoder.js";
