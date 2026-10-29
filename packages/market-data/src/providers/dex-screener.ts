@@ -198,7 +198,7 @@ async function readBoundedResponseText(response: Response): Promise<string> {
   }
 
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   const chunks: string[] = [];
   let receivedBytes = 0;
 
@@ -211,9 +211,17 @@ async function readBoundedResponseText(response: Response): Promise<string> {
         await reader.cancel().catch(() => undefined);
         throw new DexScreenerAdapterError("PARSE", false);
       }
-      chunks.push(decoder.decode(result.value, { stream: true }));
+      try {
+        chunks.push(decoder.decode(result.value, { stream: true }));
+      } catch {
+        throw new DexScreenerAdapterError("PARSE", false);
+      }
     }
-    chunks.push(decoder.decode());
+    try {
+      chunks.push(decoder.decode());
+    } catch {
+      throw new DexScreenerAdapterError("PARSE", false);
+    }
     return chunks.join("");
   } finally {
     reader.releaseLock();
