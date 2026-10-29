@@ -268,6 +268,43 @@ test("Solana PDA derivation matches the independently published Raydium authorit
   });
 });
 
+test("Raydium PDA wrapper seeds use raw 32-byte public keys, matching the upstream toBuffer() helpers", async () => {
+  const fixture = await makeFixture();
+  const rawVault = await findSolanaProgramAddress([
+    "pool_vault",
+    decode58(fixture.pool.address),
+    decode58(baseMint)
+  ], RAYDIUM_CPMM_PROGRAM_ID);
+  assert.deepEqual(
+    await deriveRaydiumCpmmVaultPda(fixture.pool.address, baseMint),
+    rawVault
+  );
+
+  const rawPool = await findSolanaProgramAddress([
+    "pool",
+    decode58(fixture.configPda.address),
+    decode58(fixture.token0Mint),
+    decode58(fixture.token1Mint)
+  ], RAYDIUM_CPMM_PROGRAM_ID);
+  assert.deepEqual(
+    await deriveRaydiumCpmmPoolPda(fixture.configPda.address, fixture.token0Mint, fixture.token1Mint),
+    rawPool
+  );
+
+  assert.deepEqual(
+    await deriveRaydiumCpmmLpMintPda(fixture.pool.address),
+    await findSolanaProgramAddress(["pool_lp_mint", decode58(fixture.pool.address)], RAYDIUM_CPMM_PROGRAM_ID)
+  );
+  assert.deepEqual(
+    await deriveRaydiumCpmmObservationPda(fixture.pool.address),
+    await findSolanaProgramAddress(["observation", decode58(fixture.pool.address)], RAYDIUM_CPMM_PROGRAM_ID)
+  );
+  assert.deepEqual(
+    fixture.configPda,
+    await findSolanaProgramAddress(["amm_config", new Uint8Array([0, 7])], RAYDIUM_CPMM_PROGRAM_ID)
+  );
+});
+
 test("decodes the pinned Raydium CPMM PoolState discriminator and packed offsets", async () => {
   const fixture = await makeFixture();
   const decoded = decodeRaydiumCpmmPool(fixture.rawAccounts.get(fixture.pool.address));
