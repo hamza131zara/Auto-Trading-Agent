@@ -42,6 +42,8 @@ The snapshot should be saved as an untracked local file, for example ./local-evi
 npm ci
 npm run build
 
+New-Item -ItemType Directory -Force .\local-evidence | Out-Null
+
 # Set these only after the approvals above are complete.
 $env:ATA_LIVE_SOURCE_APPROVAL = "APPROVED_READ_ONLY_MAINNET_RPC"
 $env:ATA_LIVE_TARGET_SOURCE_APPROVAL = "INDEPENDENT_INDEXED_SOURCE_REVIEWED"
