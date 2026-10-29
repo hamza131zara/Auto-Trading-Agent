@@ -10,8 +10,11 @@ import {
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const DEX_SCREENER_URL =
-  "https://api.dexscreener.com/latest/dex/tokens/" + SOL_MINT + "," + USDC_MINT;
+const RAYDIUM_POOL_QUERY_URL =
+  "https://api-v3.raydium.io/pools/info/mint?size=100&mint1=" + USDC_MINT +
+  "&mint2=" + SOL_MINT + "&poolType=Standard&sortField=liquidity&sortType=desc";
+const DEX_SCREENER_PAIR_URL_BASE = "https://api.dexscreener.com/latest/dex/pairs/solana/";
+const RAYDIUM_API_PROVIDER_ID = "raydium-api-v3";
 const RPC_URL = "https://api.mainnet.solana.com";
 const RPC_PROVIDER_ID = "solana-public-shared";
 const MAX_RESPONSE_BYTES = 5_000_000;
@@ -32,6 +35,9 @@ function sha256(text) {
 function approvalGate(env) {
   if (env.ATA_CPMM_DISCOVERY_RPC_APPROVAL !== "APPROVED_READ_ONLY_MAINNET_DISCOVERY") {
     throw codedError("READ_ONLY_MAINNET_RPC_APPROVAL_REQUIRED");
+  }
+  if (env.ATA_CPMM_DISCOVERY_RAYDIUM_API_APPROVAL !== "RAYDIUM_API_USAGE_REVIEWED") {
+    throw codedError("RAYDIUM_API_USAGE_REVIEW_REQUIRED");
   }
   if (env.ATA_CPMM_DISCOVERY_PROVIDER_APPROVAL !== "DEXSCREENER_TERMS_AND_BUDGET_REVIEWED") {
     throw codedError("DEXSCREENER_TERMS_QUOTA_BUDGET_REVIEW_REQUIRED");
@@ -172,6 +178,83 @@ function normalizeExactPair(pair) {
   };
 }
 
+function normalizeRaydiumPool(pool) {
+  if (!isRecord(pool) ||
+      pool.type !== "Standard" ||
+      typeof pool.id !== "string" ||
+      !isSolanaPublicKey(pool.id) ||
+      typeof pool.programId !== "string" ||
+      !isSolanaPublicKey(pool.programId) ||
+      !isRecord(pool.mintA) ||
+      !isRecord(pool.mintB)) {
+    return null;
+  }
+  const mintA = pool.mintA.address;
+  const mintB = pool.mintB.address;
+  const exactMints =
+    (mintA === SOL_MINT && mintB === USDC_MINT) ||
+    (mintA === USDC_MINT && mintB === SOL_MINT);
+  if (!exactMints) return null;
+  const liquidityUsd = asNonNegativeMetric(pool.tvl);
+  const volume24hUsd = asNonNegativeMetric(pool.day?.volume);
+  return {
+    poolAddress: pool.id,
+    raydiumProgramId: pool.programId,
+    raydiumPoolType: pool.type,
+    baseMint: SOL_MINT,
+    quoteMint: USDC_MINT,
+    baseSymbol: mintA === SOL_MINT ? pool.mintA.symbol ?? null : pool.mintB.symbol ?? null,
+    quoteSymbol: mintA === USDC_MINT ? pool.mintA.symbol ?? null : pool.mintB.symbol ?? null,
+    raydiumLiquidityUsd: liquidityUsd,
+    raydiumVolume24hUsd: volume24hUsd,
+    raydiumPrice: asNonNegativeMetric(pool.price),
+    raydiumMintAmountA: asNonNegativeMetric(pool.mintAmountA),
+    raydiumMintAmountB: asNonNegativeMetric(pool.mintAmountB),
+    raydiumPoolCreatedAt: typeof pool.openTime === "string" ? pool.openTime : null,
+    raydiumData: {
+      liquidityUsd,
+      volume24hUsd,
+      price: asNonNegativeMetric(pool.price)
+    }
+  };
+}
+
+function normalizeRaydiumPage(payload) {
+  if (!isRecord(payload) || payload.success !== true || !isRecord(payload.data) ||
+      !Array.isArray(payload.data.data) ||
+      typeof payload.data.hasNextPage !== "boolean" ||
+      !Number.isSafeInteger(payload.data.count) || payload.data.count < 0) {
+    throw codedError("RAYDIUM_API_RESPONSE_SHAPE_INVALID");
+  }
+  const pools = payload.data.data;
+  return {
+    count: payload.data.count,
+    hasNextPage: payload.data.hasNextPage,
+    pools
+  };
+}
+
+async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId) {
+  const url = DEX_SCREENER_PAIR_URL_BASE + encodeURIComponent(poolAddress);
+  const response = await fetchJson(fetchImpl, url, {
+    method: "GET",
+    headers: { accept: "application/json" }
+  }, "DEX_SCREENER_PAIR");
+  if (!isRecord(response.payload) || !Array.isArray(response.payload.pairs)) {
+    throw codedError("DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID");
+  }
+  const found = response.payload.pairs
+    .map(normalizeExactPair)
+    .find((pair) => pair !== null && pair.poolAddress === poolAddress) ?? null;
+  return {
+    poolAddress,
+    requestId,
+    rawPayloadSha256: sha256(response.rawText),
+    found: found !== null,
+    pair: found
+  };
+}
+
 function checkRpcAccounts(payload, requestId, expectedAddresses) {
   if (!isRecord(payload) || payload.jsonrpc !== "2.0" || payload.id !== requestId ||
       !isRecord(payload.result) || !isRecord(payload.result.context) ||
@@ -254,26 +337,23 @@ export async function discoverRaydiumCpmmCandidates({
   }
   const fetchedAt = now();
 
-  const indexed = await fetchJson(fetchImpl, DEX_SCREENER_URL, {
+  const raydium = await fetchJson(fetchImpl, RAYDIUM_POOL_QUERY_URL, {
     method: "GET",
     headers: { accept: "application/json" }
-  }, "INDEXED_API");
-  if (!isRecord(indexed.payload) || !Array.isArray(indexed.payload.pairs)) {
-    throw codedError("INDEXED_RESPONSE_SHAPE_INVALID");
-  }
-
+  }, "RAYDIUM_API");
+  const raydiumPage = normalizeRaydiumPage(raydium.payload);
   const byAddress = new Map();
-  for (const pair of indexed.payload.pairs) {
-    const normalized = normalizeExactPair(pair);
+  for (const pool of raydiumPage.pools) {
+    const normalized = normalizeRaydiumPool(pool);
     if (normalized === null) continue;
     const previous = byAddress.get(normalized.poolAddress);
-    if (!previous || (normalized.liquidityUsd ?? -1) > (previous.liquidityUsd ?? -1)) {
+    if (!previous || (normalized.raydiumLiquidityUsd ?? -1) > (previous.raydiumLiquidityUsd ?? -1)) {
       byAddress.set(normalized.poolAddress, normalized);
     }
   }
 
   const exactPairs = [...byAddress.values()].sort((a, b) =>
-    (b.liquidityUsd ?? -1) - (a.liquidityUsd ?? -1));
+    (b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
   const selected = exactPairs.slice(0, MAX_POOL_ACCOUNTS);
   let rpcEvidence = {
     providerId: RPC_PROVIDER_ID,
@@ -320,16 +400,16 @@ export async function discoverRaydiumCpmmCandidates({
   }
 
   const classByAddress = new Map(classifications.map((item) => [item.poolAddress, item]));
-  const candidates = exactPairs.map((candidate) => {
+  const decodedCpmmCandidates = exactPairs.map((candidate) => {
     const onChain = classByAddress.get(candidate.poolAddress) ?? {
       ownerProgramId: null,
       classification: "NOT_CHECKED_ACCOUNT_CAP"
     };
-    const meetsThresholds =
-      candidate.liquidityUsd !== null &&
-      candidate.volume24hUsd !== null &&
-      candidate.liquidityUsd >= minimumLiquidityUsd &&
-      candidate.volume24hUsd >= minimumVolume24hUsd;
+    const meetsRaydiumThresholds =
+      candidate.raydiumLiquidityUsd !== null &&
+      candidate.raydiumVolume24hUsd !== null &&
+      candidate.raydiumLiquidityUsd >= minimumLiquidityUsd &&
+      candidate.raydiumVolume24hUsd >= minimumVolume24hUsd;
     return {
       ...candidate,
       onChainProgram: onChain.classification,
@@ -337,33 +417,89 @@ export async function discoverRaydiumCpmmCandidates({
       onChainToken0Mint: onChain.token0Mint ?? null,
       onChainToken1Mint: onChain.token1Mint ?? null,
       poolDecodeErrorCode: onChain.poolDecodeErrorCode ?? null,
-      meetsLiquidityAndVolumeThresholds: meetsThresholds,
+      meetsRaydiumThresholds,
       sourceFreshness: "UNKNOWN",
-      freshnessReason: "DEX Screener pair mapping provides no trustworthy market-event timestamp."
+      freshnessReason: "Raydium pool API does not provide a reliable market-event timestamp in this response."
     };
   });
 
-  const cpmmCandidates = candidates
+  const cpmmCandidates = decodedCpmmCandidates
     .filter((candidate) => candidate.onChainProgram === "RAYDIUM_CPMM")
-    .sort((a, b) => (b.liquidityUsd ?? -1) - (a.liquidityUsd ?? -1));
-  const qualifying = cpmmCandidates.filter((candidate) => candidate.meetsLiquidityAndVolumeThresholds);
-  const displayCandidates = cpmmCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
+    .sort((a, b) => (b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
+  const candidatesToCrossCheck = cpmmCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
+  const dexScreenerEvidence = [];
+  const dexByAddress = new Map();
+  for (let index = 0; index < candidatesToCrossCheck.length; index += 1) {
+    const candidate = candidatesToCrossCheck[index];
+    const dexRequestId = clientRequestId + "-dex-" + String(index + 1);
+    const checked = await lookupDexScreenerPair(fetchImpl, candidate.poolAddress, dexRequestId);
+    dexScreenerEvidence.push({
+      poolAddress: checked.poolAddress,
+      requestId: checked.requestId,
+      rawPayloadSha256: checked.rawPayloadSha256,
+      found: checked.found
+    });
+    dexByAddress.set(candidate.poolAddress, checked.pair);
+  }
+
+  const enrichedCandidates = cpmmCandidates.map((candidate) => {
+    const dexPair = dexByAddress.get(candidate.poolAddress) ?? null;
+    const dexMeetsThresholds = dexPair !== null &&
+      dexPair.liquidityUsd !== null &&
+      dexPair.volume24hUsd !== null &&
+      dexPair.liquidityUsd >= minimumLiquidityUsd &&
+      dexPair.volume24hUsd >= minimumVolume24hUsd;
+    return {
+      ...candidate,
+      dexScreenerPairFound: dexPair !== null,
+      dexScreenerMetrics: dexPair === null ? null : {
+        liquidityUsd: dexPair.liquidityUsd,
+        volume24hUsd: dexPair.volume24hUsd,
+        priceUsd: dexPair.priceUsd,
+        buys24h: dexPair.buys24h,
+        sells24h: dexPair.sells24h,
+        dexId: dexPair.dexId
+      },
+      meetsDexScreenerThresholds: dexMeetsThresholds,
+      meetsLiquidityAndVolumeThresholds: candidate.meetsRaydiumThresholds && dexMeetsThresholds,
+      sourceFreshness: "UNKNOWN",
+      freshnessReason: "No trustworthy source-event timestamp was provided by the pool API or pair lookup."
+    };
+  });
+  const qualifying = enrichedCandidates.filter((candidate) =>
+    candidate.meetsLiquidityAndVolumeThresholds && candidate.dexScreenerPairFound);
+  const scanIncomplete =
+    raydiumPage.hasNextPage ||
+    selected.length < exactPairs.length;
+  const displayCandidates = enrichedCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
 
   return {
-    schemaVersion: "ata.phase6.cpmm-candidate-discovery.v1",
+    schemaVersion: "ata.phase6.cpmm-candidate-discovery.v2",
     generatedAt: now(),
     scope: "READ_ONLY_SOL_USDC_RAYDIUM_CPMM_CANDIDATE_DISCOVERY",
-    status: exactPairs.length > MAX_POOL_ACCOUNTS
-      ? cpmmCandidates.length > 0 ? "CPMM_CANDIDATES_FOUND_PARTIAL_SCAN" : "INCOMPLETE_RPC_ACCOUNT_CAP"
-      : cpmmCandidates.length > 0 ? "CPMM_CANDIDATES_FOUND" : "NO_CPMM_CANDIDATES_FOUND",
-    source: {
-      providerId: "dex-screener",
-      endpointClass: "latest-dex-tokens",
-      clientRequestId,
-      rawPayloadSha256: sha256(indexed.rawText),
-      retrievedAt: fetchedAt,
-      sourceObservedAt: null,
-      freshness: "UNKNOWN"
+    status: scanIncomplete
+      ? qualifying.length > 0 ? "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN" : "INCOMPLETE_DISCOVERY_SCAN"
+      : qualifying.length > 0 ? "QUALIFYING_CPMM_CANDIDATES_FOUND"
+        : cpmmCandidates.length > 0 ? "CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED"
+          : "NO_CPMM_CANDIDATES_FOUND",
+    sources: {
+      raydiumApi: {
+        providerId: RAYDIUM_API_PROVIDER_ID,
+        endpointClass: "pools/info/mint",
+        clientRequestId,
+        rawPayloadSha256: sha256(raydium.rawText),
+        retrievedAt: fetchedAt,
+        freshness: "UNKNOWN",
+        resultCount: raydiumPage.count,
+        hasNextPage: raydiumPage.hasNextPage
+      },
+      dexScreener: {
+        providerId: "dex-screener",
+        endpointClass: "latest-dex-pairs-by-pool-address",
+        poolLookupsAttempted: dexScreenerEvidence.length,
+        poolLookupsFound: dexScreenerEvidence.filter((item) => item.found).length,
+        evidence: dexScreenerEvidence
+      }
     },
     rpcEvidence,
     selectionPolicy: {
@@ -372,29 +508,35 @@ export async function discoverRaydiumCpmmCandidates({
       requiredOnChainPoolOwner: RAYDIUM_CPMM_PROGRAM_ID,
       minimumLiquidityUsd,
       minimumVolume24hUsd,
+      liquidityVolumeThresholdRequiresBothIndexedSources: true,
       maxPoolAccountsChecked: MAX_POOL_ACCOUNTS,
       poolAccountsChecked: selected.length,
-      exactRaydiumPairCount: exactPairs.length,
-      truncatedByRpcAccountCap: exactPairs.length > MAX_POOL_ACCOUNTS,
+      exactRaydiumPoolCount: exactPairs.length,
+      truncatedByRpcAccountCap: selected.length < exactPairs.length,
+      raydiumApiHasNextPage: raydiumPage.hasNextPage,
+      scanIncomplete,
       candidateCount: cpmmCandidates.length,
+      dexScreenerCrossCheckedCount: dexScreenerEvidence.length,
       thresholdQualifiedCount: qualifying.length,
       poolClassificationSummary: classifications.reduce((summary, item) => {
         summary[item.classification] = (summary[item.classification] ?? 0) + 1;
         return summary;
       }, {}),
-      recommendedFollowUpPoolAddress: qualifying[0]?.poolAddress ?? null
+      recommendedFollowUpPoolAddress: !scanIncomplete ? qualifying[0]?.poolAddress ?? null : null
     },
     candidates: displayCandidates,
     operatorAcknowledgements: {
       readOnlyMainnetRpcApproved: true,
-      indexedSourceTermsAndBudgetReviewed: true
+      raydiumApiUsageReviewed: true,
+      dexScreenerTermsQuotaAndBudgetReviewed: true
     },
     reportLimitations: [
       "This report is a discovery shortlist, not a trading recommendation or token-safety approval.",
-      "DEX Screener market-event timestamps are missing; source freshness remains UNKNOWN.",
-      "On-chain account-owner classification identifies CPMM pools but does not yet compare reserves or prove deployed binary/source equivalence.",
+      "Raydium API liquidity/volume and DEX Screener liquidity/volume are both indexed observations, not independent on-chain reserve verification.",
+      "The report requires a matching exact pool/mint identity from DEX Screener and on-chain CPMM PoolState decoding before recommending a follow-up.",
+      "Source freshness remains UNKNOWN because neither indexed mapping provides an approved market-event freshness signal here.",
       "Liquidity and volume thresholds are triage settings, not an approved trading policy.",
-      "A CPMM candidate must pass full identity, reserve reconciliation, independent market-data, token-safety, and fallback gates before any later decision."
+      "A CPMM candidate must pass the full identity workflow, same-slot reserve reconciliation, independent market-data review, token-safety review, and fallback gates before any later decision."
     ]
   };
 }
