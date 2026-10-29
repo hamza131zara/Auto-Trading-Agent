@@ -1319,3 +1319,16 @@ export function assessOnChainIdentityEvidence(
     true
   );
 }
+
+
+export {
+  SolanaRpcAccountReader,
+  SolanaRpcReaderError
+} from "./solana-rpc-reader.js";
+export type {
+  ReadSolanaAccountsRequest,
+  SolanaRpcAccountBundle,
+  SolanaRpcAccountReaderOptions,
+  SolanaRpcRawAccount,
+  SolanaRpcReaderFailureCode
+} from "./solana-rpc-reader.js";
