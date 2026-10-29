@@ -291,7 +291,7 @@ test("returns safe diagnostics and does not recommend a pool when pagination sig
   assert.equal(report.selectionPolicy.raydiumPaginationKnown, false);
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
-  assert.equal(report.status, "INCOMPLETE_DISCOVERY_SCAN");
+  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
   assert.equal(report.sources.raydiumApi.responseDiagnostics.pageHasNextPageType, "undefined");
   assert.equal(report.sources.raydiumApi.responseDiagnostics.poolArrayLength, 1);
 });
