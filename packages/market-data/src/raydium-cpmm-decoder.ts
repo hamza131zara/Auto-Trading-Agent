@@ -228,6 +228,11 @@ function publicKeyFromBytes(bytes: Uint8Array, offset: number): string | null {
   return isSolanaPublicKey(key) ? key : null;
 }
 
+function readU16LE(bytes: Uint8Array, offset: number): number | null {
+  if (offset < 0 || offset + 2 > bytes.length) return null;
+  return bytes[offset]! + bytes[offset + 1]! * 0x100;
+}
+
 function readU32LE(bytes: Uint8Array, offset: number): number | null {
   if (offset < 0 || offset + 4 > bytes.length) return null;
   return (bytes[offset]! +
@@ -641,8 +646,9 @@ function extensionEvidenceBlocked(
 }
 
 /**
- * Builds the exact six-account read request required to inspect a Raydium CPMM
- * pool and its token identities. This only reads; it never selects a production
+ * Discovers the pool layout, then reads the nine-account identity bundle at one
+ * shared context slot: pool, program, AMM config, LP mint, two mints, two vaults,
+ * and observation account. This only reads; it never selects a production
  * provider and never creates a transaction. Injected fetch results are synthetic
  * through SolanaRpcAccountReader's explicit test boundary.
  */
