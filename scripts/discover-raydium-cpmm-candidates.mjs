@@ -26,7 +26,8 @@ const RPC_URL = "https://api.mainnet.solana.com";
 const RPC_PROVIDER_ID = "solana-public-shared";
 const MAX_RESPONSE_BYTES = 5_000_000;
 const MAX_POOL_ACCOUNTS = 100;
-const MAX_DISPLAY_CANDIDATES = 20;
+const MAX_CROSS_CHECK_CANDIDATES = 50;
+const MAX_DISPLAY_CANDIDATES = 50;
 const RPC_REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/;
 
 function buildRaydiumPoolQueryUrl(quoteMint, pageNumber) {
@@ -629,7 +630,7 @@ export async function discoverRaydiumCpmmCandidates({
   const cpmmCandidates = decodedCpmmCandidates
     .filter((candidate) => candidate.onChainProgram === "RAYDIUM_CPMM")
     .sort((a, b) => (b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
-  const candidatesToCrossCheck = cpmmCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
+  const candidatesToCrossCheck = cpmmCandidates.slice(0, MAX_CROSS_CHECK_CANDIDATES);
   const dexScreenerEvidence = [];
   const dexByAddress = new Map();
   for (let index = 0; index < candidatesToCrossCheck.length; index += 1) {
@@ -727,7 +728,7 @@ export async function discoverRaydiumCpmmCandidates({
       truncatedByRpcAccountCap: selected.length < exactPairs.length,
       scanIncomplete,
       candidateCount: cpmmCandidates.length,
-      dexScreenerCrossCheckCap: MAX_DISPLAY_CANDIDATES,
+      dexScreenerCrossCheckCap: MAX_CROSS_CHECK_CANDIDATES,
       dexScreenerCrossCheckedCount: dexScreenerEvidence.length,
       unCrossCheckedCpmmCandidateCount: cpmmCandidates.length - dexScreenerEvidence.length,
       thresholdQualifiedCount: qualifying.length,

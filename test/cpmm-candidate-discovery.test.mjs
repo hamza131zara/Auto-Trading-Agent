@@ -26,6 +26,28 @@ function decode58(text) {
   return Buffer.concat([Buffer.alloc(leading), Buffer.from(bytes)]);
 }
 
+function encode58(inputBytes) {
+  const bytes = Buffer.from(inputBytes);
+  let value = BigInt("0x" + bytes.toString("hex"));
+  let encoded = "";
+  while (value > 0n) {
+    encoded = BASE58_ALPHABET[Number(value % 58n)] + encoded;
+    value /= 58n;
+  }
+  let leadingZeroes = 0;
+  while (leadingZeroes < bytes.length && bytes[leadingZeroes] === 0) leadingZeroes += 1;
+  return "1".repeat(leadingZeroes) + encoded;
+}
+
+function generatedPoolAddress(index) {
+  const bytes = Buffer.alloc(32);
+  bytes[28] = (index >>> 24) & 0xff;
+  bytes[29] = (index >>> 16) & 0xff;
+  bytes[30] = (index >>> 8) & 0xff;
+  bytes[31] = index & 0xff;
+  return encode58(bytes);
+}
+
 function writeKey(buffer, offset, address) {
   const key = decode58(address);
   assert.equal(key.length, 32);
@@ -277,6 +299,67 @@ test("treats a nullable DEX Screener pair list as not indexed without qualifying
   assert.equal(report.sources.dexScreener.poolLookupsFound, 0);
   assert.ok(report.candidates.every((candidate) => candidate.dexScreenerPairFound === false));
   assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds === false));
+});
+
+test("cross-checks every CPMM candidate beyond the former 20-pool cap", async () => {
+  const addresses = Array.from({ length: 22 }, (_, index) => generatedPoolAddress(index + 1));
+  const raydiumPools = addresses.map((address) =>
+    makeRaydiumPool(address, CPMM, 500_000, 75_000)
+  );
+  const fetchImpl = async (input, init = {}) => {
+    const url = String(input);
+    if (poolApiUrl(url)) {
+      const quoteMint = new URL(url).searchParams.get("mint2");
+      assert.ok([USDC, USDT].includes(quoteMint));
+      const pools = quoteMint === USDC ? raydiumPools : [];
+      return new Response(JSON.stringify(raydiumResponse(pools, { hasNextPage: false })), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    if (url.startsWith("https://api.mainnet.solana.com")) {
+      const request = JSON.parse(init.body);
+      assert.equal(request.method, "getMultipleAccounts");
+      const foundAddresses = request.params[0];
+      return new Response(JSON.stringify({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: {
+          context: { slot: 462900099 },
+          value: foundAddresses.map(() => ({
+            owner: CPMM,
+            executable: false,
+            space: 637,
+            data: [POOL_DATA_BASE64, "base64"]
+          }))
+        }
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    if (url.startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
+      const address = decodeURIComponent(url.split("/").at(-1));
+      return new Response(JSON.stringify(pairResponse(
+        addresses.includes(address) ? [makePair(address, 500_000, 75_000)] : null
+      )), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    throw new Error("Unexpected URL in cross-check-cap test");
+  };
+
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+
+  assert.equal(report.selectionPolicy.candidateCount, 22);
+  assert.equal(report.selectionPolicy.dexScreenerCrossCheckCap, 50);
+  assert.equal(report.selectionPolicy.dexScreenerCrossCheckedCount, 22);
+  assert.equal(report.selectionPolicy.unCrossCheckedCpmmCandidateCount, 0);
+  assert.equal(report.selectionPolicy.scanIncomplete, false);
+  assert.equal(report.selectionPolicy.thresholdQualifiedCount, 22);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, addresses[0]);
+  assert.equal(report.candidates.length, 22);
+  assert.ok(report.candidates.every((candidate) => candidate.dexScreenerPairFound));
+  assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds));
 });
 
 test("continues to reject malformed or missing DEX Screener pairs fields", async () => {

@@ -86,7 +86,7 @@ jobs:
             exit 2
           fi
 
-      - name: Discover and classify SOL/USDC pools
+      - name: Discover SOL/USDC and SOL/USDT pools
         env:
           ATA_CPMM_DISCOVERY_RPC_APPROVAL: APPROVED_READ_ONLY_MAINNET_DISCOVERY
           ATA_CPMM_DISCOVERY_RAYDIUM_API_APPROVAL: RAYDIUM_API_USAGE_REVIEWED
