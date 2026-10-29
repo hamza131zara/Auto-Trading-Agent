@@ -333,6 +333,53 @@ test("reserve/reference disagreement beyond the explicit tolerance fails closed"
   assert.equal(result.tradingAuthorized, false);
 });
 
+test("live run #2 Pyth disagreement remains fail-closed when indexed source timestamps are missing", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    reserveRatioQuotePerBase: "100.643712539836069377",
+    indexedPriceUsdPerBase: "100.64",
+    indexedSourceEventAt: null,
+    indexedRetrievedAt: "2026-10-29T14:34:17.779Z",
+    policy: {
+      nowAt: "2026-10-29T14:34:18.750Z",
+      maxSourceAgeMs: 60_000,
+      maxRetrievalAgeMs: 30_000,
+      maxReferenceTimestampSkewMs: 10_000,
+      maxFutureSkewMs: 0,
+      maxDeviationBps: 10
+    },
+    baseUsd: {
+      assetId: "So11111111111111111111111111111111111111112",
+      feedId: "sol-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "101.25522465",
+      publishedAt: "2026-10-29T14:34:18.000Z",
+      retrievedAt: "2026-10-29T14:34:18.750Z",
+      synthetic: false
+    },
+    quoteUsd: {
+      assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      feedId: "usdc-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "0.99975109",
+      publishedAt: "2026-10-29T14:34:18.000Z",
+      retrievedAt: "2026-10-29T14:34:18.750Z",
+      synthetic: false
+    }
+  }));
+
+  assert.equal(result.sourceFreshness, "FRESH");
+  assert.equal(result.referenceTimestampSkewMs, 0);
+  assert.equal(result.reserveComparison.status, "DISAGREEMENT");
+  assert.equal(result.reserveComparison.deviationBpsRounded, "63");
+  assert.equal(result.indexedPriceComparison.status, "NOT_ASSESSED");
+  assert.ok(result.reasonCodes.includes("RESERVE_RATIO_OUTSIDE_TOLERANCE"));
+  assert.ok(result.reasonCodes.includes("INDEXED_SOURCE_TIMESTAMP_MISSING"));
+  assert.equal(result.comparisonEvidenceComplete, false);
+  assert.equal(result.tradingAuthorized, false);
+});
+
 test("unapproved, aliased or wrong-feed reference sources cannot qualify as independent", () => {
   const wrongFeed = assessIndependentReservePriceAgreement(independentComparisonFixture({
     baseUsd: { feedId: "wrong-base-feed" }
