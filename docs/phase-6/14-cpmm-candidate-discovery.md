@@ -1,6 +1,6 @@
 # Phase 6.14 — Read-only Raydium CPMM candidate discovery
 
-**Status:** The initial SOL/USDC live discovery completed successfully in [run #9](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40870237606), but none of its 14 verified CPMM pools met the configured $100,000 liquidity and $10,000 24-hour volume thresholds. The broadened live run [#183](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40873581896) queried both canonical pairs successfully: Raydium pagination was terminal for USDC (31 records) and USDT (14 records), and finalized RPC checked all 45 pool accounts, classifying 24 as CPMM and 21 as AMM v4. However, only 20 of the 24 CPMM candidates were cross-checked against DEX Screener because of the old cross-check cap. The run returned `INCOMPLETE_DISCOVERY_SCAN`, zero qualified candidates among those 20 checked, and correctly no recommendation. The next fix raises the bounded cross-check cap to 50 and adds a regression test covering 22 candidates; unchanged thresholds remain $100,000 liquidity and $10,000 24-hour volume. A new manual live run is still required to get a complete result. Discovery does not approve token safety or trading.
+**Status:** Corrected live discovery run [#11](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40874763390) is complete: both canonical quote-pair queries reached terminal pagination (31 SOL/USDC records and 14 SOL/USDT records), finalized RPC checked all 45 pool accounts (24 CPMM, 21 AMM v4), and DEX Screener cross-checked all 24 CPMM candidates. The report returned `scanIncomplete: false`, `CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED`, zero threshold-qualified candidates and no recommendation. The cross-check cap is 50. All 136 CI tests, build/typecheck, dependency audit and Gitleaks passed in [CI run #183](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40874454549). The next Phase 6 gate is a separate manual read-only full identity/reserve check on the top indexed-liquidity pool for diagnostic validation only; that pool is far below the qualification thresholds and is not accepted as a trading candidate.
 
 ## Why this exists
 
@@ -29,7 +29,25 @@ The allowlist is limited to these canonical mainnet mint addresses:
 
 Mint identifiers are sourced from [Solana's mainnet stablecoin reference](https://solana.com/docs/payments/how-payments-work). This is a discovery-only allowlist, not approval to use either quote asset in production. Unknown quote mints, wrong-pair DEX Screener responses, on-chain mint mismatches, malformed responses and incomplete scans cannot qualify a candidate.
 
-The $100,000 liquidity and $10,000 24-hour volume minimums are unchanged. The latest expanded live run found 24 on-chain CPMM candidates but checked only 20 through DEX Screener, so it cannot be treated as a complete negative result. The cross-check cap is being raised to 50, enough to cover the current 24 candidates while keeping a bounded request count. After the regression suite passes, open the [Phase 6 SOL stablecoin CPMM discovery workflow](https://github.com/hamza131zara/Auto-Trading-Agent/actions/workflows/phase6-cpmm-candidate-discovery.yml) on `main` and manually run again. Review all three acknowledgements and keep both thresholds unchanged. CI uses mocks only and never contacts live provider APIs. The top candidate, if any, remains a follow-up candidate rather than a trading recommendation.
+The live run is now complete and cross-checked all 24 CPMM candidates. The $100,000 liquidity and $10,000 24-hour volume minimums remain unchanged, and no candidate passed both indexed-source thresholds. The next action is the Phase 6.13 manual identity/reserve diagnostic documented above; do not rerun discovery or lower thresholds just to force a recommendation. CI uses mocks only and never contacts live provider APIs. The top candidate, if any, remains a follow-up candidate rather than a trading recommendation.
+
+## Latest complete broadened live run — 2026-10-29
+
+[Workflow run #11](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40874763390) used real sources (`synthetic: false`) and finalized RPC context slot `462883564`. Raydium queries reached terminal pagination for both quote mints: 31 SOL/USDC records and 14 SOL/USDT records. All 45 pool accounts were checked, with 24 classified as CPMM and 21 as AMM v4. All 24 CPMM candidates were cross-checked against DEX Screener; 11 matching indexed pairs were found and 13 pool addresses were not indexed there. No candidate met the existing minimums of $100,000 indexed liquidity and $10,000 24-hour volume in both sources. The report state is `CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED`, `scanIncomplete: false`, and `recommendedFollowUpPoolAddress: null`.
+
+The highest-liquidity observed CPMM pool was `47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4` (SOL/USDC): Raydium reported about $578.07 liquidity and $206.12 in 24-hour volume; DEX Screener reported about $578.06 liquidity and $233.47 in 24-hour volume. These are indexed observations and are far below the unchanged qualification thresholds. This pool is suitable only as a read-only identity/reserve diagnostic, not as a trading candidate.
+
+### Next gate — independently inspect on-chain reserves
+
+Use the manual [Phase 6.13 live-source validation workflow](https://github.com/hamza131zara/Auto-Trading-Agent/actions/workflows/phase6-live-source-validation.yml) for the explicit SOL/USDC pool above. Suggested inputs are:
+
+- `pool_address`: `47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4`
+- `base_mint`: `So11111111111111111111111111111111111111112`
+- `quote_mint`: `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
+- `minimum_context_slot`: `462883564` (the previous discovery run's finalized slot floor)
+- `max_retrieval_age_ms`: `300000`
+
+The three workflow acknowledgement inputs default to `no`; set each to `yes` only after reviewing and approving that specific read-only RPC request, exact indexed pair, and current provider terms/quota/retention/usage budget. This diagnostic can validate pool identity, vault balances and the on-chain quote/base reserve ratio at a shared finalized slot. It does **not** make the pool eligible for trading or prove that the $100,000/$10,000 market thresholds are met.
 
 ## Default triage thresholds
 
