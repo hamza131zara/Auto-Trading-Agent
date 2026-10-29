@@ -94,6 +94,78 @@ export interface FreshnessAssessment {
   readonly reasonCodes: readonly string[];
 }
 
+/** A single timestamped asset/USD observation from an explicitly approved reference provider. */
+export interface IndependentUsdPriceObservation {
+  readonly assetId: string;
+  readonly feedId: string;
+  readonly providerId: string;
+  readonly independenceGroupId: string;
+  readonly priceUsd: string;
+  readonly publishedAt: string;
+  readonly retrievedAt: string;
+  readonly synthetic: boolean;
+}
+
+/** Deliberately has no defaults: owner-approved freshness, feed identity and tolerance are mandatory. */
+export interface IndependentReservePriceComparisonPolicy {
+  readonly nowAt: string;
+  readonly maxSourceAgeMs: number;
+  readonly maxRetrievalAgeMs: number;
+  readonly maxFutureSkewMs: number;
+  readonly maxDeviationBps: number;
+  readonly approvedProviderId: string;
+  readonly approvedIndependenceGroupId: string;
+  readonly expectedBaseFeedId: string;
+  readonly expectedQuoteFeedId: string;
+  /** Test-only bypass for fixture arithmetic; never makes synthetic results operationally eligible. */
+  readonly allowSyntheticForTests?: boolean;
+}
+
+export type IndependentPriceComparisonStatus =
+  | "AGREED"
+  | "DISAGREEMENT"
+  | "INSUFFICIENT_EVIDENCE"
+  | "INVALID_INPUT"
+  | "NOT_ASSESSED";
+
+export interface IndependentReservePriceComparisonInput {
+  readonly baseMint: string;
+  readonly quoteMint: string;
+  readonly reserveRatioQuotePerBase: string;
+  readonly indexedPriceUsdPerBase: string | null;
+  readonly indexedProviderId: string;
+  readonly indexedIndependenceGroupId: string;
+  readonly indexedSourceEventAt: string | null;
+  readonly indexedRetrievedAt: string;
+  readonly indexedSynthetic: boolean;
+  readonly baseUsd: IndependentUsdPriceObservation;
+  readonly quoteUsd: IndependentUsdPriceObservation;
+  readonly policy: IndependentReservePriceComparisonPolicy;
+}
+
+export interface IndependentReservePriceComparisonResult {
+  readonly status: IndependentPriceComparisonStatus;
+  readonly reasonCodes: readonly string[];
+  readonly reserveComparison: {
+    readonly status: IndependentPriceComparisonStatus;
+    readonly deviationBpsRounded: string | null;
+    readonly toleranceBps: number;
+  };
+  readonly indexedPriceComparison: {
+    readonly status: IndependentPriceComparisonStatus;
+    readonly deviationBpsRounded: string | null;
+    readonly toleranceBps: number;
+  };
+  readonly referenceProviderId: string;
+  readonly referenceIndependenceGroupId: string;
+  readonly baseFeedId: string;
+  readonly quoteFeedId: string;
+  readonly sourceFreshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID";
+  readonly comparisonEvidenceComplete: boolean;
+  /** This comparator only assesses evidence quality; it never authorizes a trade. */
+  readonly tradingAuthorized: false;
+}
+
 export type ProviderErrorClass =
   | "TIMEOUT"
   | "RATE_LIMIT"
@@ -409,6 +481,290 @@ export function assessFreshness(input: FreshnessInput): FreshnessAssessment {
     return { state: "STALE", ageMs, maxAgeMs, reasonCodes: ["SOURCE_EXCEEDS_MAX_AGE"] };
   }
   return { state: "FRESH", ageMs, maxAgeMs, reasonCodes: ["SOURCE_WITHIN_MAX_AGE"] };
+}
+
+type ExactPriceDecimal = { readonly coefficient: bigint; readonly scale: number };
+
+function parseExactPriceDecimal(value: unknown): ExactPriceDecimal | null {
+  if (typeof value !== "string" || value.length > 128 || !DECIMAL_PATTERN.test(value)) return null;
+  const [integerPart, fractionPart = ""] = value.split(".");
+  if (fractionPart.length > 36) return null;
+  try {
+    return { coefficient: BigInt(integerPart + fractionPart), scale: fractionPart.length };
+  } catch {
+    return null;
+  }
+}
+
+function powerOfTen(exponent: number): bigint {
+  return 10n ** BigInt(exponent);
+}
+
+function absoluteBigInt(value: bigint): bigint {
+  return value < 0n ? -value : value;
+}
+
+function alignedPriceDecimals(
+  left: ExactPriceDecimal,
+  right: ExactPriceDecimal
+): readonly [bigint, bigint] {
+  const scale = Math.max(left.scale, right.scale);
+  return [
+    left.coefficient * powerOfTen(scale - left.scale),
+    right.coefficient * powerOfTen(scale - right.scale)
+  ];
+}
+
+function comparePriceDeviationBps(
+  observed: ExactPriceDecimal,
+  reference: ExactPriceDecimal,
+  toleranceBps: number
+): { readonly status: "AGREED" | "DISAGREEMENT"; readonly deviationBpsRounded: string } {
+  const [observedUnits, referenceUnits] = alignedPriceDecimals(observed, reference);
+  const delta = absoluteBigInt(observedUnits - referenceUnits);
+  const deviationBpsRounded = ((delta * 10_000n + referenceUnits / 2n) / referenceUnits).toString();
+  return {
+    status: delta * 10_000n <= referenceUnits * BigInt(toleranceBps) ? "AGREED" : "DISAGREEMENT",
+    deviationBpsRounded
+  };
+}
+
+/** Compares reserve*quoteUSD against baseUSD without floating-point division or rounded intermediate prices. */
+function compareReserveRatioDeviationBps(
+  reserveRatio: ExactPriceDecimal,
+  baseUsd: ExactPriceDecimal,
+  quoteUsd: ExactPriceDecimal,
+  toleranceBps: number
+): { readonly status: "AGREED" | "DISAGREEMENT"; readonly deviationBpsRounded: string } {
+  const observedNumerator = reserveRatio.coefficient * quoteUsd.coefficient;
+  const observedScale = reserveRatio.scale + quoteUsd.scale;
+  const referenceNumerator = baseUsd.coefficient;
+  const referenceScale = baseUsd.scale;
+  const commonScale = Math.max(observedScale, referenceScale);
+  const observedUnits = observedNumerator * powerOfTen(commonScale - observedScale);
+  const referenceUnits = referenceNumerator * powerOfTen(commonScale - referenceScale);
+  const delta = absoluteBigInt(observedUnits - referenceUnits);
+  const deviationBpsRounded = ((delta * 10_000n + referenceUnits / 2n) / referenceUnits).toString();
+  return {
+    status: delta * 10_000n <= referenceUnits * BigInt(toleranceBps) ? "AGREED" : "DISAGREEMENT",
+    deviationBpsRounded
+  };
+}
+
+function validComparisonPolicy(policy: IndependentReservePriceComparisonPolicy): boolean {
+  return isRecord(policy) &&
+    isUtcTimestamp(policy.nowAt) &&
+    Number.isSafeInteger(policy.maxSourceAgeMs) && policy.maxSourceAgeMs > 0 &&
+    Number.isSafeInteger(policy.maxRetrievalAgeMs) && policy.maxRetrievalAgeMs > 0 &&
+    Number.isSafeInteger(policy.maxFutureSkewMs) && policy.maxFutureSkewMs >= 0 &&
+    Number.isSafeInteger(policy.maxDeviationBps) &&
+    policy.maxDeviationBps >= 0 && policy.maxDeviationBps <= 10_000 &&
+    isSafeSlug(policy.approvedProviderId) &&
+    isSafeSlug(policy.approvedIndependenceGroupId) &&
+    typeof policy.expectedBaseFeedId === "string" &&
+    REQUEST_ID_PATTERN.test(policy.expectedBaseFeedId) &&
+    typeof policy.expectedQuoteFeedId === "string" &&
+    REQUEST_ID_PATTERN.test(policy.expectedQuoteFeedId) &&
+    policy.expectedBaseFeedId !== policy.expectedQuoteFeedId &&
+    (policy.allowSyntheticForTests === undefined || typeof policy.allowSyntheticForTests === "boolean");
+}
+
+function validateReferencePriceObservation(
+  observation: IndependentUsdPriceObservation,
+  expectedAssetId: string,
+  expectedFeedId: string,
+  policy: IndependentReservePriceComparisonPolicy
+): readonly string[] {
+  const errors: string[] = [];
+  if (!isRecord(observation) ||
+      typeof observation.assetId !== "string" ||
+      !isSolanaPublicKey(observation.assetId) ||
+      typeof observation.feedId !== "string" ||
+      !REQUEST_ID_PATTERN.test(observation.feedId) ||
+      !isSafeSlug(observation.providerId) ||
+      !isSafeSlug(observation.independenceGroupId) ||
+      typeof observation.priceUsd !== "string" ||
+      parseExactPriceDecimal(observation.priceUsd) === null ||
+      (parseExactPriceDecimal(observation.priceUsd)?.coefficient ?? 0n) <= 0n ||
+      !isUtcTimestamp(observation.publishedAt) ||
+      !isUtcTimestamp(observation.retrievedAt) ||
+      typeof observation.synthetic !== "boolean") {
+    errors.push("REFERENCE_OBSERVATION_INVALID");
+    return errors;
+  }
+  if (observation.assetId !== expectedAssetId || observation.feedId !== expectedFeedId) {
+    errors.push("REFERENCE_FEED_IDENTITY_MISMATCH");
+  }
+  if (observation.providerId !== policy.approvedProviderId ||
+      observation.independenceGroupId !== policy.approvedIndependenceGroupId) {
+    errors.push("REFERENCE_PROVIDER_NOT_APPROVED_BY_POLICY");
+  }
+  const nowMs = timestampMs(policy.nowAt);
+  const publishedMs = timestampMs(observation.publishedAt);
+  const retrievedMs = timestampMs(observation.retrievedAt);
+  if (publishedMs > nowMs + policy.maxFutureSkewMs || retrievedMs > nowMs + policy.maxFutureSkewMs) {
+    errors.push("REFERENCE_TIMESTAMP_IN_FUTURE");
+  } else {
+    if (Math.max(0, nowMs - publishedMs) > policy.maxSourceAgeMs) errors.push("REFERENCE_SOURCE_STALE");
+    if (Math.max(0, nowMs - retrievedMs) > policy.maxRetrievalAgeMs) errors.push("REFERENCE_RETRIEVAL_STALE");
+  }
+  return errors;
+}
+
+/**
+ * Provider-neutral, fail-closed comparison of an on-chain quote/base reserve ratio
+ * against separately timestamped base/USD and quote/USD observations. It also compares
+ * the indexed USD/base price only when that source has a trustworthy event timestamp.
+ * All tolerances, feed IDs, source identity and freshness bounds are explicit inputs.
+ */
+export function assessIndependentReservePriceAgreement(
+  input: IndependentReservePriceComparisonInput
+): IndependentReservePriceComparisonResult {
+  const result = (
+    status: IndependentPriceComparisonStatus,
+    reasonCodes: readonly string[],
+    reserveStatus: IndependentPriceComparisonStatus = status,
+    indexedStatus: IndependentPriceComparisonStatus = status,
+    reserveDeviationBpsRounded: string | null = null,
+    indexedDeviationBpsRounded: string | null = null,
+    freshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID" = "UNKNOWN",
+    evidenceComplete = false
+  ): IndependentReservePriceComparisonResult => ({
+    status,
+    reasonCodes: [...new Set(reasonCodes)],
+    reserveComparison: {
+      status: reserveStatus,
+      deviationBpsRounded: reserveDeviationBpsRounded,
+      toleranceBps: input?.policy?.maxDeviationBps ?? -1
+    },
+    indexedPriceComparison: {
+      status: indexedStatus,
+      deviationBpsRounded: indexedDeviationBpsRounded,
+      toleranceBps: input?.policy?.maxDeviationBps ?? -1
+    },
+    referenceProviderId: input?.policy?.approvedProviderId ?? "",
+    referenceIndependenceGroupId: input?.policy?.approvedIndependenceGroupId ?? "",
+    baseFeedId: input?.policy?.expectedBaseFeedId ?? "",
+    quoteFeedId: input?.policy?.expectedQuoteFeedId ?? "",
+    sourceFreshness: freshness,
+    comparisonEvidenceComplete: evidenceComplete,
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !validComparisonPolicy(input.policy) ||
+      !isSolanaPublicKey(input.baseMint) ||
+      !isSolanaPublicKey(input.quoteMint) ||
+      input.baseMint === input.quoteMint ||
+      typeof input.indexedProviderId !== "string" ||
+      !isSafeSlug(input.indexedProviderId) ||
+      typeof input.indexedIndependenceGroupId !== "string" ||
+      !isSafeSlug(input.indexedIndependenceGroupId) ||
+      typeof input.indexedRetrievedAt !== "string" ||
+      !isUtcTimestamp(input.indexedRetrievedAt) ||
+      (input.indexedSourceEventAt !== null && !isUtcTimestamp(input.indexedSourceEventAt)) ||
+      (input.indexedPriceUsdPerBase !== null &&
+        (parseExactPriceDecimal(input.indexedPriceUsdPerBase) === null ||
+         (parseExactPriceDecimal(input.indexedPriceUsdPerBase)?.coefficient ?? 0n) <= 0n)) ||
+      typeof input.indexedSynthetic !== "boolean") {
+    return result("INVALID_INPUT", ["INDEPENDENT_COMPARISON_INPUT_INVALID"], "INVALID_INPUT", "INVALID_INPUT", null, null, "INVALID", false);
+  }
+
+  const reserveRatio = parseExactPriceDecimal(input.reserveRatioQuotePerBase);
+  if (reserveRatio === null || reserveRatio.coefficient <= 0n) {
+    return result("INVALID_INPUT", ["RESERVE_RATIO_INVALID"], "INVALID_INPUT", "INVALID_INPUT", null, null, "INVALID", false);
+  }
+
+  if (input.policy.approvedProviderId === input.indexedProviderId ||
+      input.policy.approvedIndependenceGroupId === input.indexedIndependenceGroupId) {
+    return result("INSUFFICIENT_EVIDENCE", ["REFERENCE_SOURCE_NOT_INDEPENDENT"], "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE");
+  }
+
+  const baseErrors = validateReferencePriceObservation(
+    input.baseUsd, input.baseMint, input.policy.expectedBaseFeedId, input.policy
+  );
+  const quoteErrors = validateReferencePriceObservation(
+    input.quoteUsd, input.quoteMint, input.policy.expectedQuoteFeedId, input.policy
+  );
+  const referenceErrors = [...baseErrors, ...quoteErrors];
+  if (referenceErrors.includes("REFERENCE_OBSERVATION_INVALID")) {
+    return result("INVALID_INPUT", referenceErrors, "INVALID_INPUT", "INVALID_INPUT", null, null, "INVALID", false);
+  }
+  if (referenceErrors.includes("REFERENCE_TIMESTAMP_IN_FUTURE")) {
+    return result("INVALID_INPUT", referenceErrors, "INVALID_INPUT", "INVALID_INPUT", null, null, "INVALID", false);
+  }
+  if (referenceErrors.length > 0) {
+    const stale = referenceErrors.some(code => code === "REFERENCE_SOURCE_STALE" || code === "REFERENCE_RETRIEVAL_STALE");
+    return result("INSUFFICIENT_EVIDENCE", referenceErrors, "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE", null, null, stale ? "STALE" : "UNKNOWN", false);
+  }
+
+  const hasSyntheticReference = input.baseUsd.synthetic || input.quoteUsd.synthetic || input.indexedSynthetic;
+  if (hasSyntheticReference && input.policy.allowSyntheticForTests !== true) {
+    return result("INSUFFICIENT_EVIDENCE", ["SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"], "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE", null, null, "FRESH", false);
+  }
+
+  const baseUsd = parseExactPriceDecimal(input.baseUsd.priceUsd)!;
+  const quoteUsd = parseExactPriceDecimal(input.quoteUsd.priceUsd)!;
+  const reserveComparison = compareReserveRatioDeviationBps(
+    reserveRatio,
+    baseUsd,
+    quoteUsd,
+    input.policy.maxDeviationBps
+  );
+
+  let indexedStatus: IndependentPriceComparisonStatus = "NOT_ASSESSED";
+  let indexedDeviation: string | null = null;
+  const reasonCodes: string[] = [];
+  if (input.indexedSourceEventAt === null) {
+    reasonCodes.push("INDEXED_SOURCE_TIMESTAMP_MISSING");
+  } else {
+    const nowMs = timestampMs(input.policy.nowAt);
+    const eventMs = timestampMs(input.indexedSourceEventAt);
+    const retrievalMs = timestampMs(input.indexedRetrievedAt);
+    if (eventMs > nowMs + input.policy.maxFutureSkewMs || retrievalMs > nowMs + input.policy.maxFutureSkewMs) {
+      indexedStatus = "INVALID_INPUT";
+      reasonCodes.push("INDEXED_SOURCE_TIMESTAMP_IN_FUTURE");
+    } else if (Math.max(0, nowMs - eventMs) > input.policy.maxSourceAgeMs ||
+               Math.max(0, nowMs - retrievalMs) > input.policy.maxRetrievalAgeMs) {
+      indexedStatus = "INSUFFICIENT_EVIDENCE";
+      reasonCodes.push("INDEXED_SOURCE_STALE");
+    } else if (input.indexedPriceUsdPerBase === null) {
+      indexedStatus = "INSUFFICIENT_EVIDENCE";
+      reasonCodes.push("INDEXED_PRICE_MISSING");
+    } else {
+      const indexedPrice = parseExactPriceDecimal(input.indexedPriceUsdPerBase)!;
+      const comparison = comparePriceDeviationBps(
+        indexedPrice,
+        baseUsd,
+        input.policy.maxDeviationBps
+      );
+      indexedStatus = comparison.status;
+      indexedDeviation = comparison.deviationBpsRounded;
+      if (comparison.status === "DISAGREEMENT") reasonCodes.push("INDEXED_PRICE_OUTSIDE_TOLERANCE");
+    }
+  }
+
+  const reserveStatus: IndependentPriceComparisonStatus = reserveComparison.status;
+  if (reserveStatus === "DISAGREEMENT") reasonCodes.push("RESERVE_RATIO_OUTSIDE_TOLERANCE");
+  const status: IndependentPriceComparisonStatus =
+    reserveStatus === "DISAGREEMENT" || indexedStatus === "DISAGREEMENT"
+      ? "DISAGREEMENT"
+      : reserveStatus === "INVALID_INPUT" || indexedStatus === "INVALID_INPUT"
+        ? "INVALID_INPUT"
+        : reserveStatus === "AGREED" && indexedStatus === "AGREED"
+          ? "AGREED"
+          : "INSUFFICIENT_EVIDENCE";
+  const evidenceComplete = status === "AGREED" && !hasSyntheticReference;
+  return result(
+    status,
+    reasonCodes,
+    reserveStatus,
+    indexedStatus,
+    reserveComparison.deviationBpsRounded,
+    indexedDeviation,
+    "FRESH",
+    evidenceComplete
+  );
 }
 
 function assertSafeProviderId(providerId: string): void {

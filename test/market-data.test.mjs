@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   assessFreshness,
+  assessIndependentReservePriceAgreement,
   initialProviderHealth,
   isSolanaPublicKey,
   recordProviderResult,
@@ -225,4 +226,152 @@ test("invalid provider-health policy is rejected", () => {
     at: "2026-10-29T00:00:00.000Z",
     latencyMs: 1
   }, { failureThreshold: 0, cooldownMs: 1000 }), /failureThreshold/);
+});
+
+
+function independentComparisonFixture(overrides = {}) {
+  const nowAt = "2026-10-29T12:45:00.000Z";
+  const policy = {
+    nowAt,
+    maxSourceAgeMs: 60_000,
+    maxRetrievalAgeMs: 30_000,
+    maxFutureSkewMs: 0,
+    maxDeviationBps: 10,
+    approvedProviderId: "oracle-reference",
+    approvedIndependenceGroupId: "oracle-network",
+    expectedBaseFeedId: "sol-usd-feed",
+    expectedQuoteFeedId: "usdc-usd-feed",
+    ...(overrides.policy ?? {})
+  };
+  const input = {
+    baseMint: "So11111111111111111111111111111111111111112",
+    quoteMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    reserveRatioQuotePerBase: "99.985997437490137051",
+    indexedPriceUsdPerBase: "99.98",
+    indexedProviderId: "dex-screener",
+    indexedIndependenceGroupId: "dex-screener-family",
+    indexedSourceEventAt: "2026-10-29T12:44:50.000Z",
+    indexedRetrievedAt: "2026-10-29T12:44:55.000Z",
+    indexedSynthetic: false,
+    baseUsd: {
+      assetId: "So11111111111111111111111111111111111111112",
+      feedId: "sol-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "99.98",
+      publishedAt: "2026-10-29T12:44:50.000Z",
+      retrievedAt: "2026-10-29T12:44:55.000Z",
+      synthetic: false
+    },
+    quoteUsd: {
+      assetId: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      feedId: "usdc-usd-feed",
+      providerId: "oracle-reference",
+      independenceGroupId: "oracle-network",
+      priceUsd: "1.0000",
+      publishedAt: "2026-10-29T12:44:50.000Z",
+      retrievedAt: "2026-10-29T12:44:55.000Z",
+      synthetic: false
+    },
+    policy
+  };
+  return {
+    ...input,
+    ...overrides,
+    policy: { ...policy, ...(overrides.policy ?? {}) },
+    baseUsd: { ...input.baseUsd, ...(overrides.baseUsd ?? {}) },
+    quoteUsd: { ...input.quoteUsd, ...(overrides.quoteUsd ?? {}) }
+  };
+}
+
+test("independent reserve-price agreement uses exact decimals and requires both comparisons to pass", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture());
+  assert.equal(result.status, "AGREED");
+  assert.equal(result.reserveComparison.status, "AGREED");
+  assert.equal(result.reserveComparison.deviationBpsRounded, "1");
+  assert.equal(result.indexedPriceComparison.status, "AGREED");
+  assert.equal(result.indexedPriceComparison.deviationBpsRounded, "0");
+  assert.equal(result.sourceFreshness, "FRESH");
+  assert.equal(result.comparisonEvidenceComplete, true);
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("missing indexed source timestamp leaves the indexed comparison unassessed and overall evidence incomplete", () => {
+  const result = assessIndependentReservePriceAgreement(
+    independentComparisonFixture({ indexedSourceEventAt: null })
+  );
+  assert.equal(result.reserveComparison.status, "AGREED");
+  assert.equal(result.indexedPriceComparison.status, "NOT_ASSESSED");
+  assert.equal(result.status, "INSUFFICIENT_EVIDENCE");
+  assert.ok(result.reasonCodes.includes("INDEXED_SOURCE_TIMESTAMP_MISSING"));
+  assert.equal(result.comparisonEvidenceComplete, false);
+});
+
+test("reserve/reference disagreement beyond the explicit tolerance fails closed", () => {
+  const result = assessIndependentReservePriceAgreement(
+    independentComparisonFixture({ reserveRatioQuotePerBase: "90" })
+  );
+  assert.equal(result.reserveComparison.status, "DISAGREEMENT");
+  assert.equal(result.status, "DISAGREEMENT");
+  assert.ok(result.reasonCodes.includes("RESERVE_RATIO_OUTSIDE_TOLERANCE"));
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("unapproved, aliased or wrong-feed reference sources cannot qualify as independent", () => {
+  const wrongFeed = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    baseUsd: { feedId: "wrong-base-feed" }
+  }));
+  assert.equal(wrongFeed.status, "INSUFFICIENT_EVIDENCE");
+  assert.ok(wrongFeed.reasonCodes.includes("REFERENCE_FEED_IDENTITY_MISMATCH"));
+
+  const aliasedProvider = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    policy: { approvedProviderId: "dex-screener", approvedIndependenceGroupId: "dex-screener-family" }
+  }));
+  assert.equal(aliasedProvider.status, "INSUFFICIENT_EVIDENCE");
+  assert.ok(aliasedProvider.reasonCodes.includes("REFERENCE_SOURCE_NOT_INDEPENDENT"));
+});
+
+test("stale and future reference timestamps never qualify the comparison", () => {
+  const stale = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    baseUsd: { publishedAt: "2026-10-29T12:40:00.000Z" }
+  }));
+  assert.equal(stale.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(stale.sourceFreshness, "STALE");
+  assert.ok(stale.reasonCodes.includes("REFERENCE_SOURCE_STALE"));
+
+  const future = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    quoteUsd: { publishedAt: "2026-10-29T12:46:00.000Z" }
+  }));
+  assert.equal(future.status, "INVALID_INPUT");
+  assert.equal(future.sourceFreshness, "INVALID");
+  assert.ok(future.reasonCodes.includes("REFERENCE_TIMESTAMP_IN_FUTURE"));
+});
+
+test("synthetic fixture comparisons are blocked by default and never become operational evidence", () => {
+  const blocked = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    baseUsd: { synthetic: true }
+  }));
+  assert.equal(blocked.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(blocked.comparisonEvidenceComplete, false);
+  assert.ok(blocked.reasonCodes.includes("SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"));
+
+  const mathOnly = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    baseUsd: { synthetic: true },
+    policy: { allowSyntheticForTests: true }
+  }));
+  assert.equal(mathOnly.status, "AGREED");
+  assert.equal(mathOnly.comparisonEvidenceComplete, false);
+  assert.equal(mathOnly.tradingAuthorized, false);
+});
+
+test("invalid decimal prices, tolerance and freshness policy are rejected", () => {
+  const invalidPrice = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    baseUsd: { priceUsd: "1e2" }
+  }));
+  assert.equal(invalidPrice.status, "INVALID_INPUT");
+
+  const invalidTolerance = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    policy: { maxDeviationBps: 10001 }
+  }));
+  assert.equal(invalidTolerance.status, "INVALID_INPUT");
 });
