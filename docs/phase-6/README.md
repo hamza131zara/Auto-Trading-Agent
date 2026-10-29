@@ -25,6 +25,7 @@
 5. [Acceptance criteria and open decisions](05-phase-6-acceptance-and-open-decisions.md)
 6. [DEX Screener read-only reference adapter](06-dexscreener-reference-adapter.md)
 7. [Provider agreement and fail-closed fallback policy](07-provider-agreement-and-fallback-policy.md)
+8. [On-chain identity evidence contract](08-on-chain-identity-evidence-contract.md)
 
 ## Initial implementation boundary
 
@@ -44,6 +45,10 @@ A read-only DEX Screener reference adapter is included for evaluation. Its fixtu
 ## Provider-selection gate
 
 Candidates remain those in the owner-approved provider matrix (Solana RPC, Helius, DEX Screener, Birdeye and other reviewed sources as appropriate). This phase must not turn the research shortlist or earlier dated pricing snapshot into an implied vendor commitment. A provider adapter may be considered production-ready only after endpoint/version and terms review, quota/budget selection, schema validation, timeout/retry/circuit-breaker behavior, fallback/disagreement tests, and deterministic fixtures pass.
+
+## On-chain identity evidence boundary
+
+The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry. It does not fetch RPC data or decode raw account bytes. The read-only `getMultipleAccounts` reader and protocol-specific decoder are still required before any live identity result may be claimed.
 
 ## Provider agreement and fallback safeguards
 
