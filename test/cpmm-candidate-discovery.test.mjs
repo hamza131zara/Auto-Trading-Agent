@@ -8,6 +8,7 @@ const CPMM = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C";
 const CLMM = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK";
 const SOL = "So11111111111111111111111111111111111111112";
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const POOL_DATA_BASE64 = Buffer.alloc(637).toString("base64");
 const HIGH_CPMM = "Ff68JGeEiUEF859B2xEaPX82vuFeuwxqoxGNHTZPAuKR";
 const LOW_CPMM = "7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny";
 const HIGH_CLMM = "3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv";
@@ -71,7 +72,7 @@ function mockFetchFactory() {
           owner: owners[address],
           executable: false,
           space: 637,
-          data: ["AA==", "base64"]
+          data: [POOL_DATA_BASE64, "base64"]
         }))
       }
     }), {
@@ -151,6 +152,28 @@ test("does not count quote-mint or non-Solana pairs as candidates", async () => 
   assert.equal(report.selectionPolicy.candidateCount, 0);
 });
 
+test("does not classify an owner-matching account as a CPMM pool if the PoolState space is wrong", async () => {
+  const wrongSpaceFetch = async (input, init = {}) => {
+    if (String(input).startsWith("https://api.dexscreener.com/")) {
+      return new Response(JSON.stringify({
+        pairs: [makePair(HIGH_CPMM, 500_000, 75_000)]
+      }), { status: 200 });
+    }
+    const request = JSON.parse(init.body);
+    return new Response(JSON.stringify({
+      jsonrpc: "2.0",
+      id: request.id,
+      result: {
+        context: { slot: 462900001 },
+        value: [{ owner: CPMM, executable: false, space: 636, data: [POOL_DATA_BASE64, "base64"] }]
+      }
+    }), { status: 200 });
+  };
+  const report = await discoverRaydiumCpmmCandidates({ env: approvals, fetchImpl: wrongSpaceFetch });
+  assert.equal(report.status, "NO_CPMM_CANDIDATES_FOUND");
+  assert.equal(report.selectionPolicy.candidateCount, 0);
+});
+
 test("fails closed if the RPC returns a mismatched request id", async () => {
   const { fetchImpl } = mockFetchFactory();
   const badFetch = async (input, init = {}) => {
@@ -166,7 +189,7 @@ test("fails closed if the RPC returns a mismatched request id", async () => {
       id: request.id + "-wrong",
       result: {
         context: { slot: 462900001 },
-        value: [{ owner: CPMM, executable: false, space: 637, data: ["AA==", "base64"] }]
+        value: [{ owner: CPMM, executable: false, space: 637, data: [POOL_DATA_BASE64, "base64"] }]
       }
     }), { status: 200 });
   };
