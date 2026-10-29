@@ -45,7 +45,7 @@ test("replay deterministically reports the expected freshness states", () => {
   assert.deepEqual(first, second);
   assert.deepEqual(
     first.map((item) => [item.caseId, item.validation.valid, item.freshness.state]),
-    fixture.cases.map((item) => [item.caseId, item.caseId !== "invalid-address" ? true : false, item.expectedFreshness])
+    fixture.cases.map((item) => [item.caseId, item.expectedValid, item.expectedFreshness])
   );
 });
 
