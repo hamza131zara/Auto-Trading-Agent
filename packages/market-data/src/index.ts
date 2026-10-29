@@ -1062,29 +1062,31 @@ function isValidAccountEnvelope(value: unknown): value is OnChainAccountEvidence
 }
 
 function isValidMintEvidence(value: unknown): value is OnChainMintEvidence {
-  if (!isValidAccountEnvelope(value)) return false;
-  if (!value.exists) {
-    return (value.initialized === null || value.initialized === undefined) &&
-      (value.decimals === null || value.decimals === undefined);
+  if (!isRecord(value) || !isValidAccountEnvelope(value)) return false;
+  const mint = value as Record<string, unknown> & OnChainMintEvidence;
+  if (!mint.exists) {
+    return (mint.initialized === null || mint.initialized === undefined) &&
+      (mint.decimals === null || mint.decimals === undefined);
   }
-  return typeof value.initialized === "boolean" &&
-    Number.isSafeInteger(value.decimals) &&
-    (value.decimals as number) >= 0 &&
-    (value.decimals as number) <= 255;
+  return typeof mint.initialized === "boolean" &&
+    Number.isSafeInteger(mint.decimals) &&
+    (mint.decimals as number) >= 0 &&
+    (mint.decimals as number) <= 255;
 }
 
 function isValidTokenAccountEvidence(value: unknown): value is OnChainTokenAccountEvidence {
-  if (!isValidAccountEnvelope(value)) return false;
-  if (!value.exists) {
-    return (value.initialized === null || value.initialized === undefined) &&
-      (value.mint === null || value.mint === undefined) &&
-      (value.authority === null || value.authority === undefined);
+  if (!isRecord(value) || !isValidAccountEnvelope(value)) return false;
+  const tokenAccount = value as Record<string, unknown> & OnChainTokenAccountEvidence;
+  if (!tokenAccount.exists) {
+    return (tokenAccount.initialized === null || tokenAccount.initialized === undefined) &&
+      (tokenAccount.mint === null || tokenAccount.mint === undefined) &&
+      (tokenAccount.authority === null || tokenAccount.authority === undefined);
   }
-  return typeof value.initialized === "boolean" &&
-    typeof value.mint === "string" &&
-    isSolanaPublicKey(value.mint) &&
-    typeof value.authority === "string" &&
-    isSolanaPublicKey(value.authority);
+  return typeof tokenAccount.initialized === "boolean" &&
+    typeof tokenAccount.mint === "string" &&
+    isSolanaPublicKey(tokenAccount.mint) &&
+    typeof tokenAccount.authority === "string" &&
+    isSolanaPublicKey(tokenAccount.authority);
 }
 
 function isValidOnChainSource(value: unknown): value is OnChainIdentitySourceEvidence {
