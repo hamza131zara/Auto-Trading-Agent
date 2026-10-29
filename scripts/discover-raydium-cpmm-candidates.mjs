@@ -475,7 +475,8 @@ export async function discoverRaydiumCpmmCandidates({
     candidate.meetsLiquidityAndVolumeThresholds && candidate.dexScreenerPairFound);
   const scanIncomplete =
     raydiumPage.hasNextPage ||
-    selected.length < exactPairs.length;
+    selected.length < exactPairs.length ||
+    candidatesToCrossCheck.length < cpmmCandidates.length;
   const displayCandidates = enrichedCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
 
   return {
@@ -521,7 +522,9 @@ export async function discoverRaydiumCpmmCandidates({
       raydiumApiHasNextPage: raydiumPage.hasNextPage,
       scanIncomplete,
       candidateCount: cpmmCandidates.length,
+      dexScreenerCrossCheckCap: MAX_DISPLAY_CANDIDATES,
       dexScreenerCrossCheckedCount: dexScreenerEvidence.length,
+      unCrossCheckedCpmmCandidateCount: cpmmCandidates.length - dexScreenerEvidence.length,
       thresholdQualifiedCount: qualifying.length,
       poolClassificationSummary: classifications.reduce((summary, item) => {
         summary[item.classification] = (summary[item.classification] ?? 0) + 1;
