@@ -247,7 +247,9 @@ function expandJsonNumberDecimal(value: unknown): string | null {
   if (match === null) return null;
   const exponent = Number(match[2]);
   if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 100) return null;
-  const [integerPart, fractionPart = ""] = match[1]!.split(".");
+  const decimalParts = match[1]!.split(".");
+  const integerPart = decimalParts[0] ?? "0";
+  const fractionPart = decimalParts[1] ?? "";
   const digits = integerPart + fractionPart;
   const point = integerPart.length + exponent;
   const expanded = point <= 0
