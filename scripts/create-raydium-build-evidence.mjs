@@ -44,6 +44,55 @@ function parseAnchorValue(text, key) {
 // anchor as a section terminator: with the m flag, $ matches every line
 // ending and would stop at the end of the [lib] header itself.
 export function parseProgramLibraryName(programCargo) {
+  const libMatch = programCargo.match(/(?:^|\r?\n)[ \t]*\[lib\][ \t]*\r?\n([\s\S]*?)(?=\r?\n[ \t]*\[|$)/);
+  const libraryMatch = libMatch?.[1]?.match(/^[ \t]*name[ \t]*=[ \t]*["']([^"']+)["'][ \t]*$/m);
+  return libraryMatch?.[1] ?? null;
+}
+
+export function inspectRaydiumSourceDirectory(directory) {
+  const reasons = [];
+  const sourceDir = resolve(directory);
+  let commit = null, tree = null, commitDate = null, workingTreeClean = false;
+  try {
+    commit = gitText(sourceDir, ["rev-parse", "HEAD"]);
+    tree = gitText(sourceDir, ["rev-parse", "HEAD^{tree}"]);
+    commitDate = gitText(sourceDir, ["show", "-s", "--format=%cI", "HEAD"]);
+    workingTreeClean = gitText(sourceDir, ["status", "--porcelain", "--untracked-files=normal"]) === "";
+  } catch {
+    reasons.push("SOURCE_DIRECTORY_NOT_A_GIT_CHECKOUT");
+  }
+  if (commit !== RAYDIUM_PINNED_SOURCE_COMMIT) reasons.push("SOURCE_COMMIT_NOT_PINNED_REVISION");
+  if (tree !== RAYDIUM_PINNED_SOURCE_TREE) reasons.push("SOURCE_TREE_NOT_PINNED_TREE");
+  if (!workingTreeClean) reasons.push("SOURCE_WORKTREE_NOT_CLEAN");
+
+  const hashes = {};
+  const contents = {};
+  for (const relativePath of REQUIRED_SOURCE_FILES) {
+    const absolutePath = resolve(sourceDir, relativePath);
+    if (!absolutePath.startsWith(sourceDir + "/") || !existsSync(absolutePath)) {
+      reasons.push("SOURCE_BUILD_FILE_MISSING_" + relativePath.replace(/[^A-Za-z0-9]/g, "_").toUpperCase());
+      continue;
+    }
+    try {
+      const bytes = readFileSync(absolutePath);
+      hashes[relativePath] = sha256(bytes);
+      contents[relativePath] = bytes.toString("utf8");
+    } catch {
+      reasons.push("SOURCE_BUILD_FILE_UNREADABLE_" + relativePath.replace(/[^A-Za-z0-9]/g, "_").toUpperCase());
+    }
+  }
+
+  const readme = contents["README.md"] ?? "";
+  const rootCargo = contents["Cargo.toml"] ?? "";
+  const anchorToml = contents["Anchor.toml"] ?? "";
+  const programCargo = contents["programs/cp-swap/Cargo.toml"] ?? "";
+  const rustMatch = readme.match(/rustup\s+default\s+([0-9]+\.[0-9]+\.[0-9]+)/);
+  const rust = rustMatch?.[1] ?? null;
+  const solana = parseAnchorValue(anchorToml, "solana_version");
+  const anchor = parseAnchorValue(anchorToml, "anchor_version");
+  const metadataSection = rootCargo.match(/\[workspace\.metadata\.cli\]([\s\S]*?)(?:\n\[|$)/);
+  const metadataSolanaMatch = metadataSection?.[1]?.match(/^\s*solana\s*=\s*["']([^"']+)["']\s*$/m);
+  const metadataSolana = metadataSolanaMatch?.[1] ?? null;
   const libraryName = parseProgramLibraryName(programCargo);
 
   if (rust !== EXPECTED_TOOLCHAIN.rust) reasons.push("RUST_VERSION_REFERENCE_MISMATCH");
