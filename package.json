@@ -14,7 +14,7 @@
   ],
   "scripts": {
     "validate:repo": "node scripts/validate-repository.mjs",
-    "typecheck": "tsc --noEmit -p packages/contracts/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json",
+    "typecheck": "tsc --noEmit -p packages/contracts/tsconfig.json && tsc --noEmit -p packages/config/tsconfig.json && tsc --noEmit -p packages/contracts/tsconfig.type-tests.json",
     "build": "tsc -p packages/contracts/tsconfig.json && tsc -p packages/config/tsconfig.json",
     "test": "npm run build && node --test",
     "check": "npm run validate:repo && npm run typecheck && npm test"
