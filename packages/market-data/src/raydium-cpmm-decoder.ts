@@ -19,9 +19,13 @@ export const RAYDIUM_CPMM_PROGRAM_ID = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5q
 export const RAYDIUM_CPMM_DECODER_ID = "raydium-cp-swap-pool-state";
 export const RAYDIUM_CPMM_DECODER_VERSION = "0.1.0";
 export const RAYDIUM_CPMM_POOL_STATE_LENGTH = 637;
+export const RAYDIUM_CPMM_AMM_CONFIG_LENGTH = 236;
 
 const POOL_STATE_DISCRIMINATOR = new Uint8Array([
   0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46
+]);
+const AMM_CONFIG_DISCRIMINATOR = new Uint8Array([
+  0xda, 0xf4, 0x21, 0x68, 0xcb, 0xcb, 0x2b, 0x6f
 ]);
 const POOL_STATE_OFFSETS = {
   ammConfig: 8,
@@ -54,8 +58,11 @@ const POOL_STATE_OFFSETS = {
   padding: 413
 } as const;
 
+const AMM_CONFIG_SEED = "amm_config";
 const POOL_SEED = "pool";
 const POOL_VAULT_SEED = "pool_vault";
+const LP_MINT_SEED = "pool_lp_mint";
+const OBSERVATION_SEED = "observation";
 const AUTHORITY_SEED = "vault_and_lp_mint_auth_seed";
 const PDA_MARKER = "ProgramDerivedAddress";
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -75,6 +82,7 @@ export type RaydiumCpmmPoolDecodeErrorCode =
   | "INVALID_STATUS_FLAGS"
   | "INVALID_BOOLEAN"
   | "INVALID_CREATOR_FEE_MODE"
+  | "INVALID_MINT_ORDER"
   | "INVALID_PUBLIC_KEY_BYTES";
 
 export interface RaydiumCpmmPoolState {
@@ -117,6 +125,26 @@ export interface RaydiumCpmmPoolState {
 
 export type RaydiumCpmmPoolDecodeResult =
   | { readonly status: "DECODED"; readonly value: RaydiumCpmmPoolState; readonly errorCode: null }
+  | { readonly status: "ERROR"; readonly value: null; readonly errorCode: RaydiumCpmmPoolDecodeErrorCode };
+
+export interface RaydiumCpmmAmmConfigState {
+  readonly address: string;
+  readonly programId: string;
+  readonly bump: number;
+  readonly disableCreatePool: boolean;
+  readonly index: number;
+  readonly tradeFeeRate: string;
+  readonly protocolFeeRate: string;
+  readonly fundFeeRate: string;
+  readonly createPoolFee: string;
+  readonly protocolOwner: string;
+  readonly fundOwner: string;
+  readonly creatorFeeRate: string;
+  readonly creatorFeeShareRate: string;
+}
+
+export type RaydiumCpmmAmmConfigDecodeResult =
+  | { readonly status: "DECODED"; readonly value: RaydiumCpmmAmmConfigState; readonly errorCode: null }
   | { readonly status: "ERROR"; readonly value: null; readonly errorCode: RaydiumCpmmPoolDecodeErrorCode };
 
 export interface RaydiumCpmmIdentityReadRequest {
@@ -338,6 +366,27 @@ export async function deriveRaydiumCpmmAuthorityPda(): Promise<{ readonly addres
   return findSolanaProgramAddress([AUTHORITY_SEED], RAYDIUM_CPMM_PROGRAM_ID);
 }
 
+export async function deriveRaydiumCpmmAmmConfigPda(index: number): Promise<{ readonly address: string; readonly bump: number }> {
+  if (!Number.isSafeInteger(index) || index < 0 || index > 0xffff) {
+    throw new RangeError("Raydium CPMM AMM config index must be an unsigned 16-bit integer");
+  }
+  // The upstream Rust source uses index.to_be_bytes() for the PDA seed.
+  return findSolanaProgramAddress([
+    AMM_CONFIG_SEED,
+    new Uint8Array([(index >>> 8) & 0xff, index & 0xff])
+  ], RAYDIUM_CPMM_PROGRAM_ID);
+}
+
+export async function deriveRaydiumCpmmLpMintPda(poolAddress: string): Promise<{ readonly address: string; readonly bump: number }> {
+  if (!isSolanaPublicKey(poolAddress)) throw new TypeError("poolAddress must be a Solana public key");
+  return findSolanaProgramAddress([LP_MINT_SEED, poolAddress], RAYDIUM_CPMM_PROGRAM_ID);
+}
+
+export async function deriveRaydiumCpmmObservationPda(poolAddress: string): Promise<{ readonly address: string; readonly bump: number }> {
+  if (!isSolanaPublicKey(poolAddress)) throw new TypeError("poolAddress must be a Solana public key");
+  return findSolanaProgramAddress([OBSERVATION_SEED, poolAddress], RAYDIUM_CPMM_PROGRAM_ID);
+}
+
 export async function deriveRaydiumCpmmVaultPda(
   poolAddress: string,
   tokenMint: string
@@ -483,7 +532,69 @@ export function decodeRaydiumCpmmPool(account: SolanaRpcRawAccount): RaydiumCpmm
     paddingHex: bytesToHex(bytes.slice(POOL_STATE_OFFSETS.padding)),
     canonicalPoolPdaMatches
   };
+
   return { status: "DECODED", value, errorCode: null };
+}
+
+export function decodeRaydiumCpmmAmmConfig(account: SolanaRpcRawAccount): RaydiumCpmmAmmConfigDecodeResult {
+  if (!isRecord(account) ||
+      typeof account.address !== "string" ||
+      !isSolanaPublicKey(account.address) ||
+      typeof account.exists !== "boolean" ||
+      (account.ownerProgramId !== null && typeof account.ownerProgramId !== "string") ||
+      (account.executable !== null && typeof account.executable !== "boolean") ||
+      (account.dataBase64 !== null && typeof account.dataBase64 !== "string") ||
+      (account.space !== null && typeof account.space !== "number")) {
+    return failDecode("INVALID_ACCOUNT_ENVELOPE");
+  }
+  if (!account.exists) return failDecode("POOL_ACCOUNT_MISSING");
+  if (account.ownerProgramId !== RAYDIUM_CPMM_PROGRAM_ID) return failDecode("WRONG_POOL_PROGRAM_OWNER");
+  if (account.executable !== false) return failDecode("POOL_ACCOUNT_EXECUTABLE");
+  if (typeof account.dataBase64 !== "string") return failDecode("INVALID_ACCOUNT_ENVELOPE");
+  const bytes = decodeBase64Strict(account.dataBase64);
+  if (bytes === null) return failDecode("INVALID_BASE64");
+  if (account.space !== bytes.length) return failDecode("ACCOUNT_SPACE_MISMATCH");
+  if (bytes.length !== RAYDIUM_CPMM_AMM_CONFIG_LENGTH) return failDecode("INVALID_DATA_LENGTH");
+  for (let index = 0; index < AMM_CONFIG_DISCRIMINATOR.length; index += 1) {
+    if (bytes[index] !== AMM_CONFIG_DISCRIMINATOR[index]) return failDecode("INVALID_POOL_DISCRIMINATOR");
+  }
+
+  const disableCreatePool = bytes[9]!;
+  if (disableCreatePool !== 0 && disableCreatePool !== 1) return failDecode("INVALID_BOOLEAN");
+  const index = readU16LE(bytes, 10);
+  const protocolOwner = publicKeyFromBytes(bytes, 44);
+  const fundOwner = publicKeyFromBytes(bytes, 76);
+  const tradeFeeRate = readU64LE(bytes, 12);
+  const protocolFeeRate = readU64LE(bytes, 20);
+  const fundFeeRate = readU64LE(bytes, 28);
+  const createPoolFee = readU64LE(bytes, 36);
+  const creatorFeeRate = readU64LE(bytes, 108);
+  const creatorFeeShareRate = readU64LE(bytes, 116);
+  if (index === null || protocolOwner === null || fundOwner === null ||
+      tradeFeeRate === null || protocolFeeRate === null ||
+      fundFeeRate === null || createPoolFee === null ||
+      creatorFeeRate === null || creatorFeeShareRate === null) {
+    return failDecode("INVALID_DATA_LENGTH");
+  }
+  return {
+    status: "DECODED",
+    errorCode: null,
+    value: {
+      address: account.address,
+      programId: RAYDIUM_CPMM_PROGRAM_ID,
+      bump: bytes[8]!,
+      disableCreatePool: disableCreatePool === 1,
+      index,
+      tradeFeeRate,
+      protocolFeeRate,
+      fundFeeRate,
+      createPoolFee,
+      protocolOwner,
+      fundOwner,
+      creatorFeeRate,
+      creatorFeeShareRate
+    }
+  };
 }
 
 function result(
