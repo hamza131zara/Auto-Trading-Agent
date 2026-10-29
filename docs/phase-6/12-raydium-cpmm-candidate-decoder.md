@@ -30,6 +30,10 @@ Raydium's initializer source allows a signer-created pool account as an alternat
 - Token-2022 extension-bearing mints or vault accounts stay blocked by the extension inspector/policy; known types require Phase 7 review, unknown/future IDs and wrong account-kind use are blocked. The decoder does not treat parsed extension type codes as safety approval.
 - The result `MATCH` can only advance to separate safety review. Any mock/injected-fetch run returns `SYNTHETIC_MATCH` and cannot advance. Every output carries `tradingAuthorized: false`.
 
+## Controlled real-source validation
+
+A dedicated [Phase 6.13 validation runner and runbook](13-live-source-validation-runner.md) now makes the required read-only mainnet identity check repeatable. It requires explicit local acknowledgements for RPC approval, indexed-source independence, and current provider terms/quota/budget review; rejects synthetic targets before networking; and emits a report without the RPC URL or raw account bytes. This is tooling only. **It does not mean the real-source check has run or passed.**
+
 ## Tests and remaining gates
 
 `test/raydium-cpmm-decoder.test.mjs` uses constructed bytes and mocked RPC responses to check the Raydium authority PDA test vector, pool/config decoding, discriminator/owner/space failures, the two-stage common-slot request, AMM-config/LP-mint/vault/observation linkages, missing account blocking and a fail-closed synthetic identity result. CI performs no live RPC calls.
