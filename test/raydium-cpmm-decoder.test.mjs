@@ -279,6 +279,27 @@ test("decodes the pinned Raydium CPMM PoolState discriminator and packed offsets
   assert.equal(decoded.value.canonicalPoolPdaMatches, null);
 });
 
+test("decodes Raydium AMM config and rejects wrong account owner or discriminator", async () => {
+  const fixture = await makeFixture();
+  const raw = fixture.rawAccounts.get(fixture.configPda.address);
+  assert.equal(raw.space, RAYDIUM_CPMM_AMM_CONFIG_LENGTH);
+  const decoded = decodeRaydiumCpmmAmmConfig(raw);
+  assert.equal(decoded.status, "DECODED");
+  assert.equal(decoded.value.index, 7);
+  assert.equal(decoded.value.bump, fixture.configPda.bump);
+  assert.equal(decoded.value.disableCreatePool, false);
+  assert.equal(
+    decodeRaydiumCpmmAmmConfig({ ...raw, ownerProgramId: loaderProgramId }).errorCode,
+    "WRONG_POOL_PROGRAM_OWNER"
+  );
+  const badBytes = Buffer.from(raw.dataBase64, "base64");
+  badBytes[0] ^= 0xff;
+  assert.equal(
+    decodeRaydiumCpmmAmmConfig({ ...raw, dataBase64: badBytes.toString("base64") }).errorCode,
+    "INVALID_POOL_DISCRIMINATOR"
+  );
+});
+
 test("rejects an incorrect owner, executable state, size and Anchor discriminator", async () => {
   const fixture = await makeFixture();
   const poolRaw = fixture.rawAccounts.get(fixture.pool.address);
