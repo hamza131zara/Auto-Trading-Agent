@@ -6,10 +6,11 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 5 — Repository, Environments, CI/CD and Engineering Foundation. Phases 1–4 are closed for their approved handoffs; security and numeric-risk gates remain. Live trading is not authorized; do not connect a production wallet or private key.
+> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Phases 1–5 are closed for their approved handoffs; provider selection and critical-data validation remain open. Live trading is not authorized; do not connect a production wallet or private key.
 
 ## Start here
-- [Active Phase 5 repository and CI foundation](docs/phase-5/README.md)
+- [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)
+- [Active Phase 6 market-data and canonical data layer](docs/phase-6/README.md)
 - [Locked Phase 4 design handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
 - [Clickable responsive dashboard prototype](docs/phase-4/design-previews/dashboard-prototype.html)
 - [Locked Phase 4 UX and visual design](docs/phase-4/README.md)
@@ -63,4 +64,4 @@ Use the phase titles/order in [ROADMAP-CANONICAL-PHASE-MAP.md](docs/roadmap/ROAD
 - Proposed standard price remains USD $12,000 one-time lifetime license, with no free tier/trial and no recurring core subscription. Payment/bank eligibility and legal review remain pre-sale gates.
 
 ## Current rule
-Phases 1–4 are closed for their approved handoffs, and Phase 5 is active. PR CI has verified the contract/config regression tests and refreshed GitHub Actions pins; the latest status and open acceptance gates are in [Phase 5 acceptance criteria](docs/phase-5/05-phase-5-acceptance-and-open-decisions.md). GitHub branch protection, required reviews/status checks and the dependency graph still require authorized owner configuration. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
+Phases 1–5 are closed for their approved handoffs; Phase 6 is active. The main-push CI run for commit `9b0a8af40a576f97a7859729e4e969dc163ca6a6` passed, and the owner confirmed repository security settings are complete. Phase 6 begins with provider-neutral canonical data contracts, source provenance/freshness, provider health and deterministic synthetic replay; it does not select a live provider or enable trading. No production wallet, private key, live signing or mainnet trading is authorized. Public sales remain gated on bank/payment eligibility, explicit license terms and qualified legal/tax review.
