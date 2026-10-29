@@ -430,11 +430,12 @@ test("keeps full numbered page incomplete when pagination signals are absent", a
     fetchImpl: noPaginationFetch,
     now: () => "2026-10-29T09:00:00.000Z"
   });
-  assert.equal(report.selectionPolicy.raydiumPaginationKnown, false);
+  const usdcQuery = report.sources.raydiumApi.approvedQuotePairQueries.find((query) => query.quoteMint === USDC);
+  assert.equal(usdcQuery.paginationKnown, false);
+  assert.equal(usdcQuery.paginationTerminal, false);
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
-  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
-  const usdcQuery = report.sources.raydiumApi.approvedQuotePairQueries.find((query) => query.quoteMint === USDC);
+  assert.equal(report.status, "INCOMPLETE_DISCOVERY_SCAN");
   assert.equal(usdcQuery.pages[0].responseDiagnostics.pageHasNextPageType, "undefined");
   assert.equal(usdcQuery.pages[0].responseDiagnostics.poolArrayLength, 100);
 });
