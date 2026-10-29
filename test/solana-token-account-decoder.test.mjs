@@ -25,7 +25,7 @@ function decodePublicKey(address) {
     assert.notEqual(digit, undefined);
     value = value * 58n + BigInt(digit);
   }
-  let hex = value.toString(16);
+  let hex = value === 0n ? "" : value.toString(16);
   if (hex.length % 2) hex = "0" + hex;
   const body = [];
   for (let index = 0; index < hex.length; index += 2) {
