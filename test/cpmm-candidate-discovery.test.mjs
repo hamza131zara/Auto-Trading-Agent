@@ -8,9 +8,31 @@ const CPMM = "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C";
 const CLMM = "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK";
 const SOL = "So11111111111111111111111111111111111111112";
 const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const POOL_DATA = Buffer.alloc(637);
-POOL_DATA.set([0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46], 0);
-const POOL_DATA_BASE64 = POOL_DATA.toString("base64");
+const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const BASE58_INDEX = new Map(Array.from(BASE58_ALPHABET, (character, index) => [character, BigInt(index)]));
+function decode58(text) {
+  let value = 0n;
+  for (const character of text) value = value * 58n + BASE58_INDEX.get(character);
+  const bytes = [];
+  while (value > 0n) {
+    bytes.unshift(Number(value & 0xffn));
+    value >>= 8n;
+  }
+  let leading = 0;
+  while (leading < text.length && text[leading] === "1") leading += 1;
+  return Buffer.concat([Buffer.alloc(leading), Buffer.from(bytes)]);
+}
+function writeKey(buffer, offset, address) {
+  const key = decode58(address);
+  assert.equal(key.length, 32);
+  key.copy(buffer, offset);
+}
+const POOL_STATE_BYTES = Buffer.alloc(637);
+POOL_STATE_BYTES.set([0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46], 0);
+const sortedMints = [SOL, USDC].sort((left, right) => Buffer.compare(decode58(left), decode58(right)));
+writeKey(POOL_STATE_BYTES, 168, sortedMints[0]);
+writeKey(POOL_STATE_BYTES, 200, sortedMints[1]);
+const POOL_DATA_BASE64 = POOL_STATE_BYTES.toString("base64");
 const HIGH_CPMM = "Ff68JGeEiUEF859B2xEaPX82vuFeuwxqoxGNHTZPAuKR";
 const LOW_CPMM = "7JuwJuNU88gurFnyWeiyGKbFmExMWcmRZntn9imEzdny";
 const HIGH_CLMM = "3ucNos4NbumPLZNWztqGHNFFgkHeRMBQAVemeeomsUxv";
