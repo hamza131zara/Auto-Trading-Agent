@@ -22,7 +22,7 @@ Official reference: [Solana `getMultipleAccounts` RPC](https://solana.com/docs/r
 
 ## Explicit boundaries
 
-This module is a transport reader, not the complete on-chain identity validator. It returns raw base64 account bytes plus their metadata; it does not deserialize SPL Token mint/token-account state, decode a DEX pool layout, derive protocol-specific vault PDAs, validate program upgrade authority, or prove the RPC provider is honest. Those steps require a reviewed protocol decoder and source configuration. It does not translate a context slot into a source-event timestamp; market-data freshness rules remain separate.
+This module is a transport reader, not the complete on-chain identity validator. It returns raw base64 account bytes plus their metadata; the separate [Phase 6.10 SPL Token decoder](10-spl-token-base-state-decoder.md) parses standard mint/token-account base fields only. Neither module decodes a DEX pool layout, derives protocol-specific vault PDAs, validates program upgrade authority, fully inspects Token-2022 extension TLVs, or proves the RPC provider is honest. Those steps require a reviewed protocol decoder and source configuration. It does not translate a context slot into a source-event timestamp; market-data freshness rules remain separate.
 
 The evidence contract in [Phase 6.8](08-on-chain-identity-evidence-contract.md) remains fail-closed until a reviewed adapter turns this raw bundle into typed pool/mint/vault evidence and the approved program/decoder allowlists are populated from authoritative sources.
 

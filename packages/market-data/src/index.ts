@@ -1332,3 +1332,20 @@ export type {
   SolanaRpcRawAccount,
   SolanaRpcReaderFailureCode
 } from "./solana-rpc-reader.js";
+
+
+export {
+  SPL_TOKEN_PROGRAM_ID,
+  SPL_TOKEN_2022_PROGRAM_ID,
+  decodeSplTokenAccount,
+  decodeSplTokenMint
+} from "./solana-token-account-decoder.js";
+export type {
+  DecodedSplTokenAccount,
+  DecodedSplTokenMint,
+  SplTokenDecodeErrorCode,
+  SplTokenDecodeResult,
+  SplTokenProgramKind,
+  TokenAccountState,
+  TokenExtensionState
+} from "./solana-token-account-decoder.js";

@@ -27,6 +27,7 @@
 7. [Provider agreement and fail-closed fallback policy](07-provider-agreement-and-fallback-policy.md)
 8. [On-chain identity evidence contract](08-on-chain-identity-evidence-contract.md)
 9. [Read-only Solana RPC account reader](09-solana-rpc-account-reader.md)
+10. [SPL Token base-state decoder](10-spl-token-base-state-decoder.md)
 
 ## Initial implementation boundary
 
@@ -46,6 +47,10 @@ A read-only DEX Screener reference adapter is included for evaluation. Its fixtu
 ## Provider-selection gate
 
 Candidates remain those in the owner-approved provider matrix (Solana RPC, Helius, DEX Screener, Birdeye and other reviewed sources as appropriate). This phase must not turn the research shortlist or earlier dated pricing snapshot into an implied vendor commitment. A provider adapter may be considered production-ready only after endpoint/version and terms review, quota/budget selection, schema validation, timeout/retry/circuit-breaker behavior, fallback/disagreement tests, and deterministic fixtures pass.
+
+## SPL Token base-state decoder
+
+The decoder in [Phase 6.10](10-spl-token-base-state-decoder.md) parses the classic 82-byte mint and 165-byte token-account base layouts and can parse only the base prefix of Token-2022 data. Any extended Token-2022 account is explicitly flagged `EXTENSIONS_UNINSPECTED` and cannot pass the identity-evidence parsing gate. Extension TLV interpretation is still outstanding.
 
 ## Read-only RPC transport
 
