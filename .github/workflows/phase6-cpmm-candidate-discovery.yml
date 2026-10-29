@@ -1,15 +1,15 @@
-name: Phase 6 Raydium CPMM candidate discovery
+name: Phase 6 Raydium SOL stablecoin CPMM candidate discovery
 
 on:
   workflow_dispatch:
     inputs:
       minimum_liquidity_usd:
-        description: Minimum indexed liquidity USD for candidate qualification (triage only)
+        description: Minimum indexed liquidity USD for SOL/USDC and SOL/USDT candidate qualification (triage only)
         required: true
         type: string
         default: "100000"
       minimum_volume_24h_usd:
-        description: Minimum indexed 24-hour volume USD for candidate qualification (triage only)
+        description: Minimum indexed 24-hour volume USD for SOL/USDC and SOL/USDT candidate qualification (triage only)
         required: true
         type: string
         default: "10000"
@@ -47,7 +47,7 @@ concurrency:
 
 jobs:
   discover:
-    name: Read-only SOL/USDC CPMM candidate shortlist
+    name: Read-only SOL stablecoin CPMM candidate shortlist
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
