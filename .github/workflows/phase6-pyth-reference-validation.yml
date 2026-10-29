@@ -100,6 +100,7 @@ jobs:
   validate:
     name: Read-only Pyth USD reference and CPMM reserve comparison
     if: github.ref == 'refs/heads/main'
+    environment: PYTH_API_KEY
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
