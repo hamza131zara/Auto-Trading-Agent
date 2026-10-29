@@ -86,6 +86,10 @@ function independentPriceInput(overrides = {}) {
     maxReferenceTimestampSkewMs: 10_000,
     maxFutureSkewMs: 0,
     maxDeviationBps: 10,
+    approvedProviderId: "oracle-reference",
+    approvedIndependenceGroupId: "oracle-network",
+    expectedBaseFeedId: "sol-usd-feed",
+    expectedQuoteFeedId: "usdc-usd-feed",
     ...(overrides.policy ?? {})
   };
   const baseUsd = {
