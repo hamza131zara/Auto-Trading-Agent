@@ -1,6 +1,6 @@
 # Phase 6.9 — Read-Only Solana RPC Account Reader
 
-**Status:** The bounded JSON-RPC transport is implemented with mocked-fetch tests. No production RPC provider is selected, no RPC endpoint is contacted by CI, and no protocol-specific pool decoder is included.
+**Status:** The bounded JSON-RPC transport is implemented with mocked-fetch tests. No production RPC provider is selected and no RPC endpoint is contacted by CI. A pinned-source Raydium CPMM candidate decoder consumes the returned account data; it has only synthetic/mock integration coverage.
 
 ## Request contract
 
@@ -22,7 +22,7 @@ Official reference: [Solana `getMultipleAccounts` RPC](https://solana.com/docs/r
 
 ## Explicit boundaries
 
-This module is a transport reader, not the complete on-chain identity validator. It returns raw base64 account bytes plus their metadata; the separate [Phase 6.10 SPL Token decoder](10-spl-token-base-state-decoder.md) parses standard mint/token-account base fields only. Neither module decodes a DEX pool layout, derives protocol-specific vault PDAs, validates program upgrade authority, fully inspects Token-2022 extension TLVs, or proves the RPC provider is honest. Those steps require a reviewed protocol decoder and source configuration. It does not translate a context slot into a source-event timestamp; market-data freshness rules remain separate.
+This module is a transport reader, not the complete on-chain identity validator. It returns raw base64 account bytes plus metadata; the [Phase 6.10 SPL Token decoder](10-spl-token-base-state-decoder.md) parses standard mint/token-account base fields only. The pinned-source [Phase 6.12 Raydium CPMM candidate decoder](12-raydium-cpmm-candidate-decoder.md) separately decodes the protocol pool state and derives protocol PDAs, but it is not production-selected and has not been verified against a real source. The Token-2022 TLV inspector/policy rejects unresolved extension states; no component here validates upgrade-authority risk or proves the RPC provider is honest. The transport does not translate a context slot into a source-event timestamp; market-data freshness rules remain separate.
 
 The evidence contract in [Phase 6.8](08-on-chain-identity-evidence-contract.md) remains fail-closed until a reviewed adapter turns this raw bundle into typed pool/mint/vault evidence and the approved program/decoder allowlists are populated from authoritative sources.
 
