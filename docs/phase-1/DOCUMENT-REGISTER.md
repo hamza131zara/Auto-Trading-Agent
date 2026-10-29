@@ -7,7 +7,7 @@ Canonical source artifacts, phase documents, design assets and engineering found
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `1abf7f92451ebef93de913c749a464da499f32e2`  
+**Source snapshot before this register refresh:** `daee1721d3b94e6a52c5c0271976e0092d5dee70`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -203,7 +203,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `docs/phase-6/10-spl-token-base-state-decoder.md` | Classic SPL Token base-state decoder; Token-2022 extensions remain blocked pending Phase 7 safety review | `e276df7be60e7365fceba63c3e2ee40a8cdf3532` | 4000 |
 | `docs/phase-6/11-token2022-extension-tlv-inspector.md` | Token-2022 TLV framing and fail-closed semantic registry; known IDs routed conservatively, unknown/future extensions blocked | `65d7e6486d09b869b409097a82520f56aa4ad8d4` | 3359 |
 | `docs/phase-6/12-raydium-cpmm-candidate-decoder.md` | Pinned-source Raydium CPMM PoolState/AMM-config decoder and synthetic-tested integration; real-source gate is documented in the Phase 6.13 runbook | `9ffe95643b4ee264507aadf0b593dca9658082bf` | 5919 |
-| `docs/phase-6/13-live-source-validation-runner.md` | Guarded operator runbook for read-only real-source identity validation, approvals, redacted evidence and outstanding Phase 6 exit gates | `3631f89c9ac202464db37e2caeadfc3938dd2e6f` | 7184 |
+| `docs/phase-6/13-live-source-validation-runner.md` | Guarded operator runbook for read-only real-source identity validation, approvals, redacted evidence and outstanding Phase 6 exit gates | `fd5d4da8d8163495f83912db99f5c6fc825b74ff` | 7249 |
 | `packages/market-data/package.json` | Private canonical market-data workspace with read-only DEX Screener candidate export | `1839c9bd51848baab6a97c0d3b3541527717c2a7` | 452 |
 | `packages/market-data/tsconfig.json` | Strict compiler settings for market-data package | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
 | `packages/market-data/tsconfig.type-tests.json` | Compile-time market data and DEX Screener adapter regression checks | `4aaed29f53a7a4b128b7309c17c910d67bde21de` | 303 |
@@ -222,7 +222,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `test/solana-token-account-decoder.test.mjs` | Constructed-byte tests for classic mint/account decoding, exact amounts, option tags, Token-2022 extension boundaries and malformed layouts | `ea640bfe90ce2532231868d3dbf2e0515a06d112` | 9777 |
 | `test/token2022-extension-tlv-inspector.test.mjs` | Constructed-byte tests for TLV bounds/termination, known extension routing, unknown/future IDs and wrong account-kind rejection | `8b9336a860ef539555208c6568d6345d29d4fba8` | 9165 |
 | `test/raydium-cpmm-decoder.test.mjs` | Constructed-byte and mocked-RPC tests for Raydium CPMM state/config layouts, raw-key PDA seeds, common-slot identity bundle and fail-closed mismatches | `554cdb5dd517108736d7ea2edc83f551766dbb36` | 18971 |
-| `test/phase6-live-source-runner.test.mjs` | No-network tests for explicit approvals, HTTPS endpoint policy, indexed-source provenance, provider separation and fail-closed CLI behavior | `d49a92402239fef08dc56bd107935ffd8a8786cc` | 3623 |
+| `test/phase6-live-source-runner.test.mjs` | No-network tests for explicit approvals, HTTPS endpoint policy, indexed-source provenance, provider separation and fail-closed CLI behavior | `d5ff00782dde28f018b515621b0d8d0d0656adc8` | 3667 |
 | `test/dex-screener.test.mjs` | Mocked adapter tests: identity, units/precision, timestamps, HTTP failures, streaming bounds and timeout cases | `602fe7a47467320c857bde6cebe863146a9347fd` | 10281 |
 | `test/fixtures/market-data/dexscreener-pair-v1.json` | Synthetic DEX Screener pair payload preserving source numeric precision | `e02910c2610b949582e8b7cee99fb1486aa14173` | 909 |
 | `.github/workflows/dependency-review.yml` | PR dependency review failing on high/critical findings | `20a8689e5ccf553b6463dbd39d5f78082342c9e4` | 393 |
@@ -269,7 +269,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `1abf7f92451ebef93de913c749a464da499f32e2`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `daee1721d3b94e6a52c5c0271976e0092d5dee70`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
