@@ -387,23 +387,32 @@ export async function deriveRaydiumCpmmAmmConfigPda(index: number): Promise<{ re
 }
 
 export async function deriveRaydiumCpmmLpMintPda(poolAddress: string): Promise<{ readonly address: string; readonly bump: number }> {
-  if (!isSolanaPublicKey(poolAddress)) throw new TypeError("poolAddress must be a Solana public key");
-  return findSolanaProgramAddress([LP_MINT_SEED, poolAddress], RAYDIUM_CPMM_PROGRAM_ID);
+  const poolBytes = decodeBase58(poolAddress);
+  if (poolBytes === null || poolBytes.length !== 32) {
+    throw new TypeError("poolAddress must be a Solana public key");
+  }
+  return findSolanaProgramAddress([LP_MINT_SEED, poolBytes], RAYDIUM_CPMM_PROGRAM_ID);
 }
 
 export async function deriveRaydiumCpmmObservationPda(poolAddress: string): Promise<{ readonly address: string; readonly bump: number }> {
-  if (!isSolanaPublicKey(poolAddress)) throw new TypeError("poolAddress must be a Solana public key");
-  return findSolanaProgramAddress([OBSERVATION_SEED, poolAddress], RAYDIUM_CPMM_PROGRAM_ID);
+  const poolBytes = decodeBase58(poolAddress);
+  if (poolBytes === null || poolBytes.length !== 32) {
+    throw new TypeError("poolAddress must be a Solana public key");
+  }
+  return findSolanaProgramAddress([OBSERVATION_SEED, poolBytes], RAYDIUM_CPMM_PROGRAM_ID);
 }
 
 export async function deriveRaydiumCpmmVaultPda(
   poolAddress: string,
   tokenMint: string
 ): Promise<{ readonly address: string; readonly bump: number }> {
-  if (!isSolanaPublicKey(poolAddress) || !isSolanaPublicKey(tokenMint)) {
+  const poolBytes = decodeBase58(poolAddress);
+  const mintBytes = decodeBase58(tokenMint);
+  if (poolBytes === null || poolBytes.length !== 32 ||
+      mintBytes === null || mintBytes.length !== 32) {
     throw new TypeError("poolAddress and tokenMint must be Solana public keys");
   }
-  return findSolanaProgramAddress([POOL_VAULT_SEED, poolAddress, tokenMint], RAYDIUM_CPMM_PROGRAM_ID);
+  return findSolanaProgramAddress([POOL_VAULT_SEED, poolBytes, mintBytes], RAYDIUM_CPMM_PROGRAM_ID);
 }
 
 export async function deriveRaydiumCpmmPoolPda(
@@ -422,7 +431,7 @@ export async function deriveRaydiumCpmmPoolPda(
   if (compareBytes(token0, token1) >= 0) {
     throw new TypeError("Raydium CPMM token0 mint must sort before token1 by public-key bytes");
   }
-  return findSolanaProgramAddress([POOL_SEED, ammConfig, token0Mint, token1Mint], RAYDIUM_CPMM_PROGRAM_ID);
+  return findSolanaProgramAddress([POOL_SEED, config, token0, token1], RAYDIUM_CPMM_PROGRAM_ID);
 }
 
 function compareBytes(left: Uint8Array, right: Uint8Array): number {
