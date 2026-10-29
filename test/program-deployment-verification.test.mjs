@@ -37,33 +37,43 @@ test("decodes ProgramData pointer from a strict upgradeable Program account",()=
 });
 test("verified source ELF hash matches non-synthetic deployment evidence and reports upgradeability",async()=>{
   const f=fixture({authority:true});
-  const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,programAccountContextSlot:100,programDataContextSlot:101,synthetic:false});
+  const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:100,programDataContextSlot:101,synthetic:false});
   assert.equal(result.status,"MATCH"); assert.equal(result.observedElfSha256,f.expected);
   assert.equal(result.elfByteLength,f.elfLength); assert.equal(result.deploymentSlot,"123456789");
   assert.equal(result.upgradeAuthorityPresent,true); assert.ok(result.reasonCodes.includes("PROGRAM_REMAINS_UPGRADEABLE"));
   assert.equal(result.tradingAuthorized,false);
 });
 test("hash mismatch does not pass deployment integrity gate",async()=>{
-  const f=fixture(); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:"0".repeat(64),programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
+  const f=fixture(); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:"0".repeat(64),expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
   assert.equal(result.status,"HASH_MISMATCH"); assert.deepEqual(result.reasonCodes,["DEPLOYED_ELF_HASH_MISMATCH"]); assert.equal(result.tradingAuthorized,false);
 });
 test("missing source build reference hashes the observed ELF but remains insufficient evidence",async()=>{
-  const f=fixture(); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:null,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
+  const f=fixture(); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:null,expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
   assert.equal(result.status,"INSUFFICIENT_EVIDENCE"); assert.equal(result.observedElfSha256,f.expected);
   assert.deepEqual(result.reasonCodes,["EXPECTED_REFERENCE_ELF_SHA256_REQUIRED"]);
 });
 test("synthetic fixtures cannot produce operational MATCH",async()=>{
-  const f=fixture({synthetic:true}); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,programAccountContextSlot:1,programDataContextSlot:1,synthetic:true});
+  const f=fixture({synthetic:true}); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:true});
   assert.equal(result.status,"SYNTHETIC_MATCH"); assert.equal(result.tradingAuthorized,false);
 });
+test("reference ELF hash excludes only zero-filled ProgramData allocation padding",async()=>{
+  const f=fixture(); const withPadding=Buffer.concat([Buffer.from(f.programData.dataBase64,"base64"),Buffer.alloc(32)]);
+  const paddedAccount={...f.programData,dataBase64:withPadding.toString("base64"),space:withPadding.length};
+  const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:paddedAccount,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
+  assert.equal(result.status,"MATCH"); assert.equal(result.programDataPaddingByteLength,32); assert.equal(result.programDataPaddingZeroed,true);
+  withPadding[withPadding.length-1]=1;
+  const badPadding={...paddedAccount,dataBase64:withPadding.toString("base64"),space:withPadding.length};
+  const blocked=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:badPadding,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
+  assert.equal(blocked.status,"MISMATCH"); assert.deepEqual(blocked.reasonCodes,["PROGRAMDATA_NONZERO_BYTES_AFTER_REFERENCE_ELF_LENGTH"]);
+});
 test("ProgramData below the program context slot remains insufficient",async()=>{
-  const f=fixture(); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,programAccountContextSlot:10,programDataContextSlot:9,synthetic:false});
+  const f=fixture(); const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:f.programData,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:10,programDataContextSlot:9,synthetic:false});
   assert.equal(result.status,"INSUFFICIENT_EVIDENCE"); assert.deepEqual(result.reasonCodes,["PROGRAMDATA_CONTEXT_SLOT_BELOW_PROGRAM_ACCOUNT"]);
 });
 test("invalid loader state and ProgramData address mismatch fail closed",async()=>{
   const f=fixture(); const broken=Uint8Array.from(Buffer.from(f.program.dataBase64,"base64")); broken[0]=1;
   assert.equal(inspectUpgradeableProgramAccount(account(PROGRAM_ID,LOADER,broken,true),PROGRAM_ID).valid,false);
   const wrong={...f.programData,address:"11111111111111111111111111111111"};
-  const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:wrong,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
+  const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:wrong,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
   assert.equal(result.status,"MISMATCH"); assert.deepEqual(result.reasonCodes,["PROGRAMDATA_ADDRESS_MISMATCH"]);
 });

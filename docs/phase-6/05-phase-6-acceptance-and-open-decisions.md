@@ -1,6 +1,6 @@
 # Phase 6.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active, not complete. Discovery checked 45 accounts and cross-checked 24 CPMM candidates; none met unchanged thresholds. The live Pyth comparison remains a 63-bps reserve/reference disagreement against a 10-bps diagnostic tolerance; DEX Screener source timestamps remain missing. GeckoTerminal OHLCV is an opt-in price-only comparison path with default-no terms and source-review gates. Phase 6.18 adds an optional deployed Raydium ProgramData ELF hash comparison, but it remains NOT_ASSESSED until a separately reviewed source-build hash is supplied. No ProgramData read is made by default or in CI. CI run #231 passed after workflow freshness input edits; the program-deployment integrity changes are pending CI. Production provider approval and trading authorization remain false.
+**Status:** Active, not complete. Discovery checked 45 accounts and cross-checked 24 CPMM candidates; none met unchanged thresholds. The live Pyth comparison remains a 63-bps reserve/reference disagreement against a 10-bps diagnostic tolerance; DEX Screener source timestamps remain missing. GeckoTerminal OHLCV is an opt-in price-only path behind default-no approval gates. Phase 6.18 adds an optional deployed Raydium ProgramData ELF integrity check, now requiring both the reference artifact SHA-256 and exact byte length so trailing allocation padding is not mistakenly hashed as ELF. The padding refinement is pending CI. No ProgramData read is made by default or in CI; production provider approval and trading authorization remain false.
 
 ## Acceptance checklist
 
@@ -63,8 +63,9 @@ No provider plan is purchased or assumed. Pool thresholds and the diagnostic com
 
 - [x] Add strict parsing of upgradeable-loader Program and ProgramData account state, the ProgramData pointer, metadata, deployment slot, upgrade-authority indicator, ELF magic and ELF SHA-256.
 - [x] Add deterministic tests for hash match/mismatch, missing source reference, synthetic evidence, wrong ProgramData address, malformed loader metadata and context-slot ordering.
-- [x] Wire an optional Program + ProgramData read at a shared finalized context slot into the manual identity runner when a reviewed reference ELF hash is supplied.
-- [x] Require separate affirmative build/hash review when a reference hash is supplied; no expected hash is set by default.
+- [x] Wire an optional Program + ProgramData read at a shared finalized context slot into the manual identity runner when a reviewed reference ELF hash and exact artifact byte length are supplied.
+- [x] Require separate affirmative build/hash review when the reference hash and byte length are supplied together; verify all remaining ProgramData allocation bytes are zero before accepting the exact-length ELF hash. Neither reference input is set by default.
+- [ ] CI verification for paired hash/length and zero-padding hardening is pending.
 - [ ] Independently build the exact pinned Raydium source with a reviewed toolchain, preserve build provenance, and obtain owner-approved live verification evidence.
 - [ ] Review upgrade-authority findings and current deployment policy before production selection.
 

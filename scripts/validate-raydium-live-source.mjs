@@ -233,17 +233,35 @@ function readOperatorConfiguration(env) {
   const minContextSlot = readPositiveInteger(env, "ATA_LIVE_MIN_CONTEXT_SLOT", Number.MAX_SAFE_INTEGER);
   const maxRetrievalAgeMs = readPositiveInteger(env, "ATA_LIVE_MAX_RETRIEVAL_AGE_MS", 300_000);
   const expectedProgramElfSha256 = (env.ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256 ?? "").trim();
-  if (expectedProgramElfSha256.length > 0 && !/^[a-f0-9]{64}$/.test(expectedProgramElfSha256)) {
+  const expectedProgramElfByteLengthText = (env.ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES ?? "").trim();
+  const hashSupplied = expectedProgramElfSha256.length > 0;
+  const lengthSupplied = expectedProgramElfByteLengthText.length > 0;
+  if (hashSupplied !== lengthSupplied) {
+    throw codedError("EXPECTED_PROGRAM_ELF_HASH_AND_LENGTH_REQUIRED_TOGETHER");
+  }
+  if (hashSupplied && !/^[a-f0-9]{64}$/.test(expectedProgramElfSha256)) {
     throw codedError("EXPECTED_PROGRAM_ELF_SHA256_INVALID");
   }
-  if (expectedProgramElfSha256.length > 0 &&
+  let expectedProgramElfByteLength = null;
+  if (lengthSupplied) {
+    if (!/^(?:0|[1-9][0-9]*)$/.test(expectedProgramElfByteLengthText)) {
+      throw codedError("EXPECTED_PROGRAM_ELF_LENGTH_INVALID");
+    }
+    expectedProgramElfByteLength = Number(expectedProgramElfByteLengthText);
+    if (!Number.isSafeInteger(expectedProgramElfByteLength) ||
+        expectedProgramElfByteLength < 4 || expectedProgramElfByteLength > 10_000_000) {
+      throw codedError("EXPECTED_PROGRAM_ELF_LENGTH_OUT_OF_RANGE");
+    }
+  }
+  if (hashSupplied &&
       env.ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW !== "EXPECTED_RAYDIUM_ELF_HASH_REVIEWED") {
     throw codedError("PROGRAM_BUILD_HASH_REVIEW_REQUIRED");
   }
 
   return {
     endpoint, providerId, minContextSlot, maxRetrievalAgeMs,
-    expectedProgramElfSha256: expectedProgramElfSha256 || null
+    expectedProgramElfSha256: expectedProgramElfSha256 || null,
+    expectedProgramElfByteLength
   };
 }
 
@@ -479,6 +497,7 @@ async function buildProgramDeploymentVerification(reader, bundle, config, reques
       programDataAccount: null,
       expectedProgramId: RAYDIUM_CPMM_PROGRAM_ID,
       expectedElfSha256: config.expectedProgramElfSha256,
+      expectedElfByteLength: config.expectedProgramElfByteLength,
       programAccountContextSlot: bundle.source.contextSlot,
       programDataContextSlot: null,
       synthetic: bundle.source.synthetic,
@@ -529,6 +548,7 @@ async function buildProgramDeploymentVerification(reader, bundle, config, reques
     programDataAccount,
     expectedProgramId: RAYDIUM_CPMM_PROGRAM_ID,
     expectedElfSha256: config.expectedProgramElfSha256,
+    expectedElfByteLength: config.expectedProgramElfByteLength,
     programAccountContextSlot: dataBundle.source.contextSlot,
     programDataContextSlot: dataBundle.source.contextSlot,
     synthetic: bundle.source.synthetic || dataBundle.source.synthetic,
@@ -564,8 +584,11 @@ function buildReport({ target, bundle, assessment, config, generatedAt, programD
     identityBundleContextSlot: bundle.source.contextSlot,
     programDataContextSlot: null,
     expectedElfSha256: null,
+    expectedElfByteLength: null,
     observedElfSha256: null,
     elfByteLength: null,
+    programDataPaddingByteLength: null,
+    programDataPaddingZeroed: null,
     synthetic: bundle.source.synthetic,
     programDataReadAttempted: false,
     programDataRpcEvidence: null,
@@ -699,7 +722,8 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   const reader = new SolanaRpcAccountReader({
     endpoint: config.endpoint,
     providerId: config.providerId,
-    timeoutMs: 10_000
+    timeoutMs: 10_000,
+    maxResponseBytes: config.expectedProgramElfSha256 === null ? 2_000_000 : 10_000_000
   });
   const bundle = await readRaydiumCpmmIdentityBundle(reader, target, {
     commitment: "finalized",

@@ -24,7 +24,11 @@ on:
         required: true
         type: string
       expected_program_elf_sha256:
-        description: Optional SHA-256 of raydium_cp_swap.so built from the reviewed pinned source/toolchain; leave blank to skip ProgramData read and report NOT_ASSESSED
+        description: Optional lowercase SHA-256 of the exact raydium_cp_swap.so artifact built from reviewed pinned source/toolchain; must be paired with its exact byte length
+        required: false
+        type: string
+      expected_program_elf_bytes:
+        description: Exact file size in bytes of the same reference .so artifact; required with its SHA-256 to handle zero-padded ProgramData allocation safely
         required: false
         type: string
       confirm_program_build_hash_review:
@@ -95,6 +99,7 @@ jobs:
           CONFIRM_INDEXED_SOURCE_REVIEW: ${{ inputs.confirm_indexed_source_review }}
           CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
           EXPECTED_PROGRAM_ELF_SHA256: ${{ inputs.expected_program_elf_sha256 }}
+          EXPECTED_PROGRAM_ELF_BYTES: ${{ inputs.expected_program_elf_bytes }}
           CONFIRM_PROGRAM_BUILD_HASH_REVIEW: ${{ inputs.confirm_program_build_hash_review }}
         run: |
           if [[ "$CONFIRM_READ_ONLY_RPC" != "yes" ]]; then
@@ -109,13 +114,22 @@ jobs:
             echo "::error::Current provider terms/quota/usage-budget review was not confirmed."
             exit 2
           fi
-          if [[ -n "$EXPECTED_PROGRAM_ELF_SHA256" ]]; then
+          if [[ -n "$EXPECTED_PROGRAM_ELF_SHA256" || -n "$EXPECTED_PROGRAM_ELF_BYTES" ]]; then
+            if [[ -z "$EXPECTED_PROGRAM_ELF_SHA256" || -z "$EXPECTED_PROGRAM_ELF_BYTES" ]]; then
+              echo "::error::Reference ELF SHA-256 and byte length must be supplied together."
+              exit 2
+            fi
             if [[ ! "$EXPECTED_PROGRAM_ELF_SHA256" =~ ^[a-f0-9]{64}$ ]]; then
               echo "::error::Expected program ELF hash must be lowercase SHA-256 hex."
               exit 2
             fi
+            if [[ ! "$EXPECTED_PROGRAM_ELF_BYTES" =~ ^(0|[1-9][0-9]*)$ ]] ||
+               (( EXPECTED_PROGRAM_ELF_BYTES < 4 || EXPECTED_PROGRAM_ELF_BYTES > 10000000 )); then
+              echo "::error::Expected program ELF byte length must be 4..10000000."
+              exit 2
+            fi
             if [[ "$CONFIRM_PROGRAM_BUILD_HASH_REVIEW" != "yes" ]]; then
-              echo "::error::Program build/hash review is required when an expected ELF hash is supplied."
+              echo "::error::Program build/hash review is required when reference hash/length are supplied."
               exit 2
             fi
           fi
@@ -133,6 +147,7 @@ jobs:
           ATA_LIVE_MIN_CONTEXT_SLOT: ${{ inputs.minimum_context_slot }}
           ATA_LIVE_MAX_RETRIEVAL_AGE_MS: ${{ inputs.max_retrieval_age_ms }}
           ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: ${{ inputs.expected_program_elf_sha256 }}
+          ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES: ${{ inputs.expected_program_elf_bytes }}
           ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: ${{ inputs.confirm_program_build_hash_review == 'yes' && 'EXPECTED_RAYDIUM_ELF_HASH_REVIEWED' || 'NOT_REVIEWED' }}
         run: |
           node scripts/validate-raydium-live-source.mjs \

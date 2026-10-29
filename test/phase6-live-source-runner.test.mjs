@@ -347,13 +347,15 @@ function validOperatorEnvironment(overrides = {}) {
 test("program deployment hash check stays optional unless an owner-reviewed ELF hash is supplied", () => {
   const config = readOperatorConfiguration(validOperatorEnvironment());
   assert.equal(config.expectedProgramElfSha256, null);
+  assert.equal(config.expectedProgramElfByteLength, null);
   assert.equal(config.providerId, "test-rpc");
 });
 
 test("program deployment reference hash requires a separate affirmative build-review acknowledgement", () => {
   assert.throws(
     () => readOperatorConfiguration(validOperatorEnvironment({
-      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: "a".repeat(64)
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: "a".repeat(64),
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES: "16"
     })),
     { code: "PROGRAM_BUILD_HASH_REVIEW_REQUIRED" }
   );
@@ -363,6 +365,7 @@ test("program deployment reference hash validates format before any provider req
   assert.throws(
     () => readOperatorConfiguration(validOperatorEnvironment({
       ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: "not-a-hash",
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES: "16",
       ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: "EXPECTED_RAYDIUM_ELF_HASH_REVIEWED"
     })),
     { code: "EXPECTED_PROGRAM_ELF_SHA256_INVALID" }
@@ -373,7 +376,24 @@ test("reviewed program deployment reference hash is accepted as a per-run eviden
   const expected = "b".repeat(64);
   const config = readOperatorConfiguration(validOperatorEnvironment({
     ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: expected,
+    ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES: "16",
     ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: "EXPECTED_RAYDIUM_ELF_HASH_REVIEWED"
   }));
   assert.equal(config.expectedProgramElfSha256, expected);
+  assert.equal(config.expectedProgramElfByteLength, 16);
+});
+
+test("program reference hash and exact ELF length must be supplied together", () => {
+  assert.throws(
+    () => readOperatorConfiguration(validOperatorEnvironment({
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: "a".repeat(64)
+    })),
+    { code: "EXPECTED_PROGRAM_ELF_HASH_AND_LENGTH_REQUIRED_TOGETHER" }
+  );
+  assert.throws(
+    () => readOperatorConfiguration(validOperatorEnvironment({
+      ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES: "16"
+    })),
+    { code: "EXPECTED_PROGRAM_ELF_HASH_AND_LENGTH_REQUIRED_TOGETHER" }
+  );
 });

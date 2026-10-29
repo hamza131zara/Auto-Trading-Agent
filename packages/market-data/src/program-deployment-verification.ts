@@ -35,8 +35,11 @@ export interface ProgramDeploymentVerificationResult {
   readonly programAccountContextSlot: number | null;
   readonly programDataContextSlot: number | null;
   readonly expectedElfSha256: string | null;
+  readonly expectedElfByteLength: number | null;
   readonly observedElfSha256: string | null;
   readonly elfByteLength: number | null;
+  readonly programDataPaddingByteLength: number | null;
+  readonly programDataPaddingZeroed: boolean | null;
   readonly synthetic: boolean;
   readonly tradingAuthorized: false;
 }
@@ -138,6 +141,8 @@ export async function assessUpgradeableProgramDeployment(input: {
   readonly programDataAccount: SolanaRpcRawAccount | null;
   readonly expectedProgramId: string;
   readonly expectedElfSha256: string | null;
+  /** Exact byte length of the separately built reference ELF; required to exclude loader padding. */
+  readonly expectedElfByteLength: number | null;
   readonly programAccountContextSlot: number;
   readonly programDataContextSlot: number | null;
   readonly synthetic: boolean;
@@ -155,8 +160,11 @@ export async function assessUpgradeableProgramDeployment(input: {
     programDataContextSlot: Number.isSafeInteger(input.programDataContextSlot) && (input.programDataContextSlot ?? -1) >= 0
       ? input.programDataContextSlot : null,
     expectedElfSha256: input.expectedElfSha256,
+    expectedElfByteLength: input.expectedElfByteLength,
     observedElfSha256: null as string | null,
     elfByteLength: null as number | null,
+    programDataPaddingByteLength: null as number | null,
+    programDataPaddingZeroed: null as boolean | null,
     synthetic: input.synthetic,
     tradingAuthorized: false as const
   };
@@ -185,6 +193,11 @@ export async function assessUpgradeableProgramDeployment(input: {
     overrides: Partial<typeof base> = {}
   ): ProgramDeploymentVerificationResult => ({ ...inspectedBase, ...overrides, status, reasonCodes });
 
+  if (input.expectedElfByteLength === null ||
+      !Number.isSafeInteger(input.expectedElfByteLength) ||
+      input.expectedElfByteLength < 4 || input.expectedElfByteLength > 10_000_000) {
+    return resultWithInspection("INVALID_INPUT", ["EXPECTED_REFERENCE_ELF_LENGTH_INVALID"]);
+  }
   if (input.programDataAccount === null || input.programDataContextSlot === null) {
     return resultWithInspection("INSUFFICIENT_EVIDENCE", ["PROGRAMDATA_ACCOUNT_NOT_READ"]);
   }
@@ -213,22 +226,33 @@ export async function assessUpgradeableProgramDeployment(input: {
   if (authorityTag === 1 && !isSolanaPublicKey(encodeBase58(bytes.slice(13, 45)))) {
     return resultWithInspection("MISMATCH", ["PROGRAMDATA_UPGRADE_AUTHORITY_INVALID"]);
   }
-  const elf = bytes.slice(PROGRAMDATA_METADATA_LENGTH);
+  const elfEnd = PROGRAMDATA_METADATA_LENGTH + input.expectedElfByteLength;
+  if (bytes.length < elfEnd) {
+    return resultWithInspection("MISMATCH", ["PROGRAMDATA_SHORTER_THAN_REFERENCE_ELF_LENGTH"]);
+  }
+  const elf = bytes.slice(PROGRAMDATA_METADATA_LENGTH, elfEnd);
   if (elf[0] !== 0x7f || elf[1] !== 0x45 || elf[2] !== 0x4c || elf[3] !== 0x46) {
     return resultWithInspection("MISMATCH", ["PROGRAMDATA_ELF_MAGIC_INVALID"]);
   }
+  const padding = bytes.slice(elfEnd);
+  const programDataPaddingZeroed = padding.every((byte) => byte === 0);
   const observedElfSha256 = await sha256Hex(elf);
   const common = {
     deploymentSlot: readU64LE(bytes, 4),
     upgradeAuthorityPresent: authorityTag === 1,
     observedElfSha256,
-    elfByteLength: elf.length
+    elfByteLength: elf.length,
+    programDataPaddingByteLength: padding.length,
+    programDataPaddingZeroed
   };
   if (input.expectedElfSha256 === null || input.expectedElfSha256 === "") {
     return resultWithInspection("INSUFFICIENT_EVIDENCE", ["EXPECTED_REFERENCE_ELF_SHA256_REQUIRED"], common);
   }
   if (typeof input.expectedElfSha256 !== "string" || !SHA256_PATTERN.test(input.expectedElfSha256)) {
     return resultWithInspection("INVALID_INPUT", ["EXPECTED_REFERENCE_ELF_SHA256_INVALID"], common);
+  }
+  if (!programDataPaddingZeroed) {
+    return resultWithInspection("MISMATCH", ["PROGRAMDATA_NONZERO_BYTES_AFTER_REFERENCE_ELF_LENGTH"], common);
   }
   if (observedElfSha256 !== input.expectedElfSha256) {
     return resultWithInspection(input.synthetic ? "SYNTHETIC_MISMATCH" : "HASH_MISMATCH",
