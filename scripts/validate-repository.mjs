@@ -27,7 +27,8 @@ const workspaces = [
   "apps/runtime-dashboard",
   "services/agent",
   "packages/contracts",
-  "packages/config"
+  "packages/config",
+  "packages/market-data"
 ];
 for (const path of workspaces) {
   requirePath(path + "/package.json");
@@ -41,6 +42,7 @@ requirePath(".gitignore");
 requirePath(".github/workflows/ci.yml");
 requirePath("packages/contracts/src/index.ts");
 requirePath("packages/config/src/index.ts");
+requirePath("packages/market-data/src/index.ts");
 
 const gitignore = readFileSync(join(root, ".gitignore"), "utf8");
 if (!gitignore.split(/\r?\n/).includes(".env")) failures.push(".gitignore must ignore local .env files.");
