@@ -228,6 +228,33 @@ function readOperatorConfiguration(env) {
   return { endpoint, providerId, minContextSlot, maxRetrievalAgeMs };
 }
 
+export function buildMarketDataReportSection(target) {
+  const hasSourceTimestamp = target.observedAt !== null || target.sourceEventAt !== null;
+  const sourceFreshness = hasSourceTimestamp
+    ? {
+        state: "NOT_ASSESSED",
+        reasonCodes: ["SOURCE_SPECIFIC_FRESHNESS_POLICY_NOT_CONFIGURED"]
+      }
+    : {
+        state: "UNKNOWN",
+        reasonCodes: ["SOURCE_TIMESTAMP_MISSING"]
+      };
+
+  return {
+    retrievedAt: target.retrievedAt,
+    observedAt: target.observedAt,
+    sourceEventAt: target.sourceEventAt,
+    sourceTimestampStatus: hasSourceTimestamp ? "PRESENT_BUT_NOT_ASSESSED" : "UNKNOWN",
+    sourceFreshness,
+    price: target.price ?? null,
+    liquidity: target.liquidity ?? null,
+    volume24h: target.volume24h ?? null,
+    buys24h: target.buys24h ?? null,
+    sells24h: target.sells24h ?? null,
+    interpretation: "Indexed-source measures only; not independently validated market data."
+  };
+}
+
 function buildReport({ target, bundle, assessment, config, generatedAt }) {
   const pool = assessment.pool;
   return {
@@ -262,6 +289,7 @@ function buildReport({ target, bundle, assessment, config, generatedAt }) {
       quoteMint: target.quoteMint,
       indexedDexProgramAddress: target.dexProgramAddress
     },
+    marketData: buildMarketDataReportSection(target),
     rpcEvidence: {
       providerId: bundle.source.providerId,
       commitment: bundle.source.commitment,
