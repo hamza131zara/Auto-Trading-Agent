@@ -281,7 +281,7 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
     // Injected fetch implementations are for tests/fixtures and can never yield live evidence.
-    this.synthetic = fetchImpl !== fetch;
+    this.synthetic = arguments.length > 0;
   }
 
   async fetchRaw(request: MarketDataRequest, signal: AbortSignal): Promise<unknown> {
