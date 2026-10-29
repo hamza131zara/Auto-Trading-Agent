@@ -1,13 +1,13 @@
 # Phase 5 — Repository, Environments, CI/CD and Engineering Foundation
 
-**Status:** ACTIVE — initial scaffold committed; main push CI passed; PR verification and owner-side repository settings remain pending.  
+**Status:** ACTIVE — the scaffold, contract/config regression tests, dependency update configuration and refreshed CI action pins are merged. Main-push baseline CI and multiple pull-request CI runs passed. Owner-side GitHub settings remain open.  
 **Started:** 28 October 2026.  
 **Previous phase:** Phase 4 design baseline is locked for handoff.  
 **Canonical roadmap:** Roadmap v1.0 order remains frozen.
 
 ## Purpose
 
-Create a reproducible, reviewable engineering foundation before market-data, token-risk, strategy, signing or trading features are implemented. The initial scope is the repository layout, pinned dependencies, environment separation, repeatable build/typecheck/test/validation, continuous integration, secret/dependency checks and documented recovery/release procedures.
+Create a reproducible, reviewable engineering foundation before market-data, token-risk, strategy, signing or trading features are implemented. The scope is repository layout, pinned dependencies, environment separation, repeatable build/typecheck/test/validation, continuous integration, secret/dependency checks and documented recovery/release procedures.
 
 ## Documents
 
@@ -20,26 +20,36 @@ Create a reproducible, reviewable engineering foundation before market-data, tok
 ## Initial tooling direction
 
 - Use npm workspaces as the initial monorepo mechanism.
-- Use an active Node.js LTS line for development/CI; initial target is Node 24.
-- Pin TypeScript and all dependencies exactly in package.json and package-lock.json; no ranges for direct build tools.
+- Use Node.js 24 for the current development/CI baseline.
+- Pin TypeScript and direct dependencies exactly in package.json and package-lock.json.
 - Use GitHub Actions with least-privilege permissions and full commit-SHA pins for actions.
-- Start with built-in Node test runner and small typed workspace packages; add application/framework/provider dependencies only when the relevant roadmap phase needs them.
-- CI install is npm ci. Dependency or lockfile changes require review and an updated lockfile.
+- Use the built-in Node test runner plus compile-time contract regression checks; add framework/provider dependencies only when the corresponding roadmap phase needs them.
+- CI installs with `npm ci --ignore-scripts`. Dependency or lockfile changes require review and an updated lockfile.
 
-The first TypeScript pin is an engineering bootstrap, not a final architecture choice. Reassess exact compiler/tool versions during Phase 5 validation before core product modules are built.
+TypeScript 7.0.2 remains an exact engineering-bootstrap pin. Its successful CI checks are evidence for the current foundation, not a permanent decision for all future modules.
 
-## Initial CI status
+## Verified CI evidence
 
-The main push workflow completed successfully at commit `3869809946c9f8845546ed0b5e70c35119e63c74` for install, repository validation, typecheck, build/tests, npm audit and the Gitleaks scan: [workflow run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40738716550). A pull-request Gitleaks run initially failed because checkout was shallow; the workflow now fetches full history, but a subsequent PR-specific pass has not yet been confirmed. The Dependency Review Action was removed after GitHub reported that the repository dependency graph is not enabled; npm audit remains active.
+The main-push baseline completed successfully at commit `31ce3ea97efab31e003a7e0a49747118b0c7c5b4`: [workflow run 40739952683](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40739952683).
+
+Subsequent pull-request runs also passed both the quality job and the full-history secret-scan job:
+
+- [PR #5 — contract and configuration regression checks, run 40809400085](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809400085)
+- [PR #6 — Dependabot configuration cleanup, run 40809562729](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809562729)
+- [PR #7 — combined GitHub Actions pin refresh, run 40809677560](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40809677560)
+
+The current action pins are reviewed full commit SHAs for checkout 7.0.1, setup-node 7.1.0 and Gitleaks v3.0.0. PR #7 tested the combined pin changes in one run. The contract type checks now explicitly reject execution-authorizing decision outcomes, and config tests cover frozen results and exact lowercase boolean parsing.
+
+The Dependency Review Action remains deferred because GitHub reported that this repository's dependency graph is not enabled. `npm audit --audit-level=high` is active and passed in the cited CI runs. Branch protection, required reviews and required status checks are not claimed enabled; an authorized owner must configure and verify them.
 
 ## Security invariants
 
 - No production private keys, seed phrases, RPC secrets, API keys, payment credentials or real user data in repository, CI logs, test fixtures or sample environment files.
 - Production secrets are not required by build, typecheck, tests or dependency scans.
-- .env.example contains only non-secret safe defaults; real .env files are ignored.
-- No live trading path is implemented in this phase. The foundation configuration rejects an attempt to set live trading enabled.
+- `.env.example` contains only non-secret safe defaults; real `.env` files are ignored.
+- No live trading path is implemented in this phase. The foundation configuration rejects an attempt to enable live trading.
 - No security check is reported as passed until CI or a local command has actually run and its result is available.
 
 ## Exit rule
 
-Phase 5 can close when clean install/build/typecheck/test/repository validation are reproducible, environment and secret boundaries are explicit, CI runs on pushes and pull requests, dependency/secret checks are automated, and rollback/runbooks are reviewed. Phase 6 remains the next canonical phase after Phase 5; no market-data adapter is implemented by this phase starter.
+Close Phase 5 only after clean install/build/typecheck/test/repository validation are reproducible, environment and secret boundaries are explicit, CI passes on pushes and pull requests, dependency/secret checks are automated, rollback/runbooks are reviewed, and owner-side repository protections/settings have been configured and verified or explicitly dispositioned. Phase 6 remains the next canonical phase after Phase 5; no market-data adapter is implemented by this phase starter.
