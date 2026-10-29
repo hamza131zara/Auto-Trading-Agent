@@ -10,9 +10,11 @@ import {
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const RAYDIUM_POOL_PAGE_SIZE = 100;
 const RAYDIUM_POOL_QUERY_URL =
-  "https://api-v3.raydium.io/pools/info/list-v2?size=100&mint1=" + USDC_MINT +
-  "&mint2=" + SOL_MINT + "&poolType=standard&poolSortField=liquidity&sortType=desc";
+  "https://api-v3.raydium.io/pools/info/mint?mint1=" + SOL_MINT +
+  "&mint2=" + USDC_MINT + "&poolType=standard&poolSortField=liquidity&sortType=desc" +
+  "&pageSize=" + String(RAYDIUM_POOL_PAGE_SIZE) + "&page=1";
 const DEX_SCREENER_PAIR_URL_BASE = "https://api.dexscreener.com/latest/dex/pairs/solana/";
 const RAYDIUM_API_PROVIDER_ID = "raydium-api-v3";
 const RPC_URL = "https://api.mainnet.solana.com";
@@ -219,7 +221,7 @@ function normalizeRaydiumPool(pool) {
   };
 }
 
-function normalizeRaydiumPage(payload) {
+function normalizeRaydiumPage(payload, { pageNumber = 1, pageSize = RAYDIUM_POOL_PAGE_SIZE } = {}) {
   if (!isRecord(payload)) {
     throw codedError("RAYDIUM_API_RESPONSE_ROOT_NOT_OBJECT");
   }
@@ -227,9 +229,9 @@ function normalizeRaydiumPage(payload) {
     throw codedError("RAYDIUM_API_REPORTED_FAILURE");
   }
 
-  // Raydium API v3 documents an outer { id, success, data } envelope while
-  // the SDK models the inner pool page as { count, hasNextPage, data: Pool[] }.
-  // The list-v2 API documentation also describes cursor pagination by nextPageId.
+  // The documented /pools/info/mint route uses numbered page/pageSize.
+  // Support the standard { id, success, data: { count, data: Pool[] } }
+  // envelope and a direct PoolsApiReturn page for compatibility.
   let page = payload;
   let wrapper = "none";
   if (isRecord(payload.data) && Array.isArray(payload.data.data)) {
@@ -258,6 +260,13 @@ function normalizeRaydiumPage(payload) {
     (page.nextPageId === null || page.nextPageId === "" ||
       (typeof page.nextPageId === "string" && page.nextPageId.trim().length === 0));
 
+  const parsedCount = typeof page.count === "number"
+    ? page.count
+    : typeof page.count === "string" && /^(?:0|[1-9][0-9]*)$/.test(page.count)
+      ? Number(page.count)
+      : null;
+  const count = Number.isSafeInteger(parsedCount) && parsedCount >= 0 ? parsedCount : null;
+
   let hasNextPage = null;
   let paginationSignal = "UNKNOWN";
   if (hasNextPageFieldIsBoolean) {
@@ -269,14 +278,17 @@ function normalizeRaydiumPage(payload) {
   } else if (cursorFieldIsTerminal) {
     hasNextPage = false;
     paginationSignal = "TERMINAL_CURSOR";
+  } else if (count !== null && count > pageNumber * pageSize) {
+    hasNextPage = true;
+    paginationSignal = "COUNT_EXCEEDS_NUMBERED_PAGE";
+  } else if (page.data.length < pageSize) {
+    hasNextPage = false;
+    paginationSignal = "SHORT_NUMBERED_PAGE_TERMINAL";
+  } else if (count !== null && count < pageNumber * pageSize) {
+    hasNextPage = false;
+    paginationSignal = "COUNT_BELOW_NUMBERED_PAGE_END";
   }
 
-  const parsedCount = typeof page.count === "number"
-    ? page.count
-    : typeof page.count === "string" && /^(?:0|[1-9][0-9]*)$/.test(page.count)
-      ? Number(page.count)
-      : null;
-  const count = Number.isSafeInteger(parsedCount) && parsedCount >= 0 ? parsedCount : null;
   const diagnosticKeys = (value) => isRecord(value)
     ? Object.keys(value).filter((key) => /^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(key)).sort().slice(0, 24)
     : [];
@@ -297,7 +309,9 @@ function normalizeRaydiumPage(payload) {
       pageCountType: typeof page.count,
       pageHasNextPageType: typeof page.hasNextPage,
       pageNextPageIdType: page.nextPageId === null ? "null" : typeof page.nextPageId,
-      poolArrayLength: page.data.length
+      poolArrayLength: page.data.length,
+      pageNumber,
+      pageSize
     }
   };
 }
@@ -561,7 +575,7 @@ export async function discoverRaydiumCpmmCandidates({
       raydiumApi: {
         providerId: RAYDIUM_API_PROVIDER_ID,
         responseShape: raydiumPage.responseShape,
-        endpointClass: "pools/info/list-v2",
+        endpointClass: "pools/info/mint",
         clientRequestId,
         rawPayloadSha256: sha256(raydium.rawText),
         retrievedAt: fetchedAt,
@@ -589,6 +603,8 @@ export async function discoverRaydiumCpmmCandidates({
       minimumVolume24hUsd,
       liquidityVolumeThresholdRequiresBothIndexedSources: true,
       maxPoolAccountsChecked: MAX_POOL_ACCOUNTS,
+      raydiumPageSize: RAYDIUM_POOL_PAGE_SIZE,
+      raydiumPageNumber: 1,
       poolAccountsChecked: selected.length,
       exactRaydiumPoolCount: exactPairs.length,
       truncatedByRpcAccountCap: selected.length < exactPairs.length,
