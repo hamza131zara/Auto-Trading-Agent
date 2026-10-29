@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0.0",
+  "pairs": [
+    {
+      "chainId": "solana",
+      "dexId": "synthetic-dex-label",
+      "pairAddress": "11111111111111111111111111111111",
+      "baseToken": {
+        "address": "So11111111111111111111111111111111111111112",
+        "name": "Synthetic Base",
+        "symbol": "SBASE"
+      },
+      "quoteToken": {
+        "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "name": "Synthetic Quote",
+        "symbol": "SQUOTE"
+      },
+      "priceNative": "0.000123456789012345678",
+      "priceUsd": "0.123456789012345678",
+      "txns": {
+        "h24": {
+          "buys": 17,
+          "sells": 9
+        }
+      },
+      "volume": {
+        "h24": 12345.678901234567891234
+      },
+      "liquidity": {
+        "usd": 234567.890123456789012345,
+        "base": 1800000,
+        "quote": 234500
+      },
+      "pairCreatedAt": 1793232000000
+    }
+  ]
+}
