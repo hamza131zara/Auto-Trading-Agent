@@ -147,8 +147,10 @@ export class ReadOnlyMarketDataOrchestrator {
     const independenceGroups = new Set<string>();
     const priorities = new Set<number>();
     const normalizedProviders = providers.map((registration) => {
-      if (!isRecord(registration) ||
-          !isRecord(registration.adapter) ||
+      if (registration === null ||
+          typeof registration !== "object" ||
+          registration.adapter === null ||
+          typeof registration.adapter !== "object" ||
           typeof registration.adapter.providerId !== "string" ||
           !SAFE_SLUG.test(registration.adapter.providerId) ||
           typeof registration.adapter.fetchRaw !== "function" ||
