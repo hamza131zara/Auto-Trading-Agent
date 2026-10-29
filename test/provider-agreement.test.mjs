@@ -410,6 +410,66 @@ test("critical evidence gate rejects malformed or forged authorization-shaped in
   assert.equal(inconsistent.tradingAuthorized, false);
 });
 
+
+test("approved indexed candle-start observation timestamp can be compared without claiming event-time evidence", () => {
+  const result = assessIndependentReservePriceAgreement(independentPriceInput({
+    indexedPriceUsdPerBase: "99.98",
+    indexedSourceEventAt: null,
+    indexedSourceObservedAt: "2026-10-29T12:44:50.000Z",
+    indexedProviderId: "geckoterminal",
+    indexedIndependenceGroupId: "geckoterminal-family",
+    indexedRetrievedAt: "2026-10-29T12:44:55.000Z",
+    indexedSynthetic: true,
+    policy: {
+      allowSyntheticForTests: true,
+      approvedIndexedProviderId: "geckoterminal",
+      approvedIndexedIndependenceGroupId: "geckoterminal-family"
+    }
+  }));
+
+  assert.equal(result.indexedSourceTimestampKind, "OBSERVATION");
+  assert.equal(result.reserveComparison.status, "AGREED");
+  assert.equal(result.indexedPriceComparison.status, "AGREED");
+  assert.equal(result.status, "AGREED");
+  assert.equal(result.comparisonEvidenceComplete, false, "synthetic fixture must not be operationally complete");
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("candle-start observations require explicit indexed-provider approval and source freshness", () => {
+  const unapproved = assessIndependentReservePriceAgreement(independentPriceInput({
+    indexedPriceUsdPerBase: "99.98",
+    indexedSourceEventAt: null,
+    indexedSourceObservedAt: "2026-10-29T12:44:50.000Z",
+    indexedProviderId: "geckoterminal",
+    indexedIndependenceGroupId: "geckoterminal-family",
+    indexedRetrievedAt: "2026-10-29T12:44:55.000Z",
+    indexedSynthetic: true,
+    policy: { allowSyntheticForTests: true }
+  }));
+  assert.equal(unapproved.indexedSourceTimestampKind, "OBSERVATION");
+  assert.equal(unapproved.indexedPriceComparison.status, "INSUFFICIENT_EVIDENCE");
+  assert.ok(unapproved.reasonCodes.includes("INDEXED_PROVIDER_OBSERVATION_NOT_APPROVED"));
+  assert.equal(unapproved.comparisonEvidenceComplete, false);
+
+  const stale = assessIndependentReservePriceAgreement(independentPriceInput({
+    indexedPriceUsdPerBase: "99.98",
+    indexedSourceEventAt: null,
+    indexedSourceObservedAt: "2026-10-29T12:40:00.000Z",
+    indexedProviderId: "geckoterminal",
+    indexedIndependenceGroupId: "geckoterminal-family",
+    indexedRetrievedAt: "2026-10-29T12:44:55.000Z",
+    indexedSynthetic: true,
+    policy: {
+      allowSyntheticForTests: true,
+      approvedIndexedProviderId: "geckoterminal",
+      approvedIndexedIndependenceGroupId: "geckoterminal-family"
+    }
+  }));
+  assert.equal(stale.indexedPriceComparison.status, "INSUFFICIENT_EVIDENCE");
+  assert.ok(stale.reasonCodes.includes("INDEXED_SOURCE_STALE"));
+  assert.equal(stale.comparisonEvidenceComplete, false);
+});
+
 test("invalid policy fails closed", () => {
   const assessment = assessProviderAgreement(twoAgreeingCandidates(), {
     nowAt: policy.nowAt,
