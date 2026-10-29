@@ -47,7 +47,7 @@ Candidates remain those in the owner-approved provider matrix (Solana RPC, Heliu
 
 ## Provider agreement and fallback safeguards
 
-The agreement evaluator requires at least two eligible independent providers; recalculates freshness from the injected clock; checks candidate health and provenance identity; and uses exact identity/value comparison without invented tolerances. A lone fallback, timestamp mismatch, missing required measure, stale data, or provider disagreement blocks progression. Even an agreement only permits consideration for independent on-chain validation; trading is always unauthorized. See [Phase 6.7](07-provider-agreement-and-fallback-policy.md).
+The agreement evaluator requires at least two eligible independent providers; recalculates freshness from the injected clock; checks candidate health and provenance identity; and uses exact identity/value comparison without invented tolerances, and requires distinct upstream independence groups (not just distinct adapter names). A lone fallback, timestamp mismatch, missing required measure, stale data, or provider disagreement blocks progression. Even an agreement only permits consideration for independent on-chain validation; trading is always unauthorized. See [Phase 6.7](07-provider-agreement-and-fallback-policy.md).
 
 ## Exit rule
 
