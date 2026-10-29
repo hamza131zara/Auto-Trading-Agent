@@ -215,9 +215,6 @@ async function readBoundedResponseText(response: Response): Promise<string> {
     }
     chunks.push(decoder.decode());
     return chunks.join("");
-  } catch (error) {
-    if (error instanceof DexScreenerAdapterError) throw error;
-    throw new DexScreenerAdapterError("NETWORK", true);
   } finally {
     reader.releaseLock();
   }
@@ -290,6 +287,7 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
       response = await this.fetchImpl(url, {
         method: "GET",
         headers: { accept: "application/json" },
+        redirect: "error",
         signal: combinedSignal
       });
     } catch {
@@ -307,7 +305,15 @@ export class DexScreenerPairsAdapter implements MarketDataAdapter {
       throw new DexScreenerAdapterError("HTTP", response.status >= 500, response.status);
     }
 
-    const text = await readBoundedResponseText(response);
+    let text: string;
+    try {
+      text = await readBoundedResponseText(response);
+    } catch (error) {
+      if (error instanceof DexScreenerAdapterError) throw error;
+      if (timeoutSignal.aborted) throw new DexScreenerAdapterError("TIMEOUT", true);
+      if (signal.aborted) throw new DexScreenerAdapterError("UNKNOWN", false);
+      throw new DexScreenerAdapterError("NETWORK", true);
+    }
 
     let payload: unknown;
     try {
