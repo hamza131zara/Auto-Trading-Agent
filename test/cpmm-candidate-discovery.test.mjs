@@ -80,9 +80,11 @@ function makeRaydiumPool(poolAddress, programId, tvl, volume24h, type = "Standar
   };
 }
 
-function raydiumResponse(pools, { hasNextPage = false, count = pools.length, wrapped = false } = {}) {
+function raydiumResponse(pools, { hasNextPage = false, count = pools.length, wrapped = "none" } = {}) {
   const page = { count, hasNextPage, data: pools };
-  return wrapped ? { id: "raydium-response-id", success: true, data: page } : page;
+  if (wrapped === "success") return { id: "raydium-response-id", success: true, data: page };
+  if (wrapped === "data") return { id: "raydium-response-id", data: page };
+  return page;
 }
 
 function pairResponse(pairs) {
@@ -211,7 +213,7 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
 });
 
 test("accepts Raydium SDK PoolsApiReturn page shape and the explicit HTTP envelope form", async () => {
-  for (const wrapped of [false, true]) {
+  for (const wrapped of ["none", "success", "data"]) {
     const { fetchImpl } = mockFetchFactory();
     const wrappedFetch = async (input, init = {}) => {
       const url = String(input);
