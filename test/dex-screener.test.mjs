@@ -207,16 +207,16 @@ test("classifies HTTP rate limit without leaking response body", async () => {
 
 test("cancels an oversized response stream once the byte limit is exceeded", async () => {
   let cancelled = false;
+  let chunksEmitted = 0;
   const body = new ReadableStream({
-    start(controller) {
-      controller.enqueue(new Uint8Array(1_000_000).fill(0x20));
-      controller.enqueue(new Uint8Array(1).fill(0x20));
-      controller.close();
+    pull(controller) {
+      chunksEmitted += 1;
+      controller.enqueue(new Uint8Array(chunksEmitted === 1 ? 1_000_000 : 1).fill(0x20));
     },
     cancel() {
       cancelled = true;
     }
-  });
+  }, { highWaterMark: 0 });
   const adapter = new DexScreenerPairsAdapter(async () => new Response(body));
   await assert.rejects(
     adapter.fetchRaw(request, new AbortController().signal),
