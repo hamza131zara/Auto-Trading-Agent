@@ -19,6 +19,10 @@
     "./providers/pyth-hermes": {
       "types": "./dist/providers/pyth-hermes.d.ts",
       "import": "./dist/providers/pyth-hermes.js"
+    },
+    "./providers/geckoterminal": {
+      "types": "./dist/providers/geckoterminal.d.ts",
+      "import": "./dist/providers/geckoterminal.js"
     }
   },
   "scripts": {
