@@ -1,6 +1,6 @@
 # Phase 6.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active; the provider-neutral contract is implemented and a read-only DEX Screener candidate adapter is being tested. No production market-data vendor is approved.
+**Status:** Active; the provider-neutral contract and read-only DEX Screener candidate adapter are fixture-tested, and PR CI/security gates passed on 29 October 2026. No production market-data vendor is approved.
 
 ## Acceptance checklist
 
@@ -10,7 +10,7 @@
 - [x] Provider health is distinct from freshness/data quality and has tested success, retryable failure, threshold/circuit-open, auth/config failure and recovery paths.
 - [x] Synthetic fixtures cover fresh, stale retrieval, stale source event, missing timestamp, future source time and invalid address; unit tests cover malformed decimal/unit and provider failure/recovery paths.
 - [x] Replay tests run without external network access, production credentials or non-deterministic clocks.
-- [ ] The DEX Screener candidate's mocked-fetch tests pass in CI for exact identity matching, unit/decimal normalization, timeout/rate-limit handling and sanitized failures.
+- [x] The DEX Screener candidate's mocked-fetch tests pass in CI for exact identity matching, unit/decimal normalization, fetch/body timeout classification, rate-limit handling, and sanitized failures. Quality CI passed at [run 40818498807](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818498807); Dependency Review passed at [run 40818499007](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818499007), and the included Gitleaks scan passed in the quality CI run. These are synthetic/mock tests; CI makes no live DEX Screener API call.
 - [ ] Production approval of the DEX Screener candidate requires a fresh official schema/terms/quota review, account/budget decision where applicable, and documented on-chain validation/fallback/disagreement behavior.
 - [ ] Production use stays disabled until selected adapters are tested against the chosen plan and critical fields have independent validation paths.
 
