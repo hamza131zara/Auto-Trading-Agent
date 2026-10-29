@@ -3,11 +3,11 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 3.4  
+**Register version:** 3.5  
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `c15420b3285a5a0a755c008af52fa5fbc34b195b`  
+**Source snapshot before this register refresh:** `daee1721d3b94e6a52c5c0271976e0092d5dee70`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -32,7 +32,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 | Path | Coverage/status | Git blob SHA | Bytes |
 |---|---|---|---:|
 | `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `e170708e88e8ea674498b6d0f7037ed14f6d7845` | 7490 |
-| `README.md` | Project overview, frozen roadmap, current Phase 6 integration status and real-source/provider approval gates | `57fcf7cc7c0e3757b489e9e5bef11403d97dee75` | 7767 |
+| `README.md` | Project overview, frozen roadmap, Phase 6 integration state and guarded live-source validation runner; provider/live-data gates remain open | `367ede91c4c5876900053a04dc027ee059ec92f0` | 7963 |
 | `SECURITY.md` | Project-specific supported-branch and responsible vulnerability-reporting policy | `7c80c6cc4717412380050f53e5bf095d64f03e6b` | 2688 |
 
 ## Phase 1 documents
@@ -166,7 +166,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `.editorconfig` | Consistent text editing conventions | `192c070cf03df5d7af0521a1073c0919cb46f742` | 156 |
 | `.gitignore` | Local secrets and generated output exclusions | `ec2ae517f6fd44da1ad3cc8506cd11f7721fdfab` | 137 |
 | `.env.example` | Non-secret safe environment defaults; live trading false | `e3da7cd111de243720b72e2982f1146651416937` | 85 |
-| `package.json` | Private npm workspace root with market-data build/typecheck and contract regression scripts | `78fbb87aaf1702e1104f9100b141ada1419e1a02` | 999 |
+| `package.json` | Private npm workspace root with build/typecheck/test scripts and an explicit Phase 6 live-source validation command | `c192fe4262e8d09223973c61c548e9f6641b430c` | 1100 |
 | `package-lock.json` | Lockfile v3 including the provider-neutral market-data workspace and exact TypeScript 7.0.2 pin | `1284f79e4646a476d7d57eece93bf0cf5db3785d` | 13815 |
 | `tsconfig.base.json` | Strict shared TypeScript compiler options | `86b52b09aede81156dd12770bb317442712e5085` | 497 |
 | `apps/portal/package.json` | Reserved commercial portal workspace manifest | `9994efe44e192d18af67c245d0c3f6294669a416` | 89 |
@@ -181,6 +181,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `packages/config/tsconfig.json` | Configuration workspace compiler settings | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
 | `packages/config/src/index.ts` | Safe typed config parser; refuses live trading | `e087b80daa74ea5a344ac40470a61bb7e80872d1` | 1859 |
 | `scripts/validate-repository.mjs` | Workspace, env-default and common secret-pattern checks | `adff68d5d400717ae39eb4184f8648ac2a12d207` | 4760 |
+| `scripts/validate-raydium-live-source.mjs` | Opt-in read-only live-source identity validation runner with explicit approvals, provider separation, HTTPS, redacted evidence and hard-disabled trading | `2124cd694680b11e22e425ad4edd806804c01283` | 12377 |
 | `test/config.test.mjs` | Runtime config tests: defaults, strict booleans, immutability, no live trading and safe errors | `1c58d60e9a94dd6729d45c85c3fe63a0188ff16f` | 2383 |
 | `.github/workflows/ci.yml` | Push/PR CI with reviewed checkout/setup-node/Gitleaks full-SHA pins and full-history scan | `078cc62af33a1ab87a723086e828ee91e1dcc128` | 1521 |
 | `.github/dependabot.yml` | Weekly npm and GitHub Actions updates without undefined custom labels | `788d8cfa2830a8dbd2d8e3529f3a755dbd8a9f09` | 258 |
@@ -189,19 +190,20 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-6/README.md` | Phase 6 scope, provider agreement/fallback, read-only RPC, token base decoding, Token-2022 policy, Raydium candidate and explicit exit gates | `b8d3d7d2b44b6f0e8a384ee527242cbfb7f8c391` | 9967 |
+| `docs/phase-6/README.md` | Phase 6 scope, provider agreement/fallback, read-only RPC, Token-2022 policy, Raydium candidate, guarded live-source runner and open exit gates | `bb3a4fe502dc9b3623dd767b75e959ba43d420a1` | 10705 |
 | `docs/phase-6/01-canonical-observation-schema.md` | Versioned canonical observation schema, units, validation and versioning | `e003f644e3ba6c72b334458f4d627478f073454d` | 2983 |
 | `docs/phase-6/02-adapter-contract-and-provider-boundaries.md` | Provider-neutral adapter interface, candidate adapters and fail-closed provider agreement/fallback boundaries | `672c937208f4bc0a346a1d0eadaf103324a92601` | 5437 |
 | `docs/phase-6/03-provenance-freshness-and-provider-health.md` | Separate data freshness and provider health semantics | `e1d0e227bc4f2a41b51c0fffa26d9357eb02a81f` | 2391 |
 | `docs/phase-6/04-deterministic-replay-fixtures.md` | Synthetic fixture requirements and deterministic replay rules | `7ece326c244421ac22df5892c3cd3698a3252c76` | 1323 |
-| `docs/phase-6/05-phase-6-acceptance-and-open-decisions.md` | Phase 6 implementation acceptance evidence and remaining real-source/provider approval gates; not marked complete | `8ecee8b81f4c9b9c40b5c6f1f1c88079edc30408` | 7644 |
+| `docs/phase-6/05-phase-6-acceptance-and-open-decisions.md` | Phase 6 implementation acceptance evidence, runner implementation, and still-open real-source/provider approval gates; not marked complete | `523fa71de8dee5ffcd706e8090e4906a2e874e13` | 8246 |
 | `docs/phase-6/06-dexscreener-reference-adapter.md` | Read-only candidate adapter behavior, timestamp/freshness semantics, official-source quota and licensing gates | `39267e3810d06b57f7a4201f3b6f14c8da1e974e` | 6539 |
 | `docs/phase-6/07-provider-agreement-and-fallback-policy.md` | Deterministic evidence eligibility, independent-source comparison, freshness, disagreement and fallback safeguards | `4fc2a8f8b2da37607b07a884639f862ab0a6152e` | 5833 |
 | `docs/phase-6/08-on-chain-identity-evidence-contract.md` | Protocol-neutral pool/program/mint/vault evidence checker integrated with candidate decoder; live on-chain validation not claimed | `905bff5f2d2239477d6c4c8b6ff665b82e123718` | 6951 |
 | `docs/phase-6/09-solana-rpc-account-reader.md` | Bounded read-only getMultipleAccounts transport with context-slot/provenance handling and synthetic mock boundary | `02bf2cd5405d1c3edddc27bf5d727fe33162c9b3` | 4330 |
 | `docs/phase-6/10-spl-token-base-state-decoder.md` | Classic SPL Token base-state decoder; Token-2022 extensions remain blocked pending Phase 7 safety review | `e276df7be60e7365fceba63c3e2ee40a8cdf3532` | 4000 |
 | `docs/phase-6/11-token2022-extension-tlv-inspector.md` | Token-2022 TLV framing and fail-closed semantic registry; known IDs routed conservatively, unknown/future extensions blocked | `65d7e6486d09b869b409097a82520f56aa4ad8d4` | 3359 |
-| `docs/phase-6/12-raydium-cpmm-candidate-decoder.md` | Pinned-source Raydium CPMM PoolState/AMM-config decoder, PDA derivation and synthetic-tested identity integration; live validation/provider approval remain open | `f70cc70b33cca2d0d779d9605023bab1ddfa9259` | 5391 |
+| `docs/phase-6/12-raydium-cpmm-candidate-decoder.md` | Pinned-source Raydium CPMM PoolState/AMM-config decoder and synthetic-tested integration; real-source gate is documented in the Phase 6.13 runbook | `9ffe95643b4ee264507aadf0b593dca9658082bf` | 5919 |
+| `docs/phase-6/13-live-source-validation-runner.md` | Guarded operator runbook for read-only real-source identity validation, approvals, redacted evidence and outstanding Phase 6 exit gates | `fd5d4da8d8163495f83912db99f5c6fc825b74ff` | 7249 |
 | `packages/market-data/package.json` | Private canonical market-data workspace with read-only DEX Screener candidate export | `1839c9bd51848baab6a97c0d3b3541527717c2a7` | 452 |
 | `packages/market-data/tsconfig.json` | Strict compiler settings for market-data package | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
 | `packages/market-data/tsconfig.type-tests.json` | Compile-time market data and DEX Screener adapter regression checks | `4aaed29f53a7a4b128b7309c17c910d67bde21de` | 303 |
@@ -220,6 +222,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `test/solana-token-account-decoder.test.mjs` | Constructed-byte tests for classic mint/account decoding, exact amounts, option tags, Token-2022 extension boundaries and malformed layouts | `ea640bfe90ce2532231868d3dbf2e0515a06d112` | 9777 |
 | `test/token2022-extension-tlv-inspector.test.mjs` | Constructed-byte tests for TLV bounds/termination, known extension routing, unknown/future IDs and wrong account-kind rejection | `8b9336a860ef539555208c6568d6345d29d4fba8` | 9165 |
 | `test/raydium-cpmm-decoder.test.mjs` | Constructed-byte and mocked-RPC tests for Raydium CPMM state/config layouts, raw-key PDA seeds, common-slot identity bundle and fail-closed mismatches | `554cdb5dd517108736d7ea2edc83f551766dbb36` | 18971 |
+| `test/phase6-live-source-runner.test.mjs` | No-network tests for explicit approvals, HTTPS endpoint policy, indexed-source provenance, provider separation and fail-closed CLI behavior | `d5ff00782dde28f018b515621b0d8d0d0656adc8` | 3667 |
 | `test/dex-screener.test.mjs` | Mocked adapter tests: identity, units/precision, timestamps, HTTP failures, streaming bounds and timeout cases | `602fe7a47467320c857bde6cebe863146a9347fd` | 10281 |
 | `test/fixtures/market-data/dexscreener-pair-v1.json` | Synthetic DEX Screener pair payload preserving source numeric precision | `e02910c2610b949582e8b7cee99fb1486aa14173` | 909 |
 | `.github/workflows/dependency-review.yml` | PR dependency review failing on high/critical findings | `20a8689e5ccf553b6463dbd39d5f78082342c9e4` | 393 |
@@ -259,14 +262,14 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 ## Phase 6 status
 - Phase 6 remains active and is not complete. Implemented milestones: provider-neutral canonical market-data foundation (PR #10); fixture-tested DEX Screener read-only candidate (PR #12); deterministic provider agreement/fallback safeguards (PR #13); protocol-neutral identity evidence checker (PR #14); bounded read-only Solana RPC transport (PR #15); classic SPL Token base-state decoder (PR #16); Token-2022 TLV structural inspector and fail-closed extension policy (PR #18); and the pinned-source Raydium CPMM PoolState/AMM-config candidate decoder with raw-account identity integration (PR #19, merged as `c15420b3285a5a0a755c008af52fa5fbc34b195b`).
-- Phase 6 validation evidence is deliberately separated: synthetic/mock tests pass CI, Dependency Review, Gitleaks and CodeQL; no production RPC endpoint was contacted by CI and no live on-chain identity validation is claimed. The Raydium candidate's decoder implementation item is complete, but it remains a protocol candidate, not owner-approved production selection.
+- Phase 6 validation evidence is deliberately separated: synthetic/mock tests pass CI, Dependency Review, Gitleaks and CodeQL; no production RPC endpoint was contacted by CI and no live on-chain identity validation is claimed. The guarded Phase 6.13 runner and non-network guard tests are implemented, but the runner has not been executed. The Raydium candidate's decoder implementation item is complete, but it remains a protocol candidate, not owner-approved production selection.
 - **Outstanding Phase 6 closeout gates:** independently validate the integrated decoder against a known real pool using an owner-approved read-only RPC endpoint; verify deployed program/source compatibility; choose the production RPC/indexed provider(s) and account plans; confirm current endpoint/schema/terms/quota/retention rules and approve a usage budget; verify critical market fields through independent evidence; and test the selected provider's fallback/degraded-mode behavior.
 - DEX Screener remains evaluation-only because its mapped market values do not have a trustworthy source-observation timestamp, so freshness stays UNKNOWN. Extension-bearing Token-2022 mint/vault states remain blocked pending Phase 7 review. No production wallet, private key, live signing or mainnet trading is authorized.
 - The frozen Roadmap v1.0 phase order remains unchanged.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `b6d9437584a92690e090cf9736794efea63d702b`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `daee1721d3b94e6a52c5c0271976e0092d5dee70`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
