@@ -26,7 +26,7 @@ The default live adapter uses a seven-second process-local pacing guard to stay 
 
 ## Validation
 
-The test/geckoterminal-adapter.test.mjs suite uses fixtures and injected fetch only. It covers exact endpoint/version selection, request pacing, pool/mint identity rejection, missing measures, malformed decimal/count values, HTTP/rate-limit mapping, response-size limits, invalid envelopes, and synthetic provenance. CI [run #219](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40923071801) passed 179/179 tests, typecheck, build, dependency audit and Gitleaks. A follow-up timestamp-acceptance regression is now added; its CI result will be recorded after validation. No live GeckoTerminal API request was made.
+The adapter tests use fixtures and injected fetch only. They cover exact endpoint/version selection, request pacing, pool/mint identity rejection, missing measures, malformed decimal/count values, HTTP/rate-limit mapping, response-size limits, invalid envelopes and synthetic provenance. The integration test `test/geckoterminal-evidence-gate.test.mjs` additionally proves that GeckoTerminal's missing source timestamp is rejected even alongside another fresh indexed provider; recent retrieval time alone does not establish freshness. CI [run #221](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40929864753) passed 181/181 tests, typecheck, build, dependency audit and Gitleaks. No live GeckoTerminal API request was made.
 
 ## Source-timestamp acceptance regression
 
