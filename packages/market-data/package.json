@@ -8,6 +8,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./orchestrator": {
+      "types": "./dist/provider-orchestrator.d.ts",
+      "import": "./dist/provider-orchestrator.js"
+    },
     "./providers/dex-screener": {
       "types": "./dist/providers/dex-screener.d.ts",
       "import": "./dist/providers/dex-screener.js"

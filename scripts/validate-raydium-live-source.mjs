@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DexScreenerPairsAdapter } from "@ata/market-data/providers/dex-screener";
+import { ReadOnlyMarketDataOrchestrator } from "@ata/market-data/orchestrator";
 import {
   RAYDIUM_CPMM_DECODER_ID,
   RAYDIUM_CPMM_DECODER_VERSION,
@@ -183,33 +184,32 @@ export async function buildTargetSnapshotFromDexScreener({
   now = () => new Date().toISOString(),
   requestId = INDEXER_REQUEST_PREFIX + "-" + Date.now().toString(36)
 }) {
-  const requestedAt = now();
-  const request = {
+  // Single-source identity diagnostic only: this does not establish provider consensus or candidate eligibility.
+  // The generic orchestrator supports multiple registrations, but no second indexed production provider
+  // is approved/configured for this live workflow yet.
+  const orchestrator = new ReadOnlyMarketDataOrchestrator([{
+    adapter,
+    independenceGroupId: "dex-screener-family",
+    priority: 0
+  }], {
+    now,
+    requestTimeoutMs: 5_000,
+    maxHealthAgeMs: 30_000,
+    healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+    requestId: () => requestId
+  });
+  const collection = await orchestrator.collect({
     cluster: "mainnet-beta",
     baseMint,
     quoteMint,
-    poolAddress,
-    requestedAt
-  };
-  let raw;
-  try {
-    raw = await adapter.fetchRaw(request, new AbortController().signal);
-  } catch (error) {
-    // Pass through only the adapter's stable code; never log the URL or remote body.
-    if (typeof error?.code === "string" && /^[A-Z0-9_]{1,48}$/.test(error.code)) {
-      throw codedError("INDEXED_API_" + error.code);
-    }
-    throw codedError("INDEXED_API_REQUEST_FAILED");
+    poolAddress
+  });
+  const attempt = collection.attempts.find((item) => item.providerId === adapter.providerId);
+  if (attempt?.outcome !== "OBSERVATION_NORMALIZED" || collection.observations.length !== 1) {
+    const reason = attempt?.reasonCodes[0] ?? "PROVIDER_ATTEMPT_BLOCKED";
+    throw codedError("INDEXED_API_" + reason);
   }
-  const retrievedAt = now();
-  const normalized = adapter.normalize(raw, { requestedAt, retrievedAt, requestId });
-  if (normalized.errors.length > 0 || normalized.observations.length !== 1) {
-    const detail = String(normalized.errors[0] ?? "OBSERVATION_COUNT")
-      .replace(/[^A-Z0-9_]/g, "_")
-      .slice(0, 48);
-    throw codedError("INDEXED_TARGET_" + detail);
-  }
-  return validateLiveTargetSnapshot(normalized.observations[0], rpcProviderId);
+  return validateLiveTargetSnapshot(collection.observations[0], rpcProviderId);
 }
 
 function readOperatorConfiguration(env) {
