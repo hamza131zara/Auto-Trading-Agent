@@ -25,3 +25,8 @@ If the build fails, source/input metadata does not match the pin, a binary is no
 A pass means the two builds were repeatable within this pinned workflow runner and verification toolchain, and the resulting artifact has a recorded SHA-256 and exact file byte length. It is not independent cross-organization reproducibility and does not prove that the on-chain program is this revision. Source legitimacy, the exact deployed account, any upgrade-authority status, and the ProgramData byte comparison remain separate checks.
 
 Do not copy a hash/length into the Phase 6.18 manual workflow until the build manifest and source provenance have been reviewed. Even then, the separate ProgramData check requires its own explicit approvals. No production provider is approved and `tradingAuthorized` remains false.
+
+
+## Failure diagnosis — first manual run
+
+The first manually approved run [#1](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40960267237) completed both Docker builds successfully. Both artifacts were valid ELF files with the same SHA-256 and exact length, but the manifest was correctly blocked by the source metadata validator with PROGRAM_LIBRARY_NAME_MISMATCH. The validator's TOML [lib] section regex used the multiline dollar anchor as an alternative section terminator, so it stopped at the end of the [lib] header before reading the expected library name. This was a validator bug, not a Rust compile failure or artifact disagreement. The follow-up patch extracts the [lib] section without that multiline-anchor error and adds regression tests. The blocked manifest from run #1 must remain rejected; rerun this workflow after the patch is merged to main and review the new manifest rather than reusing the prior blocked result.

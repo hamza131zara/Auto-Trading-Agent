@@ -8,6 +8,7 @@ import {
   SOLANA_VERIFY_LINUX_SHA256,
   EXPECTED_TOOLCHAIN,
   inspectElfArtifact,
+  parseProgramLibraryName,
   evaluateRaydiumBuildEvidence
 } from "../scripts/create-raydium-build-evidence.mjs";
 
@@ -47,6 +48,27 @@ function evaluate(overrides = {}) {
     ...overrides
   });
 }
+
+test("reads the library name from a later TOML [lib] section without confusing the package name", () => {
+  const cargo = [
+    "[package]",
+    'name = "raydium-cp-swap"',
+    'version = "0.2.0"',
+    "",
+    "[lib]",
+    'crate-type = ["cdylib", "lib"]',
+    'name = "raydium_cp_swap"',
+    "",
+    "[features]",
+    "default = []",
+    ""
+  ].join("\n");
+  assert.equal(parseProgramLibraryName(cargo), "raydium_cp_swap");
+});
+
+test("returns null when the program Cargo manifest has no [lib] name", () => {
+  assert.equal(parseProgramLibraryName('[package]\nname = "raydium-cp-swap"\n\n[features]\ndefault = []\n'), null);
+});
 
 test("identical artifacts from the pinned clean source build produce a reviewable reference manifest", () => {
   const report = evaluate();

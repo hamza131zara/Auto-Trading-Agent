@@ -40,6 +40,15 @@ function parseAnchorValue(text, key) {
   return match?.[1] ?? null;
 }
 
+// Parse only the TOML [lib] section. Do not use the line-multiline $
+// anchor as a section terminator: with the m flag, $ matches every line
+// ending and would stop at the end of the [lib] header itself.
+export function parseProgramLibraryName(programCargo) {
+  const libMatch = programCargo.match(/(?:^|\r?\n)[ \t]*\[lib\][ \t]*\r?\n([\s\S]*?)(?=\r?\n[ \t]*\[|$)/);
+  const libraryMatch = libMatch?.[1]?.match(/^[ \t]*name[ \t]*=[ \t]*["']([^"']+)["'][ \t]*$/m);
+  return libraryMatch?.[1] ?? null;
+}
+
 export function inspectRaydiumSourceDirectory(directory) {
   const reasons = [];
   const sourceDir = resolve(directory);
@@ -84,9 +93,7 @@ export function inspectRaydiumSourceDirectory(directory) {
   const metadataSection = rootCargo.match(/\[workspace\.metadata\.cli\]([\s\S]*?)(?:\n\[|$)/);
   const metadataSolanaMatch = metadataSection?.[1]?.match(/^\s*solana\s*=\s*["']([^"']+)["']\s*$/m);
   const metadataSolana = metadataSolanaMatch?.[1] ?? null;
-  const libMatch = programCargo.match(/^\s*\[lib\]([\s\S]*?)(?:\n\[|$)/m);
-  const libraryMatch = libMatch?.[1]?.match(/^\s*name\s*=\s*["']([^"']+)["']\s*$/m);
-  const libraryName = libraryMatch?.[1] ?? null;
+  const libraryName = parseProgramLibraryName(programCargo);
 
   if (rust !== EXPECTED_TOOLCHAIN.rust) reasons.push("RUST_VERSION_REFERENCE_MISMATCH");
   if (solana !== EXPECTED_TOOLCHAIN.solana || metadataSolana !== EXPECTED_TOOLCHAIN.solana) reasons.push("SOLANA_VERSION_METADATA_MISMATCH");
