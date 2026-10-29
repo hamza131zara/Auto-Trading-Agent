@@ -1216,6 +1216,10 @@ export function assessOnChainIdentityEvidence(
   if (nowMs - retrievalMs > policy.maxRetrievalAgeMs) {
     return assessment("INSUFFICIENT_EVIDENCE", ["ON_CHAIN_EVIDENCE_RETRIEVAL_STALE"], [], evidence);
   }
+  if (!source.synthetic &&
+      (source.requestId === null || source.rawPayloadSha256 === null)) {
+    return assessment("INSUFFICIENT_EVIDENCE", ["RPC_EVIDENCE_PROVENANCE_INCOMPLETE"], [], evidence);
+  }
   if (source.commitment !== policy.requiredCommitment) {
     return assessment("INSUFFICIENT_EVIDENCE", ["COMMITMENT_BELOW_REQUIRED_POLICY"], [], evidence);
   }
@@ -1288,7 +1292,7 @@ export function assessOnChainIdentityEvidence(
   if (mismatches.length > 0) {
     return assessment("MISMATCH", ["ON_CHAIN_IDENTITY_MISMATCH"], mismatches, evidence);
   }
-  if (source.synthetic) {
+  if (source.synthetic || target.provenance.synthetic) {
     return assessment("SYNTHETIC_MATCH", ["SYNTHETIC_EVIDENCE_ONLY"], [], evidence);
   }
   return assessment(
