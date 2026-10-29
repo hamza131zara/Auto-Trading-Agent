@@ -7,7 +7,7 @@ Canonical source artifacts, phase documents, design assets and engineering found
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `ba97b83dde3b63d64fa7a67891f2f32040e48559`  
+**Source snapshot before this register refresh:** `95319be8e484d5fa8a0874d735838446e0ad3014`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -31,7 +31,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 
 | Path | Coverage/status | Git blob SHA | Bytes |
 |---|---|---|---:|
-| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `51516cbb24ed8278771398d9a7b078e041261468` | 7484 |
+| `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `e170708e88e8ea674498b6d0f7037ed14f6d7845` | 7490 |
 | `README.md` | Project overview, frozen roadmap, Phase 5 active status and current gates | `9ab805e29cffbd9a00d6563abf44385ce4f3f4d2` | 6787 |
 | `SECURITY.md` | Project-specific supported-branch and responsible vulnerability-reporting policy | `7c80c6cc4717412380050f53e5bf095d64f03e6b` | 2688 |
 
@@ -189,7 +189,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-6/README.md` | Phase 6 scope, provider-neutral boundary and provider-selection gate | `9900a8b5f3713911f418369354e4f5e7fc035fc6` | 4042 |
+| `docs/phase-6/README.md` | Phase 6 scope, provider-neutral boundary and provider-selection gate | `26226af72f7df35d68735cf4d740719a81fe3c08` | 3958 |
 | `docs/phase-6/01-canonical-observation-schema.md` | Versioned canonical observation schema, units, validation and versioning | `45b1fb3b99b5bb5e777de09c668e620fd78850a5` | 2743 |
 | `docs/phase-6/02-adapter-contract-and-provider-boundaries.md` | Provider-neutral adapter interface and bounded failure/retry boundary | `522a6c5662353c76bc025132eaa1a90349e56524` | 2882 |
 | `docs/phase-6/03-provenance-freshness-and-provider-health.md` | Separate data freshness and provider health semantics | `e1d0e227bc4f2a41b51c0fffa26d9357eb02a81f` | 2391 |
@@ -240,7 +240,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 ## Phase 6 status
 - Phase 6 is active. The provider-neutral market-data slice merged through PR #10 into main commit `2ba2bdd357257d2d01799f8f7a80bc7439a942ec`.
 - Main-push CI (repository validation, typecheck, build/tests, npm audit and Gitleaks) passed: [run 40816041202](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816041202). Dependency Review passed on PR #10: [run 40815954105](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815954105); the optional AI code scan passed: [run 40815955521](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815955521).
-- CodeQL analysis on the merge commit was still in progress at publication: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698). Do not treat a pending result as a pass.
+- CodeQL analysis on the merge commit also completed successfully: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698).
 - The first slice validates canonical snapshots, explicit decimal units/nulls, Solana public-key syntax, deterministic freshness states, provider-health transitions and synthetic replay fixtures. No production RPC/indexed-market provider is selected.
 - Account plans, current endpoint versions/terms, source-specific freshness thresholds, provider disagreement rules and fallback behavior remain open. No live credentials, wallet/signer access or trade execution is introduced; mainnet remains unauthorized.
 
