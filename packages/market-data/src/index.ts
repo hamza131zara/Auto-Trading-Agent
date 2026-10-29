@@ -533,3 +533,410 @@ export function replayMarketDataCases(cases: readonly MarketDataReplayCase[]): r
     };
   });
 }
+
+
+/**
+ * A provider attempt presented to the deterministic Phase 6 evidence gate.
+ * Priority 0 is the preferred source; larger priorities are fallbacks.
+ */
+export interface ProviderEvidenceCandidate {
+  readonly providerId: string;
+  /** Upstream vendor/source family; aliases of the same upstream must share a group. */
+  readonly independenceGroupId: string;
+  readonly priority: number;
+  readonly health: ProviderHealthSnapshot;
+  readonly snapshot: unknown | null;
+}
+
+export interface ProviderAgreementPolicy {
+  /** Injected evaluation clock; this function never reads the system clock. */
+  readonly nowAt: string;
+  /** Maximum age for canonical source observations. */
+  readonly maxAgeMs: number;
+  /** Separate explicit bound for the provider-health snapshot itself. */
+  readonly maxHealthAgeMs: number;
+  readonly maxFutureSkewMs?: number;
+  /** Explicitly enables synthetic fixtures for tests; it never enables downstream use. */
+  readonly allowSyntheticFixtures?: boolean;
+}
+
+export type ProviderAgreementStatus =
+  | "AGREED"
+  | "DISAGREEMENT"
+  | "INSUFFICIENT_EVIDENCE"
+  | "NO_ACCEPTABLE_PROVIDER"
+  | "INVALID_INPUT";
+
+export interface RejectedProviderEvidence {
+  readonly providerId: string;
+  readonly reasonCodes: readonly string[];
+}
+
+export interface ProviderAgreementAssessment {
+  readonly status: ProviderAgreementStatus;
+  /** Eligible independent providers in stable priority order. */
+  readonly eligibleProviderIds: readonly string[];
+  readonly rejectedProviders: readonly RejectedProviderEvidence[];
+  readonly disagreementFields: readonly string[];
+  readonly reasonCodes: readonly string[];
+  /** True when only non-primary priorities contributed usable observations. */
+  readonly fallbackUsed: boolean;
+  /** True only after multi-provider agreement; still requires independent on-chain checks. */
+  readonly canProceedToOnChainValidation: boolean;
+  /** Phase 6 evidence assessment can never authorize an order. */
+  readonly tradingAuthorized: false;
+}
+
+interface EvaluatedProviderEvidence {
+  readonly providerId: string;
+  readonly priority: number;
+  readonly snapshot: CanonicalMarketSnapshot;
+  readonly sourceTimestampMs: number;
+}
+
+const PROVIDER_HEALTH_STATES = new Set<ProviderHealthState>([
+  "UNKNOWN", "HEALTHY", "DEGRADED", "UNAVAILABLE", "CIRCUIT_OPEN"
+]);
+
+function isValidAgreementPolicy(policy: ProviderAgreementPolicy): boolean {
+  return isRecord(policy) &&
+    isUtcTimestamp(policy.nowAt) &&
+    typeof policy.maxAgeMs === "number" &&
+    Number.isFinite(policy.maxAgeMs) &&
+    policy.maxAgeMs >= 0 &&
+    typeof policy.maxHealthAgeMs === "number" &&
+    Number.isFinite(policy.maxHealthAgeMs) &&
+    policy.maxHealthAgeMs >= 0 &&
+    (policy.maxFutureSkewMs === undefined ||
+      (typeof policy.maxFutureSkewMs === "number" &&
+       Number.isFinite(policy.maxFutureSkewMs) &&
+       policy.maxFutureSkewMs >= 0)) &&
+    (policy.allowSyntheticFixtures === undefined || typeof policy.allowSyntheticFixtures === "boolean");
+}
+
+
+function isValidProviderHealthEvidence(input: unknown, expectedProviderId: string): input is ProviderHealthSnapshot {
+  if (!isRecord(input) ||
+      input.providerId !== expectedProviderId ||
+      typeof input.state !== "string" ||
+      !PROVIDER_HEALTH_STATES.has(input.state as ProviderHealthState) ||
+      !Number.isSafeInteger(input.consecutiveFailures) ||
+      (input.consecutiveFailures as number) < 0) {
+    return false;
+  }
+
+  const timestampFields = ["lastSuccessAt", "lastFailureAt", "lastRequestAt", "circuitOpenUntil"] as const;
+  for (const field of timestampFields) {
+    const value = input[field];
+    if (value !== null && !isUtcTimestamp(value)) return false;
+  }
+  if (input.lastLatencyMs !== null &&
+      (typeof input.lastLatencyMs !== "number" ||
+       !Number.isFinite(input.lastLatencyMs) ||
+       input.lastLatencyMs < 0)) {
+    return false;
+  }
+  if (input.lastErrorClass !== null &&
+      (typeof input.lastErrorClass !== "string" ||
+       !PROVIDER_ERRORS.has(input.lastErrorClass as ProviderErrorClass))) {
+    return false;
+  }
+
+  if (input.state === "UNKNOWN") {
+    return input.consecutiveFailures === 0 &&
+      input.lastSuccessAt === null &&
+      input.lastFailureAt === null &&
+      input.lastRequestAt === null &&
+      input.lastLatencyMs === null &&
+      input.circuitOpenUntil === null &&
+      input.lastErrorClass === null;
+  }
+
+  if (input.state === "HEALTHY") {
+    return input.consecutiveFailures === 0 &&
+      typeof input.lastSuccessAt === "string" &&
+      input.lastRequestAt === input.lastSuccessAt &&
+      input.lastLatencyMs !== null &&
+      input.circuitOpenUntil === null &&
+      input.lastErrorClass === null &&
+      (input.lastFailureAt === null ||
+       timestampMs(input.lastFailureAt as string) <= timestampMs(input.lastSuccessAt));
+  }
+
+  const failureState = input.state === "DEGRADED" ||
+    input.state === "UNAVAILABLE" ||
+    input.state === "CIRCUIT_OPEN";
+  if (!failureState ||
+      (input.consecutiveFailures as number) < 1 ||
+      typeof input.lastFailureAt !== "string" ||
+      input.lastRequestAt !== input.lastFailureAt ||
+      input.lastErrorClass === null ||
+      (input.lastSuccessAt !== null &&
+       timestampMs(input.lastSuccessAt as string) > timestampMs(input.lastFailureAt as string))) {
+    return false;
+  }
+  if (input.state === "CIRCUIT_OPEN") return typeof input.circuitOpenUntil === "string";
+  return input.circuitOpenUntil === null;
+}
+
+/** Compares canonical non-negative decimals numerically, without binary floating-point conversion. */
+function decimalStringsEqual(left: string, right: string): boolean {
+  const normalize = (value: string): string => {
+    const point = value.indexOf(".");
+    const integer = point < 0 ? value : value.slice(0, point);
+    if (point < 0) return integer;
+    const originalFraction = value.slice(point + 1);
+    let end = originalFraction.length;
+    while (end > 0 && originalFraction[end - 1] === "0") end -= 1;
+    const fraction = originalFraction.slice(0, end);
+    return fraction.length === 0 ? integer : integer + "." + fraction;
+  };
+  return normalize(left) === normalize(right);
+}
+
+function measuresEqual(left: DecimalMeasure | null, right: DecimalMeasure | null): boolean {
+  if (left === null || right === null) return left === right;
+  return left.unit === right.unit &&
+    left.assetId === right.assetId &&
+    decimalStringsEqual(left.value, right.value);
+}
+
+/**
+ * Fail-closed provider agreement gate for Phase 6.
+ *
+ * It validates each observation, independently recomputes freshness with an injected
+ * clock, rejects unhealthy providers and unapproved synthetic evidence, and only
+ * reports agreement when at least two distinct providers match identity, source-time
+ * alignment, all listed measures and activity counts. It does not select a primary
+ * provider, define numeric tolerances, perform on-chain verification, or authorize trading.
+ */
+export function assessProviderAgreement(
+  candidates: readonly ProviderEvidenceCandidate[],
+  policy: ProviderAgreementPolicy
+): ProviderAgreementAssessment {
+  const result = (
+    status: ProviderAgreementStatus,
+    eligibleProviderIds: readonly string[] = [],
+    rejectedProviders: readonly RejectedProviderEvidence[] = [],
+    disagreementFields: readonly string[] = [],
+    reasonCodes: readonly string[] = [],
+    fallbackUsed = false,
+    canProceedToOnChainValidation = false
+  ): ProviderAgreementAssessment => ({
+    status,
+    eligibleProviderIds: [...eligibleProviderIds],
+    rejectedProviders: [...rejectedProviders],
+    disagreementFields: [...disagreementFields],
+    reasonCodes: [...reasonCodes],
+    fallbackUsed,
+    canProceedToOnChainValidation,
+    tradingAuthorized: false
+  });
+
+  if (!Array.isArray(candidates) || candidates.length === 0 || !isValidAgreementPolicy(policy)) {
+    return result("INVALID_INPUT", [], [], [], ["INVALID_CANDIDATES_OR_POLICY"]);
+  }
+
+  const providerIds = new Set<string>();
+  const independenceGroups = new Set<string>();
+  const priorities = new Set<number>();
+  for (const candidate of candidates as readonly unknown[]) {
+    if (!isRecord(candidate) ||
+        typeof candidate.providerId !== "string" ||
+        !isSafeSlug(candidate.providerId) ||
+        typeof candidate.independenceGroupId !== "string" ||
+        !isSafeSlug(candidate.independenceGroupId) ||
+        !Number.isSafeInteger(candidate.priority) ||
+        (candidate.priority as number) < 0 ||
+        typeof candidate.snapshot === "undefined" ||
+        !isValidProviderHealthEvidence(candidate.health, candidate.providerId)) {
+      return result("INVALID_INPUT", [], [], [], ["INVALID_CANDIDATE_METADATA"]);
+    }
+    if (providerIds.has(candidate.providerId)) {
+      return result("INVALID_INPUT", [], [], [], ["DUPLICATE_PROVIDER_ID"]);
+    }
+    if (independenceGroups.has(candidate.independenceGroupId)) {
+      return result("INVALID_INPUT", [], [], [], ["DUPLICATE_INDEPENDENCE_GROUP"]);
+    }
+    if (priorities.has(candidate.priority as number)) {
+      return result("INVALID_INPUT", [], [], [], ["DUPLICATE_PROVIDER_PRIORITY"]);
+    }
+    if (candidate.health.providerId !== candidate.providerId) {
+      return result("INVALID_INPUT", [], [], [], ["HEALTH_PROVIDER_ID_MISMATCH"]);
+    }
+    providerIds.add(candidate.providerId);
+    independenceGroups.add(candidate.independenceGroupId);
+    priorities.add(candidate.priority as number);
+  }
+
+  const eligible: EvaluatedProviderEvidence[] = [];
+  const rejected: RejectedProviderEvidence[] = [];
+  const orderedCandidates = [...candidates].sort((a, b) =>
+    a.priority - b.priority || a.providerId.localeCompare(b.providerId)
+  );
+
+  for (const candidate of orderedCandidates) {
+    const reasons: string[] = [];
+    if (candidate.health.state === "HEALTHY") {
+      const lastHealthRequestAt = candidate.health.lastRequestAt!;
+      const healthFreshness = assessFreshness({
+        retrievedAt: lastHealthRequestAt,
+        observedAt: lastHealthRequestAt,
+        sourceEventAt: lastHealthRequestAt,
+        nowAt: policy.nowAt,
+        maxAgeMs: policy.maxHealthAgeMs,
+        ...(policy.maxFutureSkewMs === undefined ? {} : { maxFutureSkewMs: policy.maxFutureSkewMs })
+      });
+      if (healthFreshness.state !== "FRESH") reasons.push("PROVIDER_HEALTH_" + healthFreshness.state);
+    }
+    if (candidate.snapshot === null) {
+      reasons.push("NO_OBSERVATION");
+    } else {
+      const validation = validateCanonicalMarketSnapshot(candidate.snapshot);
+      if (!validation.valid || !isRecord(candidate.snapshot)) {
+        reasons.push("INVALID_CANONICAL_SNAPSHOT");
+      } else {
+        const snapshot = candidate.snapshot as unknown as CanonicalMarketSnapshot;
+        if (snapshot.provenance.providerId !== candidate.providerId) {
+          return result("INVALID_INPUT", [], [], [], ["PROVENANCE_PROVIDER_ID_MISMATCH"]);
+        }
+        if (snapshot.poolAddress === null) reasons.push("POOL_IDENTITY_MISSING");
+        if (snapshot.provenance.synthetic && policy.allowSyntheticFixtures !== true) {
+          reasons.push("SYNTHETIC_EVIDENCE_NOT_ALLOWED");
+        }
+        if (candidate.health.state !== "HEALTHY") {
+          reasons.push("PROVIDER_NOT_HEALTHY");
+        }
+        const freshness = assessFreshness({
+          retrievedAt: snapshot.retrievedAt,
+          observedAt: snapshot.observedAt,
+          sourceEventAt: snapshot.sourceEventAt,
+          nowAt: policy.nowAt,
+          maxAgeMs: policy.maxAgeMs,
+          ...(policy.maxFutureSkewMs === undefined ? {} : { maxFutureSkewMs: policy.maxFutureSkewMs })
+        });
+        if (freshness.state !== "FRESH") reasons.push("FRESHNESS_" + freshness.state);
+        const sourceTimestamp = snapshot.sourceEventAt ?? snapshot.observedAt;
+        if (sourceTimestamp === null) reasons.push("SOURCE_TIMESTAMP_MISSING");
+
+        if (reasons.length === 0) {
+          eligible.push({
+            providerId: candidate.providerId,
+            priority: candidate.priority,
+            snapshot,
+            sourceTimestampMs: timestampMs(sourceTimestamp!)
+          });
+        }
+      }
+    }
+    if (candidate.health.state !== "HEALTHY" && !reasons.includes("PROVIDER_NOT_HEALTHY")) {
+      reasons.push("PROVIDER_NOT_HEALTHY");
+    }
+    if (reasons.length > 0) {
+      rejected.push({ providerId: candidate.providerId, reasonCodes: reasons });
+    }
+  }
+
+  const fallbackUsed = !eligible.some((candidate) => candidate.priority === 0) &&
+    eligible.some((candidate) => candidate.priority > 0);
+  const eligibleIds = eligible.map((candidate) => candidate.providerId);
+
+  if (eligible.length === 0) {
+    return result("NO_ACCEPTABLE_PROVIDER", [], rejected, [], ["NO_PROVIDER_PASSED_EVIDENCE_GATES"]);
+  }
+  if (eligible.length < 2) {
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      eligibleIds,
+      rejected,
+      [],
+      ["INDEPENDENT_PROVIDER_CONFIRMATION_REQUIRED"],
+      fallbackUsed
+    );
+  }
+
+  const reference = eligible[0]!;
+  const identityFields = ["chain", "cluster", "baseMint", "quoteMint", "poolAddress"] as const;
+  const identityDisagreements = identityFields.filter((field) =>
+    eligible.some((candidate) => candidate.snapshot[field] !== reference.snapshot[field])
+  );
+  if (identityDisagreements.length > 0) {
+    return result(
+      "DISAGREEMENT",
+      eligibleIds,
+      rejected,
+      identityDisagreements,
+      ["PROVIDER_IDENTITY_DISAGREEMENT"],
+      fallbackUsed
+    );
+  }
+
+  if (eligible.some((candidate) => candidate.sourceTimestampMs !== reference.sourceTimestampMs)) {
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      eligibleIds,
+      rejected,
+      ["sourceTimestamp"],
+      ["SOURCE_TIME_ALIGNMENT_UNCONFIGURED"],
+      fallbackUsed
+    );
+  }
+
+  const measureFields = ["price", "liquidity", "volume24h"] as const;
+  const missingFields: string[] = [];
+  const valueDisagreements: string[] = [];
+  for (const field of measureFields) {
+    const baseline = reference.snapshot[field];
+    if (baseline === null || eligible.some((candidate) => candidate.snapshot[field] === null)) {
+      missingFields.push(field);
+      continue;
+    }
+    if (eligible.some((candidate) => !measuresEqual(candidate.snapshot[field], baseline))) {
+      valueDisagreements.push(field);
+    }
+  }
+
+  const countFields = ["buys24h", "sells24h"] as const;
+  for (const field of countFields) {
+    const baseline = reference.snapshot[field];
+    if (baseline === null || eligible.some((candidate) => candidate.snapshot[field] === null)) {
+      missingFields.push(field);
+      continue;
+    }
+    if (eligible.some((candidate) => candidate.snapshot[field] !== baseline)) {
+      valueDisagreements.push(field);
+    }
+  }
+
+  if (valueDisagreements.length > 0) {
+    return result(
+      "DISAGREEMENT",
+      eligibleIds,
+      rejected,
+      valueDisagreements,
+      ["PROVIDER_MEASURE_DISAGREEMENT"],
+      fallbackUsed
+    );
+  }
+  if (missingFields.length > 0) {
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      eligibleIds,
+      rejected,
+      missingFields,
+      ["REQUIRED_MEASURE_MISSING"],
+      fallbackUsed
+    );
+  }
+
+  const syntheticEvidence = eligible.some((candidate) => candidate.snapshot.provenance.synthetic);
+  return result(
+    "AGREED",
+    eligibleIds,
+    rejected,
+    [],
+    syntheticEvidence ? ["SYNTHETIC_AGREEMENT_ONLY"] : ["PROVIDERS_AGREE_EXACTLY"],
+    fallbackUsed,
+    !syntheticEvidence
+  );
+}
