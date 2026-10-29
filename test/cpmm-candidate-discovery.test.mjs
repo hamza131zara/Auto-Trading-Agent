@@ -80,10 +80,19 @@ function makeRaydiumPool(poolAddress, programId, tvl, volume24h, type = "Standar
   };
 }
 
-function raydiumResponse(pools, { hasNextPage = false, count = pools.length, wrapped = "none" } = {}) {
-  const page = { count, hasNextPage, data: pools };
+function raydiumResponse(pools, {
+  hasNextPage = false,
+  includeHasNextPage = true,
+  count = pools.length,
+  nextPageId,
+  wrapped = "none"
+} = {}) {
+  const page = { count, data: pools };
+  if (includeHasNextPage) page.hasNextPage = hasNextPage;
+  if (nextPageId !== undefined) page.nextPageId = nextPageId;
   if (wrapped === "success") return { id: "raydium-response-id", success: true, data: page };
   if (wrapped === "data") return { id: "raydium-response-id", data: page };
+  if (wrapped === "success_array") return { id: "raydium-response-id", success: true, data: pools };
   return page;
 }
 
@@ -112,8 +121,8 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
     calls.push({ url, init });
     if (poolApiUrl(url)) {
       assert.equal(init.method, "GET");
-      assert.match(url, /poolType=Standard/);
-      assert.match(url, /sortField=liquidity/);
+      assert.match(url, /poolType=standard/);
+      assert.match(url, /poolSortField=liquidity/);
       assert.match(url, /sortType=desc/);
       return new Response(JSON.stringify(raydiumResponse(raydiumPools, { hasNextPage })), {
         status: 200,
@@ -212,7 +221,7 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   assert.equal(report.candidates[0].sourceFreshness, "UNKNOWN");
 });
 
-test("accepts Raydium SDK PoolsApiReturn page shape and the explicit HTTP envelope form", async () => {
+test("accepts Raydium SDK page shape and supported HTTP envelope forms", async () => {
   for (const wrapped of ["none", "success", "data"]) {
     const { fetchImpl } = mockFetchFactory();
     const wrappedFetch = async (input, init = {}) => {
@@ -232,6 +241,82 @@ test("accepts Raydium SDK PoolsApiReturn page shape and the explicit HTTP envelo
     assert.equal(report.selectionPolicy.candidateCount, 1);
     assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
   }
+});
+
+test("uses nextPageId cursor and refuses to recommend from a partial page", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const cursorFetch = async (input, init = {}) => {
+    const url = String(input);
+    if (poolApiUrl(url)) {
+      return new Response(JSON.stringify(raydiumResponse([
+        makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)
+      ], { includeHasNextPage: false, nextPageId: "opaque-next-page" })), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return fetchImpl(input, init);
+  };
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: cursorFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+  assert.equal(report.selectionPolicy.raydiumPaginationKnown, true);
+  assert.equal(report.selectionPolicy.raydiumPaginationSignal, "NEXT_PAGE_CURSOR_PRESENT");
+  assert.equal(report.selectionPolicy.scanIncomplete, true);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
+});
+
+test("returns safe diagnostics and does not recommend a pool when pagination signals are absent", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const noPaginationFetch = async (input, init = {}) => {
+    const url = String(input);
+    if (poolApiUrl(url)) {
+      return new Response(JSON.stringify(raydiumResponse([
+        makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)
+      ], { includeHasNextPage: false })), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return fetchImpl(input, init);
+  };
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: noPaginationFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+  assert.equal(report.selectionPolicy.raydiumPaginationKnown, false);
+  assert.equal(report.selectionPolicy.scanIncomplete, true);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
+  assert.equal(report.sources.raydiumApi.responseDiagnostics.pageHasNextPageType, "undefined");
+  assert.equal(report.sources.raydiumApi.responseDiagnostics.poolArrayLength, 1);
+});
+
+test("accepts success envelope with a direct pool array but marks it incomplete without pagination metadata", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  const directArrayFetch = async (input, init = {}) => {
+    if (poolApiUrl(String(input))) {
+      return new Response(JSON.stringify(raydiumResponse([
+        makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)
+      ], { wrapped: "success_array", includeHasNextPage: false })), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return fetchImpl(input, init);
+  };
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: directArrayFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+  assert.equal(report.sources.raydiumApi.responseShape, "success_array");
+  assert.equal(report.selectionPolicy.scanIncomplete, true);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
 });
 
 test("does not count wrong mint pairs or non-standard pools from the Raydium API", async () => {
