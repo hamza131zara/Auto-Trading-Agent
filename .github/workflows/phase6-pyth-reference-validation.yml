@@ -36,6 +36,10 @@ on:
         description: Owner-reviewed maximum age since Pyth prices were retrieved; no default is supplied
         required: true
         type: string
+      max_reference_timestamp_skew_ms:
+        description: Owner-reviewed maximum time difference allowed between SOL/USD and USDC/USD feed timestamps; no default is supplied
+        required: true
+        type: string
       max_future_skew_ms:
         description: Owner-reviewed allowed future timestamp skew; no default is supplied
         required: true
@@ -77,7 +81,7 @@ on:
           - "yes"
         default: "no"
       confirm_comparison_policy_review:
-        description: I approved the four freshness/deviation values entered above for this diagnostic run only
+        description: I approved all five freshness/time-alignment/deviation values entered above for this diagnostic run only
         required: true
         type: choice
         options:
@@ -124,6 +128,7 @@ jobs:
           PYTH_API_KEY: ${{ secrets.PYTH_API_KEY }}
           MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
           MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
+          MAX_REFERENCE_TIMESTAMP_SKEW_MS: ${{ inputs.max_reference_timestamp_skew_ms }}
           MAX_FUTURE_SKEW_MS: ${{ inputs.max_future_skew_ms }}
           MAX_DEVIATION_BPS: ${{ inputs.max_deviation_bps }}
         run: |
@@ -152,6 +157,10 @@ jobs:
             echo "::error::MAX_REFERENCE_RETRIEVAL_AGE_MS must be 1..300000."
             exit 2
           fi
+          if (( MAX_REFERENCE_TIMESTAMP_SKEW_MS > 300000 )); then
+            echo "::error::MAX_REFERENCE_TIMESTAMP_SKEW_MS must be 0..300000."
+            exit 2
+          fi
           if (( MAX_FUTURE_SKEW_MS > 60000 )); then
             echo "::error::MAX_FUTURE_SKEW_MS must be 0..60000."
             exit 2
@@ -171,6 +180,7 @@ jobs:
           MAX_RPC_RETRIEVAL_AGE_MS: ${{ inputs.max_rpc_retrieval_age_ms }}
           MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
           MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
+          MAX_REFERENCE_TIMESTAMP_SKEW_MS: ${{ inputs.max_reference_timestamp_skew_ms }}
           MAX_FUTURE_SKEW_MS: ${{ inputs.max_future_skew_ms }}
           MAX_DEVIATION_BPS: ${{ inputs.max_deviation_bps }}
           CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}

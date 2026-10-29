@@ -72,6 +72,7 @@ function validatePreflight() {
     maxRpcRetrievalAgeMs: envInteger("MAX_RPC_RETRIEVAL_AGE_MS", { min: 1, max: 300_000 }),
     maxReferenceSourceAgeMs: envInteger("MAX_REFERENCE_SOURCE_AGE_MS", { min: 1, max: 86_400_000 }),
     maxReferenceRetrievalAgeMs: envInteger("MAX_REFERENCE_RETRIEVAL_AGE_MS", { min: 1, max: 300_000 }),
+    maxReferenceTimestampSkewMs: envInteger("MAX_REFERENCE_TIMESTAMP_SKEW_MS", { min: 0, max: 300_000 }),
     maxFutureSkewMs: envInteger("MAX_FUTURE_SKEW_MS", { min: 0, max: 60_000 }),
     maxDeviationBps: envInteger("MAX_DEVIATION_BPS", { min: 0, max: 10_000 })
   };
@@ -184,6 +185,7 @@ async function main() {
       nowAt,
       maxSourceAgeMs: target.maxReferenceSourceAgeMs,
       maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
+      maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
       maxFutureSkewMs: target.maxFutureSkewMs,
       maxDeviationBps: target.maxDeviationBps,
       approvedProviderId: "pyth-hermes",
@@ -245,6 +247,7 @@ async function main() {
     comparisonPolicy: {
       maxReferenceSourceAgeMs: target.maxReferenceSourceAgeMs,
       maxReferenceRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
+      maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
       maxFutureSkewMs: target.maxFutureSkewMs,
       maxDeviationBps: target.maxDeviationBps,
       providerSelectionApprovedByThisReport: false

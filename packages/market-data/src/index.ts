@@ -111,6 +111,7 @@ export interface IndependentReservePriceComparisonPolicy {
   readonly nowAt: string;
   readonly maxSourceAgeMs: number;
   readonly maxRetrievalAgeMs: number;
+  readonly maxReferenceTimestampSkewMs: number;
   readonly maxFutureSkewMs: number;
   readonly maxDeviationBps: number;
   readonly approvedProviderId: string;
@@ -161,6 +162,8 @@ export interface IndependentReservePriceComparisonResult {
   readonly baseFeedId: string;
   readonly quoteFeedId: string;
   readonly sourceFreshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID";
+  readonly maxReferenceTimestampSkewMs: number;
+  readonly referenceTimestampSkewMs: number | null;
   readonly comparisonEvidenceComplete: boolean;
   /** This comparator only assesses evidence quality; it never authorizes a trade. */
   readonly tradingAuthorized: false;
@@ -556,6 +559,8 @@ function validComparisonPolicy(policy: IndependentReservePriceComparisonPolicy):
     isUtcTimestamp(policy.nowAt) &&
     Number.isSafeInteger(policy.maxSourceAgeMs) && policy.maxSourceAgeMs > 0 &&
     Number.isSafeInteger(policy.maxRetrievalAgeMs) && policy.maxRetrievalAgeMs > 0 &&
+    Number.isSafeInteger(policy.maxReferenceTimestampSkewMs) &&
+    policy.maxReferenceTimestampSkewMs >= 0 && policy.maxReferenceTimestampSkewMs <= 300_000 &&
     Number.isSafeInteger(policy.maxFutureSkewMs) && policy.maxFutureSkewMs >= 0 &&
     Number.isSafeInteger(policy.maxDeviationBps) &&
     policy.maxDeviationBps >= 0 && policy.maxDeviationBps <= 10_000 &&
@@ -628,7 +633,8 @@ export function assessIndependentReservePriceAgreement(
     reserveDeviationBpsRounded: string | null = null,
     indexedDeviationBpsRounded: string | null = null,
     freshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID" = "UNKNOWN",
-    evidenceComplete = false
+    evidenceComplete = false,
+    referenceTimestampSkewMs: number | null = null
   ): IndependentReservePriceComparisonResult => ({
     status,
     reasonCodes: [...new Set(reasonCodes)],
@@ -647,6 +653,8 @@ export function assessIndependentReservePriceAgreement(
     baseFeedId: input?.policy?.expectedBaseFeedId ?? "",
     quoteFeedId: input?.policy?.expectedQuoteFeedId ?? "",
     sourceFreshness: freshness,
+    maxReferenceTimestampSkewMs: input?.policy?.maxReferenceTimestampSkewMs ?? -1,
+    referenceTimestampSkewMs,
     comparisonEvidenceComplete: evidenceComplete,
     tradingAuthorized: false
   });
@@ -696,6 +704,23 @@ export function assessIndependentReservePriceAgreement(
   if (referenceErrors.length > 0) {
     const stale = referenceErrors.some(code => code === "REFERENCE_SOURCE_STALE" || code === "REFERENCE_RETRIEVAL_STALE");
     return result("INSUFFICIENT_EVIDENCE", referenceErrors, "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE", null, null, stale ? "STALE" : "UNKNOWN", false);
+  }
+
+  const referenceTimestampSkewMs = Math.abs(
+    timestampMs(input.baseUsd.publishedAt) - timestampMs(input.quoteUsd.publishedAt)
+  );
+  if (referenceTimestampSkewMs > input.policy.maxReferenceTimestampSkewMs) {
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      ["REFERENCE_SOURCE_TIMES_UNALIGNED"],
+      "INSUFFICIENT_EVIDENCE",
+      "INSUFFICIENT_EVIDENCE",
+      null,
+      null,
+      "FRESH",
+      false,
+      referenceTimestampSkewMs
+    );
   }
 
   const hasSyntheticReference = input.baseUsd.synthetic || input.quoteUsd.synthetic || input.indexedSynthetic;
@@ -763,7 +788,8 @@ export function assessIndependentReservePriceAgreement(
     reserveComparison.deviationBpsRounded,
     indexedDeviation,
     "FRESH",
-    evidenceComplete
+    evidenceComplete,
+    referenceTimestampSkewMs
   );
 }
 

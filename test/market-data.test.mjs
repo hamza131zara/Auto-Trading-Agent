@@ -235,6 +235,7 @@ function independentComparisonFixture(overrides = {}) {
     nowAt,
     maxSourceAgeMs: 60_000,
     maxRetrievalAgeMs: 30_000,
+    maxReferenceTimestampSkewMs: 10_000,
     maxFutureSkewMs: 0,
     maxDeviationBps: 10,
     approvedProviderId: "oracle-reference",
@@ -292,7 +293,22 @@ test("independent reserve-price agreement uses exact decimals and requires both 
   assert.equal(result.indexedPriceComparison.status, "AGREED");
   assert.equal(result.indexedPriceComparison.deviationBpsRounded, "0");
   assert.equal(result.sourceFreshness, "FRESH");
+  assert.equal(result.referenceTimestampSkewMs, 0);
+  assert.equal(result.maxReferenceTimestampSkewMs, 10_000);
   assert.equal(result.comparisonEvidenceComplete, true);
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("independent base/USD and quote/USD feeds must be timestamp-aligned within the explicit policy", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    quoteUsd: { publishedAt: "2026-10-29T12:45:01.000Z", retrievedAt: "2026-10-29T12:44:55.000Z" },
+    policy: { maxReferenceTimestampSkewMs: 5_000 }
+  }));
+  assert.equal(result.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.reserveComparison.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.referenceTimestampSkewMs, 11_000);
+  assert.ok(result.reasonCodes.includes("REFERENCE_SOURCE_TIMES_UNALIGNED"));
+  assert.equal(result.comparisonEvidenceComplete, false);
   assert.equal(result.tradingAuthorized, false);
 });
 
