@@ -162,9 +162,9 @@ test("decodes absent optional authorities as null", () => {
 });
 
 test("marks Token-2022 extension data uninspected and blocks identity evidence use", () => {
-  const bytes = mintBytes(167);
-  bytes[165] = 1; // Token-2022 AccountType::Mint; TLV bytes intentionally not decoded.
-  bytes[166] = 1;
+  const bytes = mintBytes(202);
+  bytes[165] = 1; // Token-2022 AccountType::Mint.
+  bytes.set([3, 0, 32, 0], 166); // MintCloseAuthority TLV header; payload intentionally not decoded.
   const result = decodeSplTokenMint(rawAccount(mintAddress, SPL_TOKEN_2022_PROGRAM_ID, bytes));
   assert.equal(result.status, "EXTENSIONS_UNINSPECTED");
   assert.equal(result.value.extensionState, "PRESENT_UNINSPECTED");
@@ -174,7 +174,8 @@ test("marks Token-2022 extension data uninspected and blocks identity evidence u
 
 test("marks extended Token-2022 token accounts uninspected and ineligible", () => {
   const bytes = tokenAccountBytes(170);
-  bytes[165] = 2; // Token-2022 AccountType::Account; extension TLV is not decoded.
+  bytes[165] = 2; // Token-2022 AccountType::Account.
+  bytes.set([7, 0, 0, 0], 166); // ImmutableOwner TLV header; extension data is not decoded.
   const result = decodeSplTokenAccount(
     rawAccount(tokenAccountAddress, SPL_TOKEN_2022_PROGRAM_ID, bytes)
   );
