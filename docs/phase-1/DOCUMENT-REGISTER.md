@@ -3,11 +3,11 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 3.1  
+**Register version:** 3.2  
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `362fd9358817ec319bc14f7e84d4699c07e4144a`  
+**Source snapshot before this register refresh:** `ed2dfa7387672c893e234906192a348b42eb4130`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -32,7 +32,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 | Path | Coverage/status | Git blob SHA | Bytes |
 |---|---|---|---:|
 | `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `e170708e88e8ea674498b6d0f7037ed14f6d7845` | 7490 |
-| `README.md` | Project overview, frozen roadmap, Phase 6 provider agreement and on-chain evidence gate with RPC-reader production blockers | `a42b567274896cd87ae42cdae1575304a53b4aac` | 7745 |
+| `README.md` | Project overview, frozen roadmap, Phase 6 provider agreement, on-chain identity evidence and read-only RPC transport with decoder/production blockers | `e6b7af7590af14b5e08183601fe1856915f05a37` | 7593 |
 | `SECURITY.md` | Project-specific supported-branch and responsible vulnerability-reporting policy | `7c80c6cc4717412380050f53e5bf095d64f03e6b` | 2688 |
 
 ## Phase 1 documents
@@ -189,19 +189,21 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-6/README.md` | Phase 6 scope, canonical market-data foundation, provider agreement/fallback and on-chain evidence boundary | `343657a5da8a3705322b0dbfa0679902702d75a2` | 7115 |
+| `docs/phase-6/README.md` | Phase 6 scope, canonical market-data foundation, provider agreement/fallback, on-chain evidence and RPC transport boundary | `35ce339d0ada2470201eaf3db3153f70de7b9cf9` | 7625 |
 | `docs/phase-6/01-canonical-observation-schema.md` | Versioned canonical observation schema, units, validation and versioning | `e003f644e3ba6c72b334458f4d627478f073454d` | 2983 |
 | `docs/phase-6/02-adapter-contract-and-provider-boundaries.md` | Provider-neutral adapter interface, candidate adapters and fail-closed provider agreement/fallback boundaries | `672c937208f4bc0a346a1d0eadaf103324a92601` | 5437 |
 | `docs/phase-6/03-provenance-freshness-and-provider-health.md` | Separate data freshness and provider health semantics | `e1d0e227bc4f2a41b51c0fffa26d9357eb02a81f` | 2391 |
 | `docs/phase-6/04-deterministic-replay-fixtures.md` | Synthetic fixture requirements and deterministic replay rules | `7ece326c244421ac22df5892c3cd3698a3252c76` | 1323 |
-| `docs/phase-6/05-phase-6-acceptance-and-open-decisions.md` | Phase 6 acceptance evidence for provider agreement and on-chain evidence bundle; RPC reader/decoder and production gates remain open | `713e03a5b59dde0a4d0ead94b679a4e4fdf6e764` | 4764 |
+| `docs/phase-6/05-phase-6-acceptance-and-open-decisions.md` | Phase 6 acceptance evidence for provider agreement, on-chain evidence and RPC transport; protocol decoder and production gates remain open | `d512458754355569f744dd8eb11cdb46596f8e6c` | 5116 |
 | `docs/phase-6/06-dexscreener-reference-adapter.md` | Read-only candidate adapter behavior, timestamp/freshness semantics, official-source quota and licensing gates | `39267e3810d06b57f7a4201f3b6f14c8da1e974e` | 6539 |
 | `docs/phase-6/07-provider-agreement-and-fallback-policy.md` | Deterministic evidence eligibility, independent-source comparison, freshness, disagreement and fallback safeguards | `4fc2a8f8b2da37607b07a884639f862ab0a6152e` | 5833 |
-| `docs/phase-6/08-on-chain-identity-evidence-contract.md` | Protocol-neutral pool/program/mint/vault evidence checker; live RPC reader and protocol decoder remain unimplemented | `6c4c46e0c69d1888ef65d74caa08d1f9966201b4` | 6199 |
+| `docs/phase-6/08-on-chain-identity-evidence-contract.md` | Protocol-neutral pool/program/mint/vault evidence checker; consumes decoded evidence and does not itself call RPC | `6f30de62b3d3604bffaacea62558707102024772` | 6406 |
+| `docs/phase-6/09-solana-rpc-account-reader.md` | Bounded read-only getMultipleAccounts transport, context-slot/provenance handling, synthetic mock boundary and outstanding decoder/provider gates | `3377ef680848e1c287f98a88831fe3361b822986` | 3972 |
 | `packages/market-data/package.json` | Private canonical market-data workspace with read-only DEX Screener candidate export | `1839c9bd51848baab6a97c0d3b3541527717c2a7` | 452 |
 | `packages/market-data/tsconfig.json` | Strict compiler settings for market-data package | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
 | `packages/market-data/tsconfig.type-tests.json` | Compile-time market data and DEX Screener adapter regression checks | `4aaed29f53a7a4b128b7309c17c910d67bde21de` | 303 |
-| `packages/market-data/src/index.ts` | Canonical schema/freshness/health/replay, provider agreement/fallback and on-chain identity evidence assessment contracts | `f78babab5f9871c8ff49c7fd6c1076617223c7ac` | 52516 |
+| `packages/market-data/src/index.ts` | Canonical schema/freshness/health/replay, provider agreement/fallback and on-chain identity evidence contract with RPC reader exports | `6d16d5b5c319f026156489e09de1e32cdbf9f147` | 52796 |
+| `packages/market-data/src/solana-rpc-reader.ts` | Bounded read-only Solana JSON-RPC transport; raw account metadata/data only, with synthetic injected-fetch marking | `e29105356eca64192b2f22daafed66be37a6dd1e` | 15133 |
 | `packages/market-data/test/types.test.ts` | Compile-time assertions for Solana-only and explicit data states | `4fee465ab586823c0761d54dba49636c745dc9d4` | 1368 |
 | `packages/market-data/src/providers/dex-screener.ts` | Read-only DEX Screener pair adapter with strict normalization, bounded streaming reads and sanitized failures | `da74c2196fa02454ba51afb1933fc1b8640d6fd9` | 15574 |
 | `packages/market-data/type-tests/dex-screener.types.ts` | Compile-time-only regression: unit type and absence of signing/transaction methods | `f65c863c913ee63d150000f185e635d7472ab56c` | 593 |
@@ -209,6 +211,7 @@ Git blob SHA values below were refreshed from the main branch immediately before
 | `test/fixtures/market-data/replay-v1.json` | Synthetic replay fixtures for fresh/stale/unknown/future/invalid observations | `627f1f637489d1ab1aa647fe4d2964a75fea5b62` | 8394 |
 | `test/provider-agreement.test.mjs` | Deterministic tests for independent-source agreement, fallback, stale/unknown data, disagreement and fail-closed outcomes | `7b527d76bd18f24c3f61831b21a42ddc0a00b00d` | 10277 |
 | `test/on-chain-identity.test.mjs` | Synthetic tests for account/decoder identity, vaults, allowlist roles, context-slot/commitment, provenance and fail-closed results | `541ce0dc231344ae9fed60aa4c7d357b2a60efe3` | 9890 |
+| `test/solana-rpc-reader.test.mjs` | Mocked-only getMultipleAccounts transport tests for request shape, slots, response integrity/size, cancellation, provenance and sanitized errors | `b02888281aa71831aeb346c3d39ababf123b57e0` | 9030 |
 | `test/dex-screener.test.mjs` | Mocked adapter tests: identity, units/precision, timestamps, HTTP failures, streaming bounds and timeout cases | `602fe7a47467320c857bde6cebe863146a9347fd` | 10281 |
 | `test/fixtures/market-data/dexscreener-pair-v1.json` | Synthetic DEX Screener pair payload preserving source numeric precision | `e02910c2610b949582e8b7cee99fb1486aa14173` | 909 |
 | `.github/workflows/dependency-review.yml` | PR dependency review failing on high/critical findings | `20a8689e5ccf553b6463dbd39d5f78082342c9e4` | 393 |
@@ -247,17 +250,16 @@ Git blob SHA values below were refreshed from the main branch immediately before
 - No trading, signing, customer portal or payment implementation is part of Phase 5. Mainnet remains unauthorized; numeric-risk and security blockers remain.
 
 ## Phase 6 status
-- Phase 6 is active. The provider-neutral canonical market-data foundation merged through PR #10 into main commit `2ba2bdd357257d2d01799f8f7a80bc7439a942ec`; the fixture-tested read-only DEX Screener candidate adapter merged through [PR #12](https://github.com/hamza131zara/Auto-Trading-Agent/pull/12) as commit `f31d09306a5412bf17669d8ff2ce12d5570dd7d1`; provider agreement/fallback safeguards merged through [PR #13](https://github.com/hamza131zara/Auto-Trading-Agent/pull/13) as commit `7d18be864fed45ccfcc4db4ae3e6e69da0e5f186`; and the on-chain identity evidence contract merged through [PR #14](https://github.com/hamza131zara/Auto-Trading-Agent/pull/14) as commit `30501c827e6ca1c341d57a4a74d0422ce563c265`.
-- PR #14 CI (repository validation, typecheck, build/tests, npm audit and Gitleaks) passed: [run 40821053260](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40821053260); Dependency Review passed: [run 40821053349](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40821053349); CodeQL for JavaScript/TypeScript and Actions passed: [run 40821049039](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40821049039).
-- The provider-agreement gate validates candidate/provenance identity and provider-health structure; independently recomputes observation and health freshness using injected time and explicit age bounds; and requires distinct upstream source groups. It blocks one-source fallback, stale/unknown or incomplete evidence, unaligned source timestamps and provider conflicts. Synthetic agreement cannot advance, and `tradingAuthorized` is always `false`.
-- The on-chain identity evidence contract checks a decoded pool/program/mint/vault bundle against explicit, disjoint DEX/token/loader allowlists, exact decoder/version, account-owner/executable, mint/vault identity, required commitment, minimum context slot and retrieval-provenance gates. Synthetic evidence returns `SYNTHETIC_MATCH` only. It does not call RPC or decode account bytes.
-- PR #12 CI/Gitleaks passed: [run 40818590050](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818590050); Dependency Review passed: [run 40818589926](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818589926); CodeQL passed: [run 40818585745](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818585745). Main-push CI after PR #12 also passed: [run 40819000622](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40819000622).
-- **Still outstanding:** the actual read-only Solana `getMultipleAccounts` RPC reader; reviewed protocol-specific pool-account decoder and program/vault-authority derivation; a genuinely approved DEX program ID and token/loader allowlists; and live-provider/terms/quota/budget review. DEX Screener's source-observation time remains unavailable, so its freshness stays UNKNOWN.
-- Production provider approval remains blocked on current official schema/terms/quota review, commercial licensing compatibility, owner-approved budget, live RPC reader/decoder, independent safety review and approved provider-selection/fallback policy. No production wallet, signing or live mainnet trading is authorized.
+- Phase 6 is active. The provider-neutral canonical market-data foundation merged through PR #10 into main commit `2ba2bdd357257d2d01799f8f7a80bc7439a942ec`; the fixture-tested read-only DEX Screener candidate adapter merged through [PR #12](https://github.com/hamza131zara/Auto-Trading-Agent/pull/12) as commit `f31d09306a5412bf17669d8ff2ce12d5570dd7d1`; provider agreement/fallback safeguards merged through [PR #13](https://github.com/hamza131zara/Auto-Trading-Agent/pull/13) as commit `7d18be864fed45ccfcc4db4ae3e6e69da0e5f186`; on-chain identity evidence contract merged through [PR #14](https://github.com/hamza131zara/Auto-Trading-Agent/pull/14) as commit `30501c827e6ca1c341d57a4a74d0422ce563c265`; and the bounded read-only RPC transport merged through [PR #15](https://github.com/hamza131zara/Auto-Trading-Agent/pull/15) as commit `b541c04f58820e9198a966f6d42aef39e618af7d`.
+- PR #15 CI (repository validation, typecheck, build/tests, npm audit and Gitleaks) passed: [run 40821593536](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40821593536); Dependency Review passed: [run 40821593561](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40821593561); CodeQL JavaScript/TypeScript and Actions passed: [run 40821590642](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40821590642).
+- The read-only RPC reader requests only explicit accounts in one `getMultipleAccounts` call, retains account order and missing-account states, enforces commitment/minContextSlot, stream-limits bodies, rejects redirects, strictly decodes UTF-8, hashes raw response bytes and sanitizes failures. Injected fetch results are marked synthetic; CI uses mocks only. The reader emits raw base64 account data and metadata; it is not an account decoder.
+- The provider-agreement gate validates provenance and provider-health state, independently recomputes observation/health freshness and requires distinct upstream source groups. It blocks single-source fallback, stale/unknown or incomplete evidence, unaligned timestamps and provider conflicts. The on-chain identity checker validates decoded pool/program/mint/vault evidence against disjoint explicit allowlists and slot/commitment/provenance gates. Synthetic evidence cannot advance, and `tradingAuthorized` is always `false`.
+- **Still outstanding:** the reviewed protocol-specific pool decoder and program/vault-authority derivation; approved DEX program ID plus token/loader allowlists; selected production RPC provider and terms/quota/budget review; and an integrated real-source identity validation run. DEX Screener's source-observation time remains unavailable, so freshness stays UNKNOWN.
+- Production provider approval remains blocked on current official schema/terms/quota review, commercial licensing compatibility, owner-approved budget, reviewed protocol decoder, independent safety review and approved provider-selection/fallback policy. No production wallet, signing or live mainnet trading is authorized.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `362fd9358817ec319bc14f7e84d4699c07e4144a`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `ed2dfa7387672c893e234906192a348b42eb4130`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
