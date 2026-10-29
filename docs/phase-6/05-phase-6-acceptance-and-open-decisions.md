@@ -1,6 +1,6 @@
 # Phase 6.5 — Acceptance Criteria and Open Decisions
 
-**Status:** Active, not complete. Canonical contracts, fallback assessment, read-only RPC transport, SPL Token base decoder and fail-closed Token-2022 extension classification are implemented with synthetic tests. No DEX pool protocol or production market-data/RPC provider is owner-approved.
+**Status:** Active, not complete. Canonical contracts, fallback assessment, read-only RPC transport, SPL Token base decoder, fail-closed Token-2022 extension classification and pinned-source Raydium CPMM candidate decoding/integration are implemented with synthetic tests. No production DEX or market-data/RPC provider is owner-approved; real-source identity validation remains open.
 
 ## Acceptance checklist
 
@@ -36,4 +36,4 @@
 
 ## Phase exit rule
 
-**Phase 6 remains ACTIVE. Do not mark it complete yet.** The remaining technical gate is the protocol-specific pool decoder plus end-to-end raw-account-to-identity evidence integration. The owner decision gates also remain open: choose the production RPC/indexed provider(s), confirm current endpoint/terms/quota/retention rules and account-specific plan, approve usage budget, and obtain at least one independently verifiable real-source identity validation. These cannot be claimed complete from synthetic fixtures or a public rate-limit page. Close Phase 6 only after all acceptance items are tested, selected adapters and fallback behavior are documented, failure/degraded modes are proven safe, critical identity is independently validated, and replay is deterministic. Phase 7 token safety and all trade execution remain out of scope.
+**Phase 6 remains ACTIVE. Do not mark it complete yet.** The protocol-decoder implementation item is completed for the pinned Raydium CPMM candidate, but it has only synthetic/mock evidence. Remaining gates: validate the integrated decoder against an independently sourced real pool using an owner-approved read-only RPC endpoint; verify current deployed program/source compatibility; select and approve the production RPC/indexed providers and account plans; confirm current endpoint/schema/terms/quota/retention rules and approve a usage budget; and test the chosen provider's fallback/degraded behavior. A public rate limit or successful fixture test cannot satisfy these gates. Close Phase 6 only after all acceptance items are tested, selected adapters and fallback behavior are documented, failure/degraded modes are proven safe, critical identity is independently validated, and replay is deterministic. Phase 7 token safety and all trade execution remain out of scope.
