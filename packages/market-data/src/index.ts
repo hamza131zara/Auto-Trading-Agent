@@ -175,7 +175,7 @@ export interface MarketDataReplayResult {
 }
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const BASE58_LOOKUP = new Map(Array.from(BASE58_ALPHABET, (char, index) => [char, index]));
+const BASE58_LOOKUP = new Map<string, number>(Array.from(BASE58_ALPHABET, (char, index): [string, number] => [char, index]));
 const DECIMAL_PATTERN = /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/;
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/;
 const PROVIDER_ID_PATTERN = /^[a-z][a-z0-9._-]{0,63}$/;
@@ -518,17 +518,18 @@ export function replayMarketDataCases(cases: readonly MarketDataReplayCase[]): r
       };
     }
     const snapshot = replayCase.snapshot as unknown as CanonicalMarketSnapshot;
+    const freshnessInput: FreshnessInput = {
+      retrievedAt: snapshot.retrievedAt,
+      observedAt: snapshot.observedAt,
+      sourceEventAt: snapshot.sourceEventAt,
+      nowAt: replayCase.nowAt,
+      maxAgeMs: replayCase.maxAgeMs,
+      ...(replayCase.maxFutureSkewMs === undefined ? {} : { maxFutureSkewMs: replayCase.maxFutureSkewMs })
+    };
     return {
       caseId: replayCase.caseId,
       validation,
-      freshness: assessFreshness({
-        retrievedAt: snapshot.retrievedAt,
-        observedAt: snapshot.observedAt,
-        sourceEventAt: snapshot.sourceEventAt,
-        nowAt: replayCase.nowAt,
-        maxAgeMs: replayCase.maxAgeMs,
-        maxFutureSkewMs: replayCase.maxFutureSkewMs
-      })
+      freshness: assessFreshness(freshnessInput)
     };
   });
 }
