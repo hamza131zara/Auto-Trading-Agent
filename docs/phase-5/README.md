@@ -41,7 +41,7 @@ Pull-request CI runs also passed both the quality job and full-history secret sc
 
 Current pins are full commit SHAs for checkout 7.0.1, setup-node 7.1.0 and Gitleaks v3.0.0. The root `SECURITY.md` policy is project-specific, and contract/config regression tests are active.
 
-The owner confirmed branch protection, required checks/reviews and dependency graph settings are complete. The connected GitHub integration could not read the classic branch-protection endpoint (403), so this is recorded as owner-confirmed rather than independently API-verified. The separate Dependency Review workflow is being re-enabled in the Phase 6 branch; its next PR run must verify that GitHub accepts the repository dependency graph. `npm audit --audit-level=high` remains active.
+The owner confirmed branch protection, required checks/reviews and dependency graph settings are complete. The connected GitHub integration could not read the classic branch-protection endpoint (403), so this is recorded as owner-confirmed rather than independently API-verified. The separate Dependency Review workflow has been reintroduced in the Phase 6 PR and passed [run 40815728124](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815728124), showing that GitHub accepted the dependency graph for that run. `npm audit --audit-level=high` remains active.
 
 ## Security invariants
 
