@@ -1372,19 +1372,26 @@ export type {
 
 
 export {
+  RAYDIUM_CPMM_AMM_CONFIG_LENGTH,
   RAYDIUM_CPMM_DECODER_ID,
   RAYDIUM_CPMM_DECODER_VERSION,
   RAYDIUM_CPMM_POOL_STATE_LENGTH,
   RAYDIUM_CPMM_PROGRAM_ID,
   assessRaydiumCpmmIdentityEvidence,
+  decodeRaydiumCpmmAmmConfig,
   decodeRaydiumCpmmPool,
+  deriveRaydiumCpmmAmmConfigPda,
   deriveRaydiumCpmmAuthorityPda,
+  deriveRaydiumCpmmLpMintPda,
+  deriveRaydiumCpmmObservationPda,
   deriveRaydiumCpmmPoolPda,
   deriveRaydiumCpmmVaultPda,
   findSolanaProgramAddress,
   readRaydiumCpmmIdentityBundle
 } from "./raydium-cpmm-decoder.js";
 export type {
+  RaydiumCpmmAmmConfigDecodeResult,
+  RaydiumCpmmAmmConfigState,
   RaydiumCpmmIdentityAssessment,
   RaydiumCpmmIdentityReadRequest,
   RaydiumCpmmIdentityStatus,
