@@ -61,6 +61,7 @@ test("fetches only the known Solana pair using a fixed read-only endpoint", asyn
     calls += 1;
     assert.equal(String(input), "https://api.dexscreener.com/latest/dex/pairs/solana/" + pairAddress);
     assert.equal(init?.method, "GET");
+    assert.equal(init?.redirect, "error");
     assert.equal(new Headers(init?.headers).get("authorization"), null);
     return successResponse();
   });
