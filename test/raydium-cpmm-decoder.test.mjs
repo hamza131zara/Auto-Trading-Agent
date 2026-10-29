@@ -138,6 +138,8 @@ function poolStateBytes({
   token1Mint,
   token0Program = tokenProgramId,
   token1Program = tokenProgramId,
+  token0Decimals = token0Mint === baseMint ? 6 : 9,
+  token1Decimals = token1Mint === baseMint ? 6 : 9,
   observationKey,
   authBump,
   status = 0
@@ -159,8 +161,8 @@ function poolStateBytes({
   bytes[328] = authBump;
   bytes[329] = status;
   bytes[330] = 9;
-  bytes[331] = 9;
-  bytes[332] = 6;
+  bytes[331] = token0Decimals;
+  bytes[332] = token1Decimals;
   for (const offset of [333, 341, 349, 357, 365, 373, 381, 397, 405]) writeU64(bytes, offset, "0");
   bytes[389] = 0;
   bytes[390] = 0;
@@ -317,9 +319,9 @@ test("read helper requests pool/program/mints/derived vaults at an explicit slot
   assert.equal(assessment.pool.canonicalPoolPdaMatches, true);
 });
 
-test("blocks missing accounts and pool/vault identity mismatches", async () => {
+test("blocks pool/vault identity mismatches and missing vault accounts", async () => {
   const fixture = await makeFixture();
-  const reader = new SolanaRpcAccountReader({
+  const alteredPoolReader = new SolanaRpcAccountReader({
     endpoint: "https://rpc.example.invalid",
     providerId: "test-rpc",
     clock: () => retrievedAt,
@@ -336,7 +338,7 @@ test("blocks missing accounts and pool/vault identity mismatches", async () => {
             if (!account) return null;
             const data = Buffer.from(account.dataBase64, "base64");
             if (address === fixture.pool.address) {
-              // Keep the payload well-formed but redirect token0's vault identity.
+              // Keep the layout/discriminator valid but point the state at a different vault.
               writePubkey(data, 72, makeKey(99));
             }
             return {
@@ -351,9 +353,51 @@ test("blocks missing accounts and pool/vault identity mismatches", async () => {
       }), { status: 200 });
     }
   });
-  const bundle = await readRaydiumCpmmIdentityBundle(fixture.target, {
+  const alteredBundle = await readRaydiumCpmmIdentityBundle(alteredPoolReader, fixture.target, {
     commitment: "finalized",
     minContextSlot: 400,
-    requestId: "bad-reader"
+    requestId: "raydium-bad-vault"
   });
+  const altered = await assessRaydiumCpmmIdentityEvidence(fixture.target, alteredBundle, policy());
+  assert.equal(altered.status, "MISMATCH");
+  assert.ok(altered.reasonCodes.includes("POOL_VAULT_PDA_MISMATCH"));
+  assert.equal(altered.tradingAuthorized, false);
+
+  const missingVaultReader = new SolanaRpcAccountReader({
+    endpoint: "https://rpc.example.invalid",
+    providerId: "test-rpc",
+    clock: () => retrievedAt,
+    fetchImpl: async (_url, init) => {
+      const request = JSON.parse(String(init?.body));
+      const addresses = request.params[0];
+      return new Response(JSON.stringify({
+        jsonrpc: "2.0",
+        id: request.id,
+        result: {
+          context: { slot: 500 },
+          value: addresses.map((address) => {
+            if (address === fixture.token1Vault.address) return null;
+            const account = fixture.rawAccounts.get(address);
+            if (!account) return null;
+            return {
+              data: [account.dataBase64, "base64"],
+              executable: account.executable,
+              lamports: 1_000_000,
+              owner: account.ownerProgramId,
+              space: account.space
+            };
+          })
+        }
+      }), { status: 200 });
+    }
+  });
+  const missingBundle = await readRaydiumCpmmIdentityBundle(missingVaultReader, fixture.target, {
+    commitment: "finalized",
+    minContextSlot: 400,
+    requestId: "raydium-missing-vault"
+  });
+  const missing = await assessRaydiumCpmmIdentityEvidence(fixture.target, missingBundle, policy());
+  assert.equal(missing.status, "INSUFFICIENT_EVIDENCE");
+  assert.deepEqual(missing.reasonCodes, ["REQUIRED_ACCOUNT_MISSING"]);
+  assert.equal(missing.tradingAuthorized, false);
 });
