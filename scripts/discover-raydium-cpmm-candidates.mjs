@@ -339,12 +339,11 @@ export async function discoverRaydiumCpmmCandidates({
   if (!RPC_REQUEST_ID_PATTERN.test(clientRequestId + "-rpc")) {
     throw codedError("DISCOVERY_REQUEST_ID_INVALID");
   }
-  const fetchedAt = now();
-
   const raydium = await fetchJson(fetchImpl, RAYDIUM_POOL_QUERY_URL, {
     method: "GET",
     headers: { accept: "application/json" }
   }, "RAYDIUM_API");
+  const fetchedAt = now();
   const raydiumPage = normalizeRaydiumPage(raydium.payload);
   const byAddress = new Map();
   for (const pool of raydiumPage.pools) {
@@ -475,6 +474,7 @@ export async function discoverRaydiumCpmmCandidates({
     candidate.meetsLiquidityAndVolumeThresholds && candidate.dexScreenerPairFound);
   const scanIncomplete =
     raydiumPage.hasNextPage ||
+    raydiumPage.count > raydiumPage.pools.length ||
     selected.length < exactPairs.length ||
     candidatesToCrossCheck.length < cpmmCandidates.length;
   const displayCandidates = enrichedCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
