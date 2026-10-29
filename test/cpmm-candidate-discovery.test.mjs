@@ -80,12 +80,9 @@ function makeRaydiumPool(poolAddress, programId, tvl, volume24h, type = "Standar
   };
 }
 
-function raydiumResponse(pools, { hasNextPage = false, count = pools.length } = {}) {
-  return {
-    id: "raydium-response-id",
-    success: true,
-    data: { count, hasNextPage, data: pools }
-  };
+function raydiumResponse(pools, { hasNextPage = false, count = pools.length, wrapped = false } = {}) {
+  const page = { count, hasNextPage, data: pools };
+  return wrapped ? { id: "raydium-response-id", success: true, data: page } : page;
 }
 
 function pairResponse(pairs) {
@@ -211,6 +208,28 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   assert.equal(report.candidates[1].meetsLiquidityAndVolumeThresholds, false);
   assert.equal(report.candidates.some((item) => item.poolAddress === HIGH_CLMM), false);
   assert.equal(report.candidates[0].sourceFreshness, "UNKNOWN");
+});
+
+test("accepts Raydium SDK PoolsApiReturn page shape and the explicit HTTP envelope form", async () => {
+  for (const wrapped of [false, true]) {
+    const { fetchImpl } = mockFetchFactory();
+    const wrappedFetch = async (input, init = {}) => {
+      const url = String(input);
+      if (poolApiUrl(url)) {
+        return new Response(JSON.stringify(raydiumResponse([
+          makeRaydiumPool(HIGH_CPMM, CPMM, 500_000, 75_000)
+        ], { wrapped })), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return fetchImpl(input, init);
+    };
+    const report = await discoverRaydiumCpmmCandidates({
+      env: approvals,
+      fetchImpl: wrappedFetch,
+      now: () => "2026-10-29T09:00:00.000Z"
+    });
+    assert.equal(report.selectionPolicy.candidateCount, 1);
+    assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
+  }
 });
 
 test("does not count wrong mint pairs or non-standard pools from the Raydium API", async () => {
