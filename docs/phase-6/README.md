@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — implementation includes canonical market-data contracts, provider-agreement/fallback gates, an on-chain identity evidence contract, read-only RPC transport, SPL Token base-state decoding, Token-2022 TLV structure inspection, and a fail-closed semantic registry for known/unknown Token-2022 extension IDs. Phase 6 is not closed: a protocol-specific pool decoder/integration and owner-approved production provider/plan remain gates.
+**Status:** ACTIVE — implementation includes canonical market-data contracts, provider-agreement/fallback gates, on-chain identity evidence, bounded read-only RPC transport, SPL Token base-state decoding, Token-2022 TLV structure and fail-closed semantic policy, plus a pinned-source Raydium CPMM decoder/integration candidate. Phase 6 is not closed: real-source identity validation and owner-approved provider/plan decisions remain gates.
 **Started:** 29 October 2026.
 **Previous phase:** Phase 5 closed for engineering-foundation handoff; see [Phase 5 closeout](../phase-5/06-phase-5-closeout-and-phase-6-handoff.md).
 **Canonical roadmap:** Frozen Roadmap v1.0; phase order is unchanged.
@@ -29,6 +29,7 @@
 9. [Read-only Solana RPC account reader](09-solana-rpc-account-reader.md)
 10. [SPL Token base-state decoder](10-spl-token-base-state-decoder.md)
 11. [Token-2022 extension TLV structure inspector](11-token2022-extension-tlv-inspector.md)
+12. [Raydium CPMM candidate pool decoder](12-raydium-cpmm-candidate-decoder.md)
 
 ## Initial implementation boundary
 
@@ -49,21 +50,25 @@ A read-only DEX Screener reference adapter is included for evaluation. Its fixtu
 
 Candidates remain those in the owner-approved provider matrix (Solana RPC, Helius, DEX Screener, Birdeye and other reviewed sources as appropriate). This phase must not turn the research shortlist or earlier dated pricing snapshot into an implied vendor commitment. A provider adapter may be considered production-ready only after endpoint/version and terms review, quota/budget selection, schema validation, timeout/retry/circuit-breaker behavior, fallback/disagreement tests, and deterministic fixtures pass.
 
+## Protocol-specific candidate decoder
+
+The Raydium CPMM candidate decoder in [Phase 6.12](12-raydium-cpmm-candidate-decoder.md) now connects the bounded account reader to decoded PoolState, AMM config, LP mint, mint/vault state, and PDA/authority checks. Tests are synthetic only; this is not production provider selection or live-source validation.
+
 ## Token-2022 extension TLV structure and semantic policy
 
 The structural inspector and fail-closed semantic registry in [Phase 6.11](11-token2022-extension-tlv-inspector.md) validate TLV entry boundaries, lengths, duplicate types, termination and account-kind applicability. Known types are inventoried against the published `spl-token-2022-interface` 3.1.2 enum with a conservative impact category; unknown/future IDs are explicitly blocked. No extension-bearing token is deemed safe or eligible for identity evidence by this Phase 6 policy. Token-specific safety review remains Phase 7.
 
 ## SPL Token base-state decoder
 
-The decoder in [Phase 6.10](10-spl-token-base-state-decoder.md) parses the classic 82-byte mint and 165-byte token-account base layouts and can parse only the base prefix of Token-2022 data. Any extended Token-2022 account is explicitly flagged `EXTENSIONS_UNINSPECTED` and cannot pass the identity-evidence parsing gate. Extension TLV interpretation is still outstanding.
+The decoder in [Phase 6.10](10-spl-token-base-state-decoder.md) parses the classic 82-byte mint and 165-byte token-account base layouts and validates the base prefix of Token-2022 data. Extended Token-2022 accounts are flagged `EXTENSIONS_UNINSPECTED` by the base decoder; the separate [Phase 6.11 inspector/policy](11-token2022-extension-tlv-inspector.md) inspects TLV structure and routes known, unknown and scope-invalid types conservatively. Extension-bearing accounts remain ineligible for identity evidence pending the actual token-safety review in Phase 7.
 
 ## Read-only RPC transport
 
-A bounded, read-only `getMultipleAccounts` transport is implemented in [Phase 6.9](09-solana-rpc-account-reader.md). It preserves the response context slot and account order, hashes the response, marks injected-fetch results synthetic, and never makes an RPC call in CI. It deliberately returns raw base64 account data only; pool/mint/vault decoding and production provider selection remain separate gates.
+A bounded, read-only `getMultipleAccounts` transport is implemented in [Phase 6.9](09-solana-rpc-account-reader.md). It preserves the response context slot and account order, hashes the response, marks injected-fetch results synthetic, and never makes an RPC call in CI. It returns raw base64 account data only; [Phase 6.12](12-raydium-cpmm-candidate-decoder.md) now consumes that transport for a pinned-source Raydium CPMM candidate. Provider selection and real-source validation remain separate gates.
 
 ## On-chain identity evidence boundary
 
-The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry with disjoint DEX/token/loader roles. It does not fetch RPC data or decode raw account bytes. The read-only `getMultipleAccounts` reader and protocol-specific decoder are still required before any live identity result may be claimed.
+The pure evidence checker in [Phase 6.8](08-on-chain-identity-evidence-contract.md) validates a decoded pool/program/mint/vault bundle against an explicitly approved program/decoder registry with disjoint DEX/token/loader roles. It does not fetch RPC data or decode raw account bytes. The generic reader and a pinned-source Raydium CPMM candidate decoder now exist, but only mocked/synthetic tests have run; no live identity result may be claimed until independent real-source verification and owner-approved provider selection.
 
 ## Provider agreement and fallback safeguards
 
@@ -73,4 +78,4 @@ The agreement evaluator requires at least two eligible independent providers; re
 
 ## Exit rule
 
-Phase 6 closes only after the canonical schema and adapter contract are approved, selected adapters have fixture-backed parse/error/retry/freshness/provenance tests, provider-health, provider disagreement and fallback/degraded-mode behaviors are verified, independent on-chain validation is implemented and tested, and replay is deterministic. The Phase 6 exit does not authorize token-safety scoring (Phase 7) or execution.
+**Phase 6 remains ACTIVE.** The protocol-decoder implementation item now has synthetic test coverage, but Phase 6 cannot close until an integrated identity assessment succeeds against a real, independently sourced pool using an owner-approved read-only RPC source, the chosen RPC/indexed-provider plans and their current terms/quota/retention behavior are reviewed, the usage budget is explicitly approved, and the selected provider's fallback/degraded modes are tested. A mock run cannot count as live-source verification. Closing Phase 6 does not authorize token-safety scoring (Phase 7) or execution.

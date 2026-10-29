@@ -1,6 +1,6 @@
 # Phase 6.8 — On-Chain Identity Evidence Contract
 
-**Status:** The deterministic evidence-bundle checker, generic read-only JSON-RPC transport and classic/Token-2022 base-state decoder are implemented with synthetic/mock tests. A DEX-specific pool decoder and reviewed Token-2022 extension-semantic policy are not implemented, and no production RPC provider is selected. Structural TLV framing is inspected, but extension-bearing token state remains ineligible for identity evidence. This contract must not be described as completed live on-chain verification.
+**Status:** The deterministic evidence-bundle checker, generic read-only JSON-RPC transport and classic/Token-2022 base-state decoder are implemented with synthetic/mock tests. A pinned Raydium CPMM candidate pool decoder and fail-closed Token-2022 extension-semantic routing are implemented. The Raydium decoder is a synthetic-tested candidate only; extension-bearing token state remains ineligible for identity evidence, Phase 7 review is still required, and no production RPC/indexed provider is selected. This contract must not be described as completed live on-chain verification.
 
 ## Why this is a separate gate
 
@@ -10,9 +10,9 @@ The official [Solana `getMultipleAccounts` RPC documentation](https://solana.com
 
 ## Implemented checker boundary
 
-`assessOnChainIdentityEvidence(target, evidence, policy)` is a pure deterministic checker. It performs no network calls and does not decode raw account bytes. A future read-only RPC reader and a versioned protocol-specific decoder must produce the evidence it consumes.
+`assessOnChainIdentityEvidence(target, evidence, policy)` is a pure deterministic checker. It performs no network calls and does not decode raw account bytes. The bounded generic reader and a pinned-source Raydium CPMM candidate decoder now produce synthetic-testable evidence for this gate. Real-source verification and production provider approval remain outstanding.
 
-The separate reader returns raw base64 account data at a shared context slot. The SPL Token base-state decoder can parse mint/token-account prefixes but does not decode protocol-specific pool layouts or Token-2022 extension TLVs. The identity check requires:
+The separate reader returns raw base64 account data at a shared context slot. The SPL Token base-state decoder parses standard mint/token-account prefixes; a separate Token-2022 TLV inspector/policy blocks unresolved extensions, and the Raydium CPMM candidate decoder parses its pinned protocol-specific pool layout. The identity check requires:
 
 - **Explicit scope:** target must be a canonical Solana `mainnet-beta` observation with a non-null pool address.
 - **Read provenance:** safe RPC provider ID, UTC retrieval time, context slot, requested `minContextSlot`, commitment, request ID and SHA-256 of raw response bytes. Non-synthetic evidence without request ID or digest is insufficient.
