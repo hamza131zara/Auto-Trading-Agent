@@ -40,7 +40,7 @@ The current provider matrix is a shortlist only. Before any concrete adapter shi
 - terms, retention, redistribution and customer-isolation considerations;
 - schema fixtures for success, missing fields, malformed data, rate limits, stale responses and provider disagreement.
 
-No live or paid provider call is made by the Phase 6 provider-neutral package. Provider disagreement/fallback assessment is implemented as a pure deterministic gate in [Phase 6.7](07-provider-agreement-and-fallback-policy.md); each candidate must identify its upstream independence group, and the gate cannot count aliases as independent, select around a conflict, or authorize trading.
+No live or paid provider call is made by the Phase 6 provider-neutral package. Provider disagreement/fallback assessment is implemented as a pure deterministic gate in [Phase 6.7](07-provider-agreement-and-fallback-policy.md); each candidate must identify its upstream independence group; observation and provider-health freshness are separately rechecked. The gate cannot count aliases as independent, select around a conflict, or authorize trading.
 
 
 ## DEX Screener candidate adapter (evaluation only)
