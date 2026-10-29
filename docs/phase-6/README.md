@@ -47,6 +47,8 @@ Candidates remain those in the owner-approved provider matrix (Solana RPC, Heliu
 
 ## Provider agreement and fallback safeguards
 
+Implementation and synthetic-test validation on the active PR branch passed CI/typecheck/build/tests/npm audit/Gitleaks ([run 40819982381](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40819982381)), Dependency Review ([run 40819982477](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40819982477)), and CodeQL ([run 40819979725](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40819979725)). No provider endpoint was contacted by these tests.
+
 The agreement evaluator requires at least two eligible independent providers; recalculates freshness from the injected clock; checks candidate health and provenance identity; and uses exact identity/value comparison without invented tolerances, and requires distinct upstream independence groups (not just distinct adapter names). A lone fallback, timestamp mismatch, missing required measure, stale data, or provider disagreement blocks progression. Even an agreement only permits consideration for independent on-chain validation; trading is always unauthorized. See [Phase 6.7](07-provider-agreement-and-fallback-policy.md).
 
 ## Exit rule
