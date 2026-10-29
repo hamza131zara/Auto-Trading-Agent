@@ -9,6 +9,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "src/providers/**/*.ts",
+    "type-tests/**/*.ts"
   ]
 }

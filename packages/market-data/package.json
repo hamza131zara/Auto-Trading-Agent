@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./providers/dex-screener": {
+      "types": "./dist/providers/dex-screener.d.ts",
+      "import": "./dist/providers/dex-screener.js"
     }
   },
   "scripts": {

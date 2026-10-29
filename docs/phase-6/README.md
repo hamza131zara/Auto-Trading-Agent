@@ -13,7 +13,7 @@
 4. Assess observation freshness deterministically using an injected clock and documented maximum age.
 5. Represent provider health as a separate operational state from data quality/freshness.
 6. Build deterministic, synthetic replay fixtures that run without network access.
-7. Define adapter boundaries so individual provider integrations can be added only after current official documentation, account plan, terms, quotas and fallback behavior are reviewed.
+7. Define adapter boundaries and add fixture-backed read-only candidate adapters only after documenting endpoint semantics; provider plan, terms, quota and fallback decisions remain separate production gates.
 
 ## Documents
 
@@ -22,10 +22,11 @@
 3. [Provenance, freshness and provider health](03-provenance-freshness-and-provider-health.md)
 4. [Deterministic replay fixtures](04-deterministic-replay-fixtures.md)
 5. [Acceptance criteria and open decisions](05-phase-6-acceptance-and-open-decisions.md)
+6. [DEX Screener read-only reference adapter](06-dexscreener-reference-adapter.md)
 
 ## Initial implementation boundary
 
-The first package is provider-neutral and performs validation, time/freshness assessment, provider-health transitions and fixture replay only. It performs no external RPC/API requests and contains no provider credentials. It does not select a market route, assert token safety, calculate a trade, authorize an entry, sign a transaction or place an order.
+The shared contract package performs validation, freshness assessment, provider-health transitions and fixture replay. A read-only DEX Screener candidate adapter exists for evaluation and can only query an explicitly requested Solana mainnet pair. The adapter is not selected for production; adapter tests use a mocked fetch and do not call the external API. The adapter does not select a market route, assert token safety, calculate a trade, authorize an entry, sign a transaction or place an order.
 
 ## Initial implementation validation
 
@@ -33,6 +34,10 @@ The first package is provider-neutral and performs validation, time/freshness as
 - Dependency Review passed on PR #10: [run 40815954105](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815954105).
 - GitHub's optional AI code-scan workflow passed on PR #10: [run 40815955521](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815955521).
 - CodeQL analysis on the main merge commit completed successfully: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698).
+
+## Candidate adapter in the current slice
+
+A read-only DEX Screener reference adapter is included for evaluation. Its fixture and mocked-fetch tests are part of the active branch/CI evidence; its existence does not close provider selection or production data-readiness gates. It uses a USD-per-base price measure and explicit USD liquidity/volume measures. Because the response lacks a trustworthy source-observation timestamp, it retains null observation/event timestamps and freshness remains `UNKNOWN`. See [the DEX Screener reference adapter note](06-dexscreener-reference-adapter.md).
 
 ## Provider-selection gate
 
