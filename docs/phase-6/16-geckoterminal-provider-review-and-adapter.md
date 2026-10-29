@@ -26,7 +26,11 @@ The default live adapter uses a seven-second process-local pacing guard to stay 
 
 ## Validation
 
-The test/geckoterminal-adapter.test.mjs suite uses fixtures and injected fetch only. It covers exact endpoint/version selection, request pacing, pool/mint identity rejection, missing measures, malformed decimal/count values, HTTP/rate-limit mapping, response-size limits, invalid envelopes, and synthetic provenance. CI [run #219](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40923071801) passed 179/179 tests, typecheck, build, dependency audit and Gitleaks. No live GeckoTerminal API request was made.
+The test/geckoterminal-adapter.test.mjs suite uses fixtures and injected fetch only. It covers exact endpoint/version selection, request pacing, pool/mint identity rejection, missing measures, malformed decimal/count values, HTTP/rate-limit mapping, response-size limits, invalid envelopes, and synthetic provenance. CI [run #219](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40923071801) passed 179/179 tests, typecheck, build, dependency audit and Gitleaks. A follow-up timestamp-acceptance regression is now added; its CI result will be recorded after validation. No live GeckoTerminal API request was made.
+
+## Source-timestamp acceptance regression
+
+The new `test/geckoterminal-evidence-gate.test.mjs` verifies that even when another indexed provider offers a current, timestamped observation, GeckoTerminal's otherwise well-formed pool snapshot is rejected with `FRESHNESS_UNKNOWN` and `SOURCE_TIMESTAMP_MISSING`. A recent retrieval time alone does not make the missing source timestamp acceptable, and the provider agreement result remains `INSUFFICIENT_EVIDENCE` or `NO_ACCEPTABLE_PROVIDER`, with on-chain progression and trading authorization false. The test uses fixture data and makes no network call. This preserves the open timestamp gap as a real acceptance blocker rather than silently treating this candidate as a production fallback.
 
 ## Open approval gates
 

@@ -6,7 +6,7 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Live discovery found no pool meeting approved thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps), and DEX Screener source time is missing. The evidence gates and read-only provider orchestrator are implemented. A disabled-by-default GeckoTerminal exact-pool adapter with conservative seven-second process-local request pacing passed [CI #219](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40923071801) with 179/179 tests, typecheck, build, dependency audit and Gitleaks. No live GeckoTerminal call was made. Official rate-limit sources conflict, API terms/attribution approval is open, and there is no trustworthy current pool snapshot timestamp. Production-provider approval, live fallback and trading remain unauthorized.
+> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Live discovery found no pool meeting approved thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps), and DEX Screener source time is missing. A disabled GeckoTerminal exact-pool adapter exists, but it is not enabled. A new integration regression explicitly proves that its missing source timestamp cannot count toward provider consensus even beside a fresh indexed source; CI is pending. No live request or paid plan is authorized. Provider terms, attribution, current quota and timestamp semantics remain open; production-provider approval and trading are not authorized.
 
 ## Start here
 - [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)
