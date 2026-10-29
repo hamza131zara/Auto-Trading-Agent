@@ -3,11 +3,11 @@
 Canonical source artifacts, phase documents, design assets and engineering foundation files. Git blob hashes and byte sizes refer to the tracked main-branch file state before this register refresh.
 
 
-**Register version:** 2.8  
+**Register version:** 2.9  
 **Last refreshed:** 29 October 2026  
 **Repository:** `hamza131zara/Auto-Trading-Agent`  
 **Branch:** `main`  
-**Source snapshot before this register refresh:** `95319be8e484d5fa8a0874d735838446e0ad3014`  
+**Source snapshot before this register refresh:** `ef553870f339657f07734a842e6f5bbde9793606`  
 **Canonical product baseline:** *Solana Autonomous DEX Trading Agent — Roadmap v1.0*, dated 20 October 2026.  
 **Locked commercial deployment decision:** D-025 — self-hosted, customer-isolated, approved by owner on 28 October 2026.
 
@@ -32,7 +32,7 @@ The DOCX/PDF remain separately supplied artifacts; they are not committed as bin
 | Path | Coverage/status | Git blob SHA | Bytes |
 |---|---|---|---:|
 | `PHASE1-STATUS.md` | Phases 1–4 handoffs closed; Phase 5 PR CI evidence and owner-side gates documented | `e170708e88e8ea674498b6d0f7037ed14f6d7845` | 7490 |
-| `README.md` | Project overview, frozen roadmap, Phase 5 active status and current gates | `9ab805e29cffbd9a00d6563abf44385ce4f3f4d2` | 6787 |
+| `README.md` | Project overview, frozen roadmap, Phase 6 active status, adapter candidate and production gates | `8db2bc8974e36a6211429dc6fe336db98d13ca95` | 7033 |
 | `SECURITY.md` | Project-specific supported-branch and responsible vulnerability-reporting policy | `7c80c6cc4717412380050f53e5bf095d64f03e6b` | 2688 |
 
 ## Phase 1 documents
@@ -189,19 +189,24 @@ Git blob SHA values below were refreshed from the main branch immediately before
 
 | Repository path | Coverage/status | Current main-branch Git blob SHA | Bytes |
 |---|---|---|---:|
-| `docs/phase-6/README.md` | Phase 6 scope, provider-neutral boundary and provider-selection gate | `26226af72f7df35d68735cf4d740719a81fe3c08` | 3958 |
-| `docs/phase-6/01-canonical-observation-schema.md` | Versioned canonical observation schema, units, validation and versioning | `45b1fb3b99b5bb5e777de09c668e620fd78850a5` | 2743 |
-| `docs/phase-6/02-adapter-contract-and-provider-boundaries.md` | Provider-neutral adapter interface and bounded failure/retry boundary | `522a6c5662353c76bc025132eaa1a90349e56524` | 2882 |
+| `docs/phase-6/README.md` | Phase 6 scope, canonical market-data foundation and candidate-adapter boundaries | `981345017acbe2e92035ab3bed68482c804a49b0` | 4802 |
+| `docs/phase-6/01-canonical-observation-schema.md` | Versioned canonical observation schema, units, validation and versioning | `e003f644e3ba6c72b334458f4d627478f073454d` | 2983 |
+| `docs/phase-6/02-adapter-contract-and-provider-boundaries.md` | Provider-neutral adapter interface, candidate adapters and bounded failures | `9dad4342a2ebee416c6b559f22fe13952fc5acb7` | 5065 |
 | `docs/phase-6/03-provenance-freshness-and-provider-health.md` | Separate data freshness and provider health semantics | `e1d0e227bc4f2a41b51c0fffa26d9357eb02a81f` | 2391 |
 | `docs/phase-6/04-deterministic-replay-fixtures.md` | Synthetic fixture requirements and deterministic replay rules | `7ece326c244421ac22df5892c3cd3698a3252c76` | 1323 |
-| `docs/phase-6/05-phase-6-acceptance-and-open-decisions.md` | Phase 6 acceptance evidence and provider-selection decisions | `7a75381f3bd018afa9b67cd56831f66992de62bc` | 2744 |
-| `packages/market-data/package.json` | Private provider-neutral canonical market-data workspace | `448d5312ba16282cc8d6e1cba53d60b8b28ec97d` | 307 |
+| `docs/phase-6/05-phase-6-acceptance-and-open-decisions.md` | Phase 6 acceptance evidence, passing candidate-adapter CI and production gates | `a43853f862d32878f2e67de8a8ebca85adc90fb0` | 3577 |
+| `docs/phase-6/06-dexscreener-reference-adapter.md` | Read-only candidate adapter behavior, timestamp/freshness semantics, official-source quota and licensing gates | `39267e3810d06b57f7a4201f3b6f14c8da1e974e` | 6539 |
+| `packages/market-data/package.json` | Private canonical market-data workspace with read-only DEX Screener candidate export | `1839c9bd51848baab6a97c0d3b3541527717c2a7` | 452 |
 | `packages/market-data/tsconfig.json` | Strict compiler settings for market-data package | `cf9e1b1a27ef4c39a4c724e106ea5d6b7ca0daf2` | 153 |
-| `packages/market-data/tsconfig.type-tests.json` | Compile-time market data contract tests | `58fbc45587a3023ef471695a4ca452a6ba162f90` | 248 |
-| `packages/market-data/src/index.ts` | Canonical snapshot validation, freshness, provider health, adapter and replay contracts | `6b0fcf4de0f55de0f6c0fa22606f6020beaac417` | 20402 |
+| `packages/market-data/tsconfig.type-tests.json` | Compile-time market data and DEX Screener adapter regression checks | `4aaed29f53a7a4b128b7309c17c910d67bde21de` | 303 |
+| `packages/market-data/src/index.ts` | Canonical snapshot validation, explicit USD-per-base units, freshness, provider health and replay contracts | `c7e05790b5e434d2ee6a0f9690d6f4be5fda9980` | 20544 |
 | `packages/market-data/test/types.test.ts` | Compile-time assertions for Solana-only and explicit data states | `4fee465ab586823c0761d54dba49636c745dc9d4` | 1368 |
+| `packages/market-data/src/providers/dex-screener.ts` | Read-only DEX Screener pair adapter with strict normalization, bounded streaming reads and sanitized failures | `da74c2196fa02454ba51afb1933fc1b8640d6fd9` | 15574 |
+| `packages/market-data/type-tests/dex-screener.types.ts` | Compile-time-only regression: unit type and absence of signing/transaction methods | `f65c863c913ee63d150000f185e635d7472ab56c` | 593 |
 | `test/market-data.test.mjs` | Runtime schema, freshness, provider-health and deterministic replay tests | `3b1930a53f233872edaaeb9d796650d32dc11182` | 8285 |
 | `test/fixtures/market-data/replay-v1.json` | Synthetic replay fixtures for fresh/stale/unknown/future/invalid observations | `627f1f637489d1ab1aa647fe4d2964a75fea5b62` | 8394 |
+| `test/dex-screener.test.mjs` | Mocked adapter tests: identity, units/precision, timestamps, HTTP failures, streaming bounds and timeout cases | `602fe7a47467320c857bde6cebe863146a9347fd` | 10281 |
+| `test/fixtures/market-data/dexscreener-pair-v1.json` | Synthetic DEX Screener pair payload preserving source numeric precision | `e02910c2610b949582e8b7cee99fb1486aa14173` | 909 |
 | `.github/workflows/dependency-review.yml` | PR dependency review failing on high/critical findings | `20a8689e5ccf553b6463dbd39d5f78082342c9e4` | 393 |
 
 ## Brand assets
@@ -238,15 +243,17 @@ Git blob SHA values below were refreshed from the main branch immediately before
 - No trading, signing, customer portal or payment implementation is part of Phase 5. Mainnet remains unauthorized; numeric-risk and security blockers remain.
 
 ## Phase 6 status
-- Phase 6 is active. The provider-neutral market-data slice merged through PR #10 into main commit `2ba2bdd357257d2d01799f8f7a80bc7439a942ec`.
+- Phase 6 is active. The provider-neutral canonical market-data foundation merged through PR #10. The fixture-tested read-only DEX Screener candidate adapter merged through [PR #12](https://github.com/hamza131zara/Auto-Trading-Agent/pull/12) as main commit `f31d09306a5412bf17669d8ff2ce12d5570dd7d1`.
 - Main-push CI (repository validation, typecheck, build/tests, npm audit and Gitleaks) passed: [run 40816041202](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816041202). Dependency Review passed on PR #10: [run 40815954105](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815954105); the optional AI code scan passed: [run 40815955521](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40815955521).
 - CodeQL analysis on the merge commit also completed successfully: [run 40816040698](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40816040698).
-- The first slice validates canonical snapshots, explicit decimal units/nulls, Solana public-key syntax, deterministic freshness states, provider-health transitions and synthetic replay fixtures. No production RPC/indexed-market provider is selected.
+- Main-push CI passed after the adapter merge: [run 40819000622](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40819000622). PR #12 validation passed CI/Gitleaks [run 40818590050](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818590050), Dependency Review [run 40818589926](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818589926) and CodeQL [run 40818585745](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40818585745).
+- The adapter requires an explicit Solana mainnet pool and exact chain/pair/base/quote identity, preserves provider decimal lexemes, bounds response reads, rejects redirects and keeps observation/event timestamps null when source timing is unsupported. Freshness remains UNKNOWN; the adapter is for research/evaluation only.
+- DEX Screener is not selected as a production provider. Current official schema/terms/quota, commercial licensing compatibility, owner-approved budget, independent on-chain checks and fallback/disagreement policy remain release gates. No production wallet, signing or live mainnet trading is authorized.
 - Account plans, current endpoint versions/terms, source-specific freshness thresholds, provider disagreement rules and fallback behavior remain open. No live credentials, wallet/signer access or trade execution is introduced; mainnet remains unauthorized.
 
 ## Integrity and maintenance
 - DOCX/PDF values above are SHA-256 digests of the exact uploaded files; Git blob values are different identifiers.
-- Every document edit changes its Git blob SHA. This register was refreshed against source tree `ba97b83dde3b63d64fa7a67891f2f32040e48559`; its own blob hash is intentionally excluded.
+- Every document edit changes its Git blob SHA. This register was refreshed against source snapshot `ef553870f339657f07734a842e6f5bbde9793606`; its own blob hash is intentionally excluded.
 - This register's own blob hash is intentionally excluded.
 - Document presence/approval is not evidence that code is implemented, tests pass, a processor/bank approves the product, legal clearance exists or trading is profitable.
 - Public provider limits/prices are dated snapshots and must be confirmed against the chosen account before implementation.
