@@ -87,6 +87,12 @@ The decoded pool records `canonicalPoolPdaMatches: true`, `statusFlags: 0`, and 
 
 The report correctly retained `phase6Complete: false`, `productionProviderApprovedByThisReport: false`, and `tradingAuthorized: false`. The first two operator acknowledgements and the terms/budget acknowledgement applied only to this one-off run; they do not constitute blanket production authorization.
 
+## Market-data fields in the report
+
+Each future report includes the indexed provider's `price`, `liquidity`, `volume24h`, `buys24h`, and `sells24h` values exactly as normalized, including explicit nulls and units, along with retrieval/observation/source-event timestamps. These fields are source observations, not independent validation.
+
+The report explicitly marks source freshness as `UNKNOWN` when both source timestamps are absent. If a timestamp exists but no source-specific maximum-age policy has been approved, freshness is `NOT_ASSESSED`; retrieval time alone is never treated as market-event freshness. The current DEX Screener mapping leaves both source timestamps null, so this gate stays open. No market-data price/liquidity/volume measurement from the existing run should be interpreted retroactively from the identity match alone.
+
 ## Evidence report
 
 The JSON report retains the target provider/request/hash, RPC provider/commitment/time/context slot/request ID/raw-response hash, decoder ID/version, decoded public account identities, outcome reason codes and acknowledgements. It intentionally excludes the endpoint URL and raw base64 account payloads. Store the report outside the repository unless and until the owner decides where a redacted audit artifact belongs.
