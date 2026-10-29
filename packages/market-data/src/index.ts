@@ -118,6 +118,9 @@ export interface IndependentReservePriceComparisonPolicy {
   readonly approvedIndependenceGroupId: string;
   readonly expectedBaseFeedId: string;
   readonly expectedQuoteFeedId: string;
+  /** Optional owner-approved indexed source for candle/observation timestamps; both fields are required together. */
+  readonly approvedIndexedProviderId?: string;
+  readonly approvedIndexedIndependenceGroupId?: string;
   /** Test-only bypass for fixture arithmetic; never makes synthetic results operationally eligible. */
   readonly allowSyntheticForTests?: boolean;
 }
@@ -137,6 +140,8 @@ export interface IndependentReservePriceComparisonInput {
   readonly indexedProviderId: string;
   readonly indexedIndependenceGroupId: string;
   readonly indexedSourceEventAt: string | null;
+  /** Conservative observation time such as an OHLCV candle start; never relabel as a transaction event. */
+  readonly indexedSourceObservedAt?: string | null;
   readonly indexedRetrievedAt: string;
   readonly indexedSynthetic: boolean;
   readonly baseUsd: IndependentUsdPriceObservation;
@@ -157,6 +162,7 @@ export interface IndependentReservePriceComparisonResult {
     readonly deviationBpsRounded: string | null;
     readonly toleranceBps: number;
   };
+  readonly indexedSourceTimestampKind: "EVENT" | "OBSERVATION" | "MISSING";
   readonly referenceProviderId: string;
   readonly referenceIndependenceGroupId: string;
   readonly baseFeedId: string;
@@ -593,6 +599,11 @@ function validComparisonPolicy(policy: IndependentReservePriceComparisonPolicy):
     typeof policy.expectedQuoteFeedId === "string" &&
     REQUEST_ID_PATTERN.test(policy.expectedQuoteFeedId) &&
     policy.expectedBaseFeedId !== policy.expectedQuoteFeedId &&
+    ((policy.approvedIndexedProviderId === undefined && policy.approvedIndexedIndependenceGroupId === undefined) ||
+      (typeof policy.approvedIndexedProviderId === "string" &&
+       isSafeSlug(policy.approvedIndexedProviderId) &&
+       typeof policy.approvedIndexedIndependenceGroupId === "string" &&
+       isSafeSlug(policy.approvedIndexedIndependenceGroupId))) &&
     (policy.allowSyntheticForTests === undefined || typeof policy.allowSyntheticForTests === "boolean");
 }
 
@@ -674,6 +685,12 @@ export function assessIndependentReservePriceAgreement(
     referenceIndependenceGroupId: input?.policy?.approvedIndependenceGroupId ?? "",
     baseFeedId: input?.policy?.expectedBaseFeedId ?? "",
     quoteFeedId: input?.policy?.expectedQuoteFeedId ?? "",
+    indexedSourceTimestampKind:
+      input?.indexedSourceEventAt !== null && input?.indexedSourceEventAt !== undefined
+        ? "EVENT"
+        : input?.indexedSourceObservedAt !== null && input?.indexedSourceObservedAt !== undefined
+          ? "OBSERVATION"
+          : "MISSING",
     sourceFreshness: freshness,
     maxReferenceTimestampSkewMs: input?.policy?.maxReferenceTimestampSkewMs ?? -1,
     referenceTimestampSkewMs,
@@ -693,6 +710,9 @@ export function assessIndependentReservePriceAgreement(
       typeof input.indexedRetrievedAt !== "string" ||
       !isUtcTimestamp(input.indexedRetrievedAt) ||
       (input.indexedSourceEventAt !== null && !isUtcTimestamp(input.indexedSourceEventAt)) ||
+      (input.indexedSourceObservedAt !== undefined &&
+       input.indexedSourceObservedAt !== null &&
+       !isUtcTimestamp(input.indexedSourceObservedAt)) ||
       (input.indexedPriceUsdPerBase !== null &&
         (parseExactPriceDecimal(input.indexedPriceUsdPerBase) === null ||
          (parseExactPriceDecimal(input.indexedPriceUsdPerBase)?.coefficient ?? 0n) <= 0n)) ||
@@ -762,16 +782,26 @@ export function assessIndependentReservePriceAgreement(
   let indexedStatus: IndependentPriceComparisonStatus = "NOT_ASSESSED";
   let indexedDeviation: string | null = null;
   const reasonCodes: string[] = [];
-  if (input.indexedSourceEventAt === null) {
+  const indexedSourceTimestamp = input.indexedSourceEventAt ?? input.indexedSourceObservedAt ?? null;
+  const usesObservationTimestamp =
+    input.indexedSourceEventAt === null && input.indexedSourceObservedAt !== undefined &&
+    input.indexedSourceObservedAt !== null;
+
+  if (indexedSourceTimestamp === null) {
     reasonCodes.push("INDEXED_SOURCE_TIMESTAMP_MISSING");
+  } else if (usesObservationTimestamp &&
+      (input.policy.approvedIndexedProviderId !== input.indexedProviderId ||
+       input.policy.approvedIndexedIndependenceGroupId !== input.indexedIndependenceGroupId)) {
+    indexedStatus = "INSUFFICIENT_EVIDENCE";
+    reasonCodes.push("INDEXED_PROVIDER_OBSERVATION_NOT_APPROVED");
   } else {
     const nowMs = timestampMs(input.policy.nowAt);
-    const eventMs = timestampMs(input.indexedSourceEventAt);
+    const sourceMs = timestampMs(indexedSourceTimestamp);
     const retrievalMs = timestampMs(input.indexedRetrievedAt);
-    if (eventMs > nowMs + input.policy.maxFutureSkewMs || retrievalMs > nowMs + input.policy.maxFutureSkewMs) {
+    if (sourceMs > nowMs + input.policy.maxFutureSkewMs || retrievalMs > nowMs + input.policy.maxFutureSkewMs) {
       indexedStatus = "INVALID_INPUT";
       reasonCodes.push("INDEXED_SOURCE_TIMESTAMP_IN_FUTURE");
-    } else if (Math.max(0, nowMs - eventMs) > input.policy.maxSourceAgeMs ||
+    } else if (Math.max(0, nowMs - sourceMs) > input.policy.maxSourceAgeMs ||
                Math.max(0, nowMs - retrievalMs) > input.policy.maxRetrievalAgeMs) {
       indexedStatus = "INSUFFICIENT_EVIDENCE";
       reasonCodes.push("INDEXED_SOURCE_STALE");
