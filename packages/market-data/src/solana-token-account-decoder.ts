@@ -13,6 +13,10 @@ const MAX_TOKEN_DATA_BYTES = 2_000_000;
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const CANONICAL_BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export type SplTokenProgramKind = "SPL_TOKEN" | "TOKEN_2022";
 export type TokenAccountState = "UNINITIALIZED" | "INITIALIZED" | "FROZEN";
 export type TokenExtensionState = "NONE" | "PRESENT_UNINSPECTED";
