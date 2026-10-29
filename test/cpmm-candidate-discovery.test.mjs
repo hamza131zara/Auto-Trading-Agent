@@ -253,22 +253,27 @@ test("treats a nullable DEX Screener pair list as not indexed without qualifying
   assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds === false));
 });
 
-test("continues to reject a malformed non-null DEX Screener pairs value", async () => {
-  const { fetchImpl } = mockFetchFactory();
-  const malformedPairsFetch = async (input, init = {}) => {
-    if (String(input).startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
-      return new Response(JSON.stringify({ schemaVersion: "1.0.0", pairs: "unexpected" }), {
-        status: 200,
-        headers: { "content-type": "application/json" }
-      });
-    }
-    return fetchImpl(input, init);
-  };
+test("continues to reject malformed or missing DEX Screener pairs fields", async () => {
+  for (const body of [
+    { schemaVersion: "1.0.0", pairs: "unexpected" },
+    { schemaVersion: "1.0.0" }
+  ]) {
+    const { fetchImpl } = mockFetchFactory();
+    const malformedPairsFetch = async (input, init = {}) => {
+      if (String(input).startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
+        return new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        });
+      }
+      return fetchImpl(input, init);
+    };
 
-  await assert.rejects(
-    discoverRaydiumCpmmCandidates({ env: approvals, fetchImpl: malformedPairsFetch }),
-    { code: "DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID" }
-  );
+    await assert.rejects(
+      discoverRaydiumCpmmCandidates({ env: approvals, fetchImpl: malformedPairsFetch }),
+      { code: "DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID" }
+    );
+  }
 });
 
 test("accepts Raydium SDK page shape and supported HTTP envelope forms", async () => {
