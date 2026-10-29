@@ -25,6 +25,25 @@ test("accepts documented non-secret configuration values", () => {
   });
 });
 
+test("returns frozen configuration without mutating caller-owned environment values", () => {
+  const env = {
+    APP_ENV: "test",
+    LOG_LEVEL: "warn",
+    TELEMETRY_OPT_IN: "false",
+    LIVE_TRADING_ENABLED: "false"
+  };
+  const before = { ...env };
+
+  const config = parseBaseConfig(env);
+
+  assert.deepEqual(env, before);
+  assert.equal(Object.isFrozen(config), true);
+  assert.throws(() => {
+    config.logLevel = "error";
+  }, TypeError);
+  assert.equal(config.liveTradingEnabled, false);
+});
+
 test("rejects unknown application environment", () => {
   assert.throws(() => parseBaseConfig({ APP_ENV: "prod" }), /APP_ENV must be/);
 });
@@ -35,6 +54,13 @@ test("rejects unknown log level", () => {
 
 test("rejects non-boolean telemetry setting", () => {
   assert.throws(() => parseBaseConfig({ TELEMETRY_OPT_IN: "yes" }), /TELEMETRY_OPT_IN must be/);
+});
+
+test("requires exact lowercase boolean spelling for live-trading configuration", () => {
+  assert.throws(
+    () => parseBaseConfig({ LIVE_TRADING_ENABLED: "TRUE" }),
+    /LIVE_TRADING_ENABLED must be exactly/
+  );
 });
 
 test("rejects any request to enable live trading in the foundation", () => {
