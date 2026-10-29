@@ -11,6 +11,7 @@ import {
   USDC_MAINNET_MINT,
   WRAPPED_SOL_MINT
 } from "../packages/market-data/dist/providers/pyth-hermes.js";
+import { IndexedPriceEvidenceError, resolveIndexedPriceEvidence } from "./resolve-indexed-price-evidence.mjs";
 
 const DEFAULT_POOL = "47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4";
 const APPROVALS = [
@@ -51,6 +52,15 @@ function validatePreflight() {
   if (APPROVALS.some((name) => process.env[name] !== "yes")) {
     throw new Error("REQUIRED_OPERATOR_APPROVAL_MISSING");
   }
+  const indexedPriceSource = process.env.INDEXED_PRICE_SOURCE?.trim() || "dex-screener";
+  if (indexedPriceSource !== "dex-screener" && indexedPriceSource !== "geckoterminal") {
+    throw new Error("INDEXED_PRICE_SOURCE_INVALID");
+  }
+  if (indexedPriceSource === "geckoterminal" &&
+      (process.env.CONFIRM_GECKOTERMINAL_TERMS_BUDGET !== "yes" ||
+       process.env.CONFIRM_GECKOTERMINAL_SOURCE_REVIEW !== "yes")) {
+    throw new Error("GECKOTERMINAL_OPERATOR_APPROVAL_MISSING");
+  }
   if ((process.env.PYTH_API_KEY ?? "").trim().length === 0) {
     throw new Error("PYTH_API_KEY_SECRET_MISSING");
   }
@@ -74,7 +84,8 @@ function validatePreflight() {
     maxReferenceRetrievalAgeMs: envInteger("MAX_REFERENCE_RETRIEVAL_AGE_MS", { min: 1, max: 300_000 }),
     maxReferenceTimestampSkewMs: envInteger("MAX_REFERENCE_TIMESTAMP_SKEW_MS", { min: 0, max: 300_000 }),
     maxFutureSkewMs: envInteger("MAX_FUTURE_SKEW_MS", { min: 0, max: 60_000 }),
-    maxDeviationBps: envInteger("MAX_DEVIATION_BPS", { min: 0, max: 10_000 })
+    maxDeviationBps: envInteger("MAX_DEVIATION_BPS", { min: 0, max: 10_000 }),
+    indexedPriceSource
   };
 }
 
@@ -168,33 +179,43 @@ async function main() {
     return;
   }
 
-  const nowAt = [baseUsd.retrievedAt, quoteUsd.retrievedAt]
+  let indexedPriceEvidence;
+  try {
+    indexedPriceEvidence = await resolveIndexedPriceEvidence({
+      source: target.indexedPriceSource, target, identityReport,
+      geckoTerminalApproved: target.indexedPriceSource === "geckoterminal" &&
+        process.env.CONFIRM_GECKOTERMINAL_TERMS_BUDGET === "yes" &&
+        process.env.CONFIRM_GECKOTERMINAL_SOURCE_REVIEW === "yes"
+    });
+  } catch (error) {
+    emitFailure(error instanceof IndexedPriceEvidenceError ? error.code : "INDEXED_PRICE_EVIDENCE_RESOLUTION_FAILED", 1);
+    return;
+  }
+  if (indexedPriceEvidence.synthetic) { emitFailure("INDEXED_PRICE_EVIDENCE_SYNTHETIC", 1); return; }
+  const nowAt = [baseUsd.retrievedAt, quoteUsd.retrievedAt, indexedPriceEvidence.retrievedAt]
     .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
   const comparison = assessIndependentReservePriceAgreement({
-    baseMint: target.baseMint,
-    quoteMint: target.quoteMint,
+    baseMint: target.baseMint, quoteMint: target.quoteMint,
     reserveRatioQuotePerBase: identityReport.onChainReserves.reserveRatioQuotePerBase,
-    indexedPriceUsdPerBase: identityReport.marketData?.price?.unit === "USD_PER_BASE"
-      ? identityReport.marketData.price.value
-      : null,
-    indexedProviderId: "dex-screener",
-    indexedIndependenceGroupId: "dex-screener-family",
-    indexedSourceEventAt: identityReport.marketData?.sourceEventAt ?? null,
-    indexedRetrievedAt: identityReport.marketData.retrievedAt,
-    indexedSynthetic: false,
-    baseUsd,
-    quoteUsd,
+    indexedPriceUsdPerBase: indexedPriceEvidence.priceUsdPerBase,
+    indexedProviderId: indexedPriceEvidence.providerId,
+    indexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId,
+    indexedSourceEventAt: indexedPriceEvidence.sourceEventAt,
+    indexedSourceObservedAt: indexedPriceEvidence.sourceObservedAt,
+    indexedRetrievedAt: indexedPriceEvidence.retrievedAt,
+    indexedSynthetic: indexedPriceEvidence.synthetic,
+    baseUsd, quoteUsd,
     policy: {
-      nowAt,
-      maxSourceAgeMs: target.maxReferenceSourceAgeMs,
+      nowAt, maxSourceAgeMs: target.maxReferenceSourceAgeMs,
       maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
       maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
-      maxFutureSkewMs: target.maxFutureSkewMs,
-      maxDeviationBps: target.maxDeviationBps,
-      approvedProviderId: "pyth-hermes",
-      approvedIndependenceGroupId: "pyth-network",
-      expectedBaseFeedId: PYTH_SOL_USD_FEED_ID,
-      expectedQuoteFeedId: PYTH_USDC_USD_FEED_ID
+      maxFutureSkewMs: target.maxFutureSkewMs, maxDeviationBps: target.maxDeviationBps,
+      approvedProviderId: "pyth-hermes", approvedIndependenceGroupId: "pyth-network",
+      expectedBaseFeedId: PYTH_SOL_USD_FEED_ID, expectedQuoteFeedId: PYTH_USDC_USD_FEED_ID,
+      ...(indexedPriceEvidence.providerId === "geckoterminal" ? {
+        approvedIndexedProviderId: indexedPriceEvidence.providerId,
+        approvedIndexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId
+      } : {})
     }
   });
 
@@ -219,6 +240,7 @@ async function main() {
     },
     onChainReserves: identityReport.onChainReserves,
     indexedSource: {
+      role: "DEX Screener source used for exact-pool identity lookup",
       providerId: identityReport.targetSource.providerId,
       price: identityReport.marketData.price,
       liquidity: identityReport.marketData.liquidity,
@@ -227,6 +249,17 @@ async function main() {
       sourceEventAt: identityReport.marketData.sourceEventAt,
       retrievedAt: identityReport.marketData.retrievedAt,
       sourceFreshness: identityReport.marketData.sourceFreshness
+    },
+    indexedPriceEvidence: {
+      providerId: indexedPriceEvidence.providerId, independenceGroupId: indexedPriceEvidence.independenceGroupId,
+      priceUsdPerBase: indexedPriceEvidence.priceUsdPerBase,
+      sourceEventAt: indexedPriceEvidence.sourceEventAt, sourceObservedAt: indexedPriceEvidence.sourceObservedAt,
+      timestampKind: indexedPriceEvidence.sourceEventAt !== null ? "EVENT" :
+        indexedPriceEvidence.sourceObservedAt !== null ? "OBSERVATION" : "MISSING",
+      retrievedAt: indexedPriceEvidence.retrievedAt, requestId: indexedPriceEvidence.requestId,
+      rawPayloadSha256: indexedPriceEvidence.rawPayloadSha256,
+      timeframe: indexedPriceEvidence.timeframe, aggregate: indexedPriceEvidence.aggregate,
+      synthetic: indexedPriceEvidence.synthetic
     },
     pythReference: {
       providerId: "pyth-hermes",
@@ -253,6 +286,10 @@ async function main() {
       maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
       maxFutureSkewMs: target.maxFutureSkewMs,
       maxDeviationBps: target.maxDeviationBps,
+      indexedPriceSource: indexedPriceEvidence.providerId,
+      indexedPriceIndependenceGroupId: indexedPriceEvidence.independenceGroupId,
+      indexedPriceTimestampKind: indexedPriceEvidence.sourceEventAt !== null ? "EVENT" :
+        indexedPriceEvidence.sourceObservedAt !== null ? "OBSERVATION" : "MISSING",
       providerSelectionApprovedByThisReport: false
     },
     comparison,
@@ -261,7 +298,9 @@ async function main() {
     tradingAuthorized: false,
     limitations: [
       "A Pyth reference comparison is evidence only; it does not establish executable swap price or token safety.",
-      "The DEX Screener observation/event timestamps are absent in the current adapter; its indexed-price comparison may remain NOT_ASSESSED.",
+      "The selected indexed price source is price-only evidence; it does not timestamp the DEX Screener identity lookup or its liquidity, reserve, or 24-hour-volume fields.",
+      "For GeckoTerminal, the timestamp is a one-minute candle-opening boundary, not a trade event; candle age must fit the explicit freshness policy.",
+      "Provider terms/use rights, attribution, quota and budget approval is per manual run and is not lasting production approval.",
       "The comparison tolerance and freshness limits are supplied per manual run; their presence does not record a lasting owner/provider decision.",
       "The public Solana RPC and Pyth reference adapter are not automatically approved production providers.",
       "No API key, authorization header, raw provider payload, or transaction material is included in this report."

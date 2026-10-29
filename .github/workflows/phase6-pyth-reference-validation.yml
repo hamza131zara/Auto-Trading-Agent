@@ -18,6 +18,30 @@ on:
         required: true
         type: string
         default: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+      indexed_price_source:
+        description: Price evidence source; DEX Screener remains the pool identity lookup source
+        required: true
+        type: choice
+        options:
+          - "dex-screener"
+          - "geckoterminal"
+        default: "dex-screener"
+      confirm_geckoterminal_terms_budget:
+        description: For GeckoTerminal only — reviewed terms/use rights including plan requirements, attribution, storage, quota and budget; this workflow implies no spend
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
+      confirm_geckoterminal_source_review:
+        description: For GeckoTerminal only — reviewed exact-pool OHLCV evidence, provider family, candle-start semantics and freshness policy
+        required: true
+        type: choice
+        options:
+          - "no"
+          - "yes"
+        default: "no"
       minimum_context_slot:
         description: Finalized RPC slot floor from the prior verified run
         required: true
@@ -57,7 +81,7 @@ on:
           - "yes"
         default: "no"
       confirm_indexed_source_review:
-        description: I reviewed this exact DEX Screener pool/mint pair for this run
+        description: I reviewed this exact DEX Screener pool/mint pair for identity and the selected indexed price source for this run
         required: true
         type: choice
         options:
@@ -126,6 +150,9 @@ jobs:
           CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
           CONFIRM_PYTH_PROVIDER_REVIEW: ${{ inputs.confirm_pyth_provider_review }}
           CONFIRM_COMPARISON_POLICY_REVIEW: ${{ inputs.confirm_comparison_policy_review }}
+          INDEXED_PRICE_SOURCE: ${{ inputs.indexed_price_source }}
+          CONFIRM_GECKOTERMINAL_TERMS_BUDGET: ${{ inputs.confirm_geckoterminal_terms_budget }}
+          CONFIRM_GECKOTERMINAL_SOURCE_REVIEW: ${{ inputs.confirm_geckoterminal_source_review }}
           PYTH_API_KEY: ${{ secrets.PYTH_API_KEY }}
           MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
           MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
@@ -140,6 +167,17 @@ jobs:
               exit 2
             fi
           done
+          if [[ "$INDEXED_PRICE_SOURCE" == "geckoterminal" ]]; then
+            for approval in CONFIRM_GECKOTERMINAL_TERMS_BUDGET CONFIRM_GECKOTERMINAL_SOURCE_REVIEW; do
+              if [[ "${!approval}" != "yes" ]]; then
+                echo "::error::GeckoTerminal selected without required approval: $approval"
+                exit 2
+              fi
+            done
+          elif [[ "$INDEXED_PRICE_SOURCE" != "dex-screener" ]]; then
+            echo "::error::Unknown indexed price source."
+            exit 2
+          fi
           if [[ -z "${PYTH_API_KEY:-}" ]]; then
             echo "::error::Repository secret PYTH_API_KEY is missing; no provider requests were made."
             exit 2
@@ -189,6 +227,9 @@ jobs:
           CONFIRM_PROVIDER_TERMS_BUDGET: ${{ inputs.confirm_provider_terms_budget }}
           CONFIRM_PYTH_PROVIDER_REVIEW: ${{ inputs.confirm_pyth_provider_review }}
           CONFIRM_COMPARISON_POLICY_REVIEW: ${{ inputs.confirm_comparison_policy_review }}
+          INDEXED_PRICE_SOURCE: ${{ inputs.indexed_price_source }}
+          CONFIRM_GECKOTERMINAL_TERMS_BUDGET: ${{ inputs.confirm_geckoterminal_terms_budget }}
+          CONFIRM_GECKOTERMINAL_SOURCE_REVIEW: ${{ inputs.confirm_geckoterminal_source_review }}
           ATA_LIVE_SOURCE_APPROVAL: APPROVED_READ_ONLY_MAINNET_RPC
           ATA_LIVE_TARGET_SOURCE_APPROVAL: INDEPENDENT_INDEXED_SOURCE_REVIEWED
           ATA_LIVE_PROVIDER_TERMS_APPROVAL: TERMS_QUOTA_AND_BUDGET_REVIEWED

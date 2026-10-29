@@ -6,11 +6,12 @@
 
 Solana-only autonomous DEX trading research and execution system.
 
-> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Live discovery found no pool meeting approved thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps), and DEX Screener source time is missing. The GeckoTerminal pool-details adapter remains disabled and unknown-freshness for complete snapshots; a separate OHLCV price path extracts timestamped candle-start observations, which the comparator checks against source age and explicit indexed-provider approval. This does not timestamp the pool's liquidity/reserve/24h-volume fields or activate the provider. CI [#227](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40931411803) passed 187/187 tests, typecheck, build, dependency audit and Gitleaks. No live API call or paid plan is authorized. Provider terms, attribution, quota, pool-metric timestamp semantics, and live fallback remain open.
+> **Current phase:** Phase 6 — Market-Data Ingestion and Canonical Data Layer. Live discovery found no pool meeting approved thresholds. Live Pyth comparison remains DISAGREEMENT (63 bps vs 10 bps), and DEX Screener source time is missing. The GeckoTerminal OHLCV price-only path is wired to the manual Pyth comparator but remains opt-in, defaults to DEX Screener, and is blocked unless separate terms/budget and source-review confirmations are affirmative. Candle start is treated as an observation timestamp, not a trade event; pool liquidity/reserve/24h-volume timestamps remain unknown. CI validation for this wiring is pending. No live GeckoTerminal request or paid plan is authorized. Provider terms, attribution, quota, pool-metric timestamp semantics, and live fallback remain open. See [Phase 6.17](docs/phase-6/17-timestamped-indexed-price-comparison-runner.md).
 
 ## Start here
 - [Closed Phase 5 foundation and Phase 6 handoff](docs/phase-5/06-phase-5-closeout-and-phase-6-handoff.md)
 - [Active Phase 6 market-data and canonical data layer](docs/phase-6/README.md)
+- [Timestamped indexed-price evidence runner and approval gates](docs/phase-6/17-timestamped-indexed-price-comparison-runner.md)
 - [Phase 6.13 live-source validation runner and operator runbook](docs/phase-6/13-live-source-validation-runner.md)
 - [Manual-only live-source validation workflow](.github/workflows/phase6-live-source-validation.yml)
 - [Locked Phase 4 design handoff](docs/phase-4/08-phase-4-closeout-and-phase-5-handoff.md)
