@@ -20,6 +20,12 @@ The policy requires an injected UTC evaluation time and separate explicit maximu
 
 Synthetic observations are rejected by default. Tests may pass `allowSyntheticFixtures: true` to exercise the comparison algorithm, but an agreement made with any synthetic observation cannot advance to on-chain validation. Unknown, stale, invalid, missing-timestamp and unhealthy observations remain rejected with stable reason codes.
 
+## Provider-attempt and recovery-probe gate
+
+`assessProviderAttemptPermission` is a deterministic, side-effect-free decision gate for one provider attempt. `UNKNOWN` permits an initial request; fresh `HEALTHY` permits a request; fresh `DEGRADED` permits a retry below the circuit-open threshold; stale health permits a health recheck; `UNAVAILABLE` blocks until operator correction; and `CIRCUIT_OPEN` blocks until `circuitOpenUntil`. After cooldown, the function returns `ALLOW_RECOVERY_PROBE` with `requiresExclusiveProbe: true`. The orchestrator must atomically claim and serialize that probe and pass `recoveryProbeInFlight: true` to block competing probes; this pure library function cannot provide a distributed lock itself.
+
+`recordProviderResult` validates the previous health snapshot and rejects a result timestamp older than `lastRequestAt`, preventing out-of-order provider responses from restoring a healthier state after a newer failure. Equal timestamps are accepted because timestamps can be millisecond-granular; callers should serialize state updates for a single provider.
+
 ## Outcomes
 
 | Status | Meaning | Action |
@@ -48,7 +54,7 @@ These strict rules are deliberately conservative. No numeric price/liquidity/vol
 
 The policy has no production defaults. Callers must explicitly supply expected base/quote feed IDs, approved provider ID and independence group, source/retrieval age bounds, future-time skew, and maximum deviation in basis points, plus a maximum publication-time difference between base/USD and quote/USD reference observations. The reference provider and source family must differ from the indexed source. Missing indexed source time yields `NOT_ASSESSED`; reference feed timestamps outside the approved skew window or stale reference data yield insufficient evidence; out-of-tolerance values return `DISAGREEMENT`; synthetic evidence cannot set `comparisonEvidenceComplete: true`. `tradingAuthorized` is always false.
 
-The Pyth Hermes adapter is prepared for official Solana SOL/USD and USDC/USD feed IDs, but no live Pyth request has been made and no production provider has been selected. Hermes requires a Pyth API key; see [Phase 6.15](15-pyth-hermes-reference-adapter.md) for the secret name, official endpoint/feed references, and manual-only workflow. Live use remains blocked until the owner reviews the current plan/terms/quota/budget and approves feed identities, source age, retrieval age, cross-feed timestamp skew, future-time skew, and deviation tolerance.
+The Pyth Hermes adapter has completed a first live diagnostic; it fetched both feeds but the low-liquidity pool returned a 63-bps reserve/reference disagreement against a 10-bps run tolerance, and DEX Screener's source timestamp remains missing. No production provider has been selected. Hermes requires a Pyth API key; see [Phase 6.15](15-pyth-hermes-reference-adapter.md) for the secret name, official endpoint/feed references, and manual-only workflow. Live use remains blocked until the owner reviews the current plan/terms/quota/budget and approves feed identities, source age, retrieval age, cross-feed timestamp skew, future-time skew, and deviation tolerance.
 
 ## Combined critical market-data evidence gate
 
@@ -70,4 +76,4 @@ The first live Pyth read confirms both the reference feeds are available and fre
 
 ## Tests
 
-`test/provider-agreement.test.mjs` covers agreeing sources, exact-decimal equivalence, differing values/identity, unaligned source times, unhealthy primary plus two fallbacks, a lone fallback, stale/unknown observations, missing measures, synthetic evidence, duplicate candidates, provenance mismatch, and invalid policy. It also covers `assessCriticalMarketDataEvidenceGate`: a complete non-synthetic indexed-provider agreement plus an agreeing independent price comparison may proceed only to on-chain validation; the recorded live Pyth disagreement (63 bps), missing DEX Screener source timestamp, incomplete evidence, and malformed authorization-shaped input block that gate. CI [#204](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40898220288) passed 156/156 tests. Tests use deterministic fixtures and do not call a provider or Solana RPC.
+`test/provider-agreement.test.mjs` covers provider agreement and independent evidence blockers. `test/market-data.test.mjs` additionally covers circuit-open cooldown boundaries, the serialized recovery-probe requirement, authentication failure blocking, stale-health recheck, malformed health, and out-of-order provider results. It also covers `assessCriticalMarketDataEvidenceGate`: a complete non-synthetic indexed-provider agreement plus an agreeing independent price comparison may proceed only to on-chain validation; the recorded live Pyth disagreement (63 bps), missing DEX Screener source timestamp, incomplete evidence, and malformed authorization-shaped input block that gate. CI [#204](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40898220288) passed 156/156 tests. Tests use deterministic fixtures and do not call a provider or Solana RPC.

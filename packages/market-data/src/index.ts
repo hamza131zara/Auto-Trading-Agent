@@ -195,6 +195,28 @@ export interface ProviderHealthPolicy {
   readonly cooldownMs: number;
 }
 
+export type ProviderAttemptPermissionStatus =
+  | "ALLOW_INITIAL_REQUEST"
+  | "ALLOW_REQUEST"
+  | "ALLOW_RETRY"
+  | "ALLOW_HEALTH_RECHECK"
+  | "ALLOW_RECOVERY_PROBE"
+  | "BLOCK_CIRCUIT_OPEN"
+  | "BLOCK_RECOVERY_PROBE_IN_FLIGHT"
+  | "BLOCK_UNAVAILABLE"
+  | "INVALID_INPUT";
+
+export interface ProviderAttemptPermissionAssessment {
+  readonly status: ProviderAttemptPermissionStatus;
+  readonly providerId: string | null;
+  readonly providerState: ProviderHealthState | null;
+  readonly reasonCodes: readonly string[];
+  readonly canAttempt: boolean;
+  /** Caller must atomically claim/serialize this one probe per provider before issuing it. */
+  readonly requiresExclusiveProbe: boolean;
+  readonly tradingAuthorized: false;
+}
+
 export type ProviderResult =
   | {
       readonly kind: "SUCCESS";
@@ -834,6 +856,13 @@ export function recordProviderResult(
   assertSafeProviderId(previous.providerId);
   assertHealthPolicy(policy);
   assertUtcTimestamp(result.at);
+  if (!isValidProviderHealthEvidence(previous, previous.providerId)) {
+    throw new TypeError("previous must be a valid provider health snapshot");
+  }
+  if (previous.lastRequestAt !== null &&
+      timestampMs(result.at) < timestampMs(previous.lastRequestAt)) {
+    throw new RangeError("result.at must not precede previous lastRequestAt");
+  }
 
   if (result.kind === "SUCCESS") {
     if (!Number.isFinite(result.latencyMs) || result.latencyMs < 0) {
@@ -1059,6 +1088,130 @@ function isValidProviderHealthEvidence(input: unknown, expectedProviderId: strin
   }
   if (input.state === "CIRCUIT_OPEN") return typeof input.circuitOpenUntil === "string";
   return input.circuitOpenUntil === null;
+}
+
+/**
+ * Pure request permission gate for a single provider.
+ *
+ * It does not issue requests or implement an atomic probe lock. A caller receiving
+ * ALLOW_RECOVERY_PROBE must atomically claim and serialize that provider's probe,
+ * passing recoveryProbeInFlight=true to competing evaluations until the probe finishes.
+ */
+export function assessProviderAttemptPermission(input: {
+  readonly health: unknown;
+  readonly nowAt: string;
+  readonly maxHealthAgeMs: number;
+  readonly recoveryProbeInFlight: boolean;
+}): ProviderAttemptPermissionAssessment {
+  const decision = (
+    status: ProviderAttemptPermissionStatus,
+    providerId: string | null,
+    providerState: ProviderHealthState | null,
+    reasonCodes: readonly string[],
+    canAttempt: boolean,
+    requiresExclusiveProbe = false
+  ): ProviderAttemptPermissionAssessment => ({
+    status,
+    providerId,
+    providerState,
+    reasonCodes: [...reasonCodes],
+    canAttempt,
+    requiresExclusiveProbe,
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !isUtcTimestamp(input.nowAt) ||
+      !Number.isSafeInteger(input.maxHealthAgeMs) ||
+      (input.maxHealthAgeMs as number) < 1 ||
+      typeof input.recoveryProbeInFlight !== "boolean" ||
+      !isRecord(input.health) ||
+      typeof input.health.providerId !== "string" ||
+      !isSafeSlug(input.health.providerId) ||
+      !isValidProviderHealthEvidence(input.health, input.health.providerId)) {
+    return decision("INVALID_INPUT", null, null, ["PROVIDER_ATTEMPT_POLICY_OR_HEALTH_INVALID"], false);
+  }
+
+  const health = input.health as unknown as ProviderHealthSnapshot;
+  if (health.state === "UNKNOWN") {
+    return decision(
+      "ALLOW_INITIAL_REQUEST",
+      health.providerId,
+      health.state,
+      ["PROVIDER_HEALTH_UNKNOWN_INITIAL_REQUEST"],
+      true
+    );
+  }
+  if (health.state === "UNAVAILABLE") {
+    return decision(
+      "BLOCK_UNAVAILABLE",
+      health.providerId,
+      health.state,
+      ["PROVIDER_UNAVAILABLE_REQUIRES_OPERATOR_CORRECTION"],
+      false
+    );
+  }
+  if (health.state === "CIRCUIT_OPEN") {
+    if (timestampMs(input.nowAt) < timestampMs(health.circuitOpenUntil!)) {
+      return decision(
+        "BLOCK_CIRCUIT_OPEN",
+        health.providerId,
+        health.state,
+        ["PROVIDER_CIRCUIT_COOLDOWN_ACTIVE"],
+        false
+      );
+    }
+    if (input.recoveryProbeInFlight) {
+      return decision(
+        "BLOCK_RECOVERY_PROBE_IN_FLIGHT",
+        health.providerId,
+        health.state,
+        ["PROVIDER_RECOVERY_PROBE_ALREADY_IN_FLIGHT"],
+        false
+      );
+    }
+    return decision(
+      "ALLOW_RECOVERY_PROBE",
+      health.providerId,
+      health.state,
+      ["PROVIDER_CIRCUIT_COOLDOWN_ELAPSED_PROBE_ONLY"],
+      true,
+      true
+    );
+  }
+
+  const healthFreshness = assessFreshness({
+    retrievedAt: health.lastRequestAt!,
+    observedAt: health.lastRequestAt!,
+    sourceEventAt: health.lastRequestAt!,
+    nowAt: input.nowAt,
+    maxAgeMs: input.maxHealthAgeMs
+  });
+  if (healthFreshness.state !== "FRESH") {
+    return decision(
+      "ALLOW_HEALTH_RECHECK",
+      health.providerId,
+      health.state,
+      ["PROVIDER_HEALTH_" + healthFreshness.state + "_RECHECK_REQUIRED"],
+      true
+    );
+  }
+  if (health.state === "DEGRADED") {
+    return decision(
+      "ALLOW_RETRY",
+      health.providerId,
+      health.state,
+      ["PROVIDER_DEGRADED_RETRY_ALLOWED"],
+      true
+    );
+  }
+  return decision(
+    "ALLOW_REQUEST",
+    health.providerId,
+    health.state,
+    ["PROVIDER_HEALTHY"],
+    true
+  );
 }
 
 /** Compares canonical non-negative decimals numerically, without binary floating-point conversion. */

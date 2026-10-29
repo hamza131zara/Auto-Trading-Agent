@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   assessFreshness,
   assessIndependentReservePriceAgreement,
+  assessProviderAttemptPermission,
   initialProviderHealth,
   isSolanaPublicKey,
   recordProviderResult,
@@ -218,6 +219,151 @@ test("success resets failures and a non-retryable auth failure marks unavailable
     latencyMs: 20
   }, { failureThreshold: 2, cooldownMs: 30000 });
   assert.equal(unavailable.state, "UNAVAILABLE");
+});
+
+test("out-of-order provider results cannot roll health state backwards", () => {
+  const policy = { failureThreshold: 1, cooldownMs: 30_000 };
+  const opened = recordProviderResult(initialProviderHealth("example-rpc"), {
+    kind: "FAILURE",
+    at: "2026-10-29T00:00:02.000Z",
+    errorClass: "TIMEOUT",
+    retryable: true,
+    latencyMs: null
+  }, policy);
+  assert.equal(opened.state, "CIRCUIT_OPEN");
+  assert.throws(() => recordProviderResult(opened, {
+    kind: "SUCCESS",
+    at: "2026-10-29T00:00:01.000Z",
+    latencyMs: 10
+  }, policy), /must not precede previous lastRequestAt/);
+  assert.throws(() => recordProviderResult({
+    ...opened,
+    state: "HEALTHY",
+    circuitOpenUntil: null
+  }, {
+    kind: "SUCCESS",
+    at: "2026-10-29T00:00:03.000Z",
+    latencyMs: 10
+  }, policy), /valid provider health snapshot/);
+});
+
+test("provider attempt gate permits initial/healthy requests but requests a recheck for stale health", () => {
+  const initial = initialProviderHealth("example-rpc");
+  assert.deepEqual(assessProviderAttemptPermission({
+    health: initial,
+    nowAt: "2026-10-29T00:00:00.000Z",
+    maxHealthAgeMs: 10_000,
+    recoveryProbeInFlight: false
+  }).status, "ALLOW_INITIAL_REQUEST");
+
+  const healthy = recordProviderResult(initial, {
+    kind: "SUCCESS",
+    at: "2026-10-29T00:00:55.000Z",
+    latencyMs: 20
+  }, { failureThreshold: 2, cooldownMs: 30_000 });
+  const allowed = assessProviderAttemptPermission({
+    health: healthy,
+    nowAt: "2026-10-29T00:01:00.000Z",
+    maxHealthAgeMs: 10_000,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(allowed.status, "ALLOW_REQUEST");
+  assert.equal(allowed.canAttempt, true);
+  assert.equal(allowed.tradingAuthorized, false);
+
+  const stale = assessProviderAttemptPermission({
+    health: healthy,
+    nowAt: "2026-10-29T00:02:00.000Z",
+    maxHealthAgeMs: 10_000,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(stale.status, "ALLOW_HEALTH_RECHECK");
+  assert.ok(stale.reasonCodes.includes("PROVIDER_HEALTH_STALE_RECHECK_REQUIRED"));
+});
+
+test("provider attempt gate permits a below-threshold retry but only one post-cooldown recovery probe", () => {
+  const firstFailure = recordProviderResult(initialProviderHealth("example-rpc"), {
+    kind: "FAILURE",
+    at: "2026-10-29T00:00:01.000Z",
+    errorClass: "NETWORK",
+    retryable: true,
+    latencyMs: null
+  }, { failureThreshold: 2, cooldownMs: 30_000 });
+  assert.equal(firstFailure.state, "DEGRADED");
+  const retry = assessProviderAttemptPermission({
+    health: firstFailure,
+    nowAt: "2026-10-29T00:00:02.000Z",
+    maxHealthAgeMs: 60_000,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(retry.status, "ALLOW_RETRY");
+  assert.equal(retry.canAttempt, true);
+
+  const open = recordProviderResult(firstFailure, {
+    kind: "FAILURE",
+    at: "2026-10-29T00:00:02.000Z",
+    errorClass: "TIMEOUT",
+    retryable: true,
+    latencyMs: null
+  }, { failureThreshold: 2, cooldownMs: 30_000 });
+  const duringCooldown = assessProviderAttemptPermission({
+    health: open,
+    nowAt: "2026-10-29T00:00:31.999Z",
+    maxHealthAgeMs: 60_000,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(duringCooldown.status, "BLOCK_CIRCUIT_OPEN");
+  assert.equal(duringCooldown.canAttempt, false);
+
+  const probe = assessProviderAttemptPermission({
+    health: open,
+    nowAt: "2026-10-29T00:00:32.000Z",
+    maxHealthAgeMs: 60_000,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(probe.status, "ALLOW_RECOVERY_PROBE");
+  assert.equal(probe.canAttempt, true);
+  assert.equal(probe.requiresExclusiveProbe, true);
+
+  const competingProbe = assessProviderAttemptPermission({
+    health: open,
+    nowAt: "2026-10-29T00:00:32.000Z",
+    maxHealthAgeMs: 60_000,
+    recoveryProbeInFlight: true
+  });
+  assert.equal(competingProbe.status, "BLOCK_RECOVERY_PROBE_IN_FLIGHT");
+  assert.equal(competingProbe.canAttempt, false);
+});
+
+test("provider attempt gate blocks authentication/configuration failures until operator correction", () => {
+  const unavailable = recordProviderResult(initialProviderHealth("example-rpc"), {
+    kind: "FAILURE",
+    at: "2026-10-29T00:00:02.000Z",
+    errorClass: "AUTH",
+    retryable: false,
+    latencyMs: 20
+  }, { failureThreshold: 2, cooldownMs: 30_000 });
+  const decision = assessProviderAttemptPermission({
+    health: unavailable,
+    nowAt: "2026-10-29T00:01:00.000Z",
+    maxHealthAgeMs: 60_000,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(decision.status, "BLOCK_UNAVAILABLE");
+  assert.equal(decision.canAttempt, false);
+  assert.ok(decision.reasonCodes.includes("PROVIDER_UNAVAILABLE_REQUIRES_OPERATOR_CORRECTION"));
+});
+
+test("provider attempt gate rejects malformed health and policy", () => {
+  const invalid = assessProviderAttemptPermission({
+    health: { ...initialProviderHealth("example-rpc"), state: "HEALTHY" },
+    nowAt: "2026-10-29T00:00:00.000Z",
+    maxHealthAgeMs: -1,
+    recoveryProbeInFlight: false
+  });
+  assert.equal(invalid.status, "INVALID_INPUT");
+  assert.equal(invalid.canAttempt, false);
+  assert.equal(invalid.tradingAuthorized, false);
 });
 
 test("invalid provider-health policy is rejected", () => {
