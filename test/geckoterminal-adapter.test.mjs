@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  assessGeckoTerminalRequestPacing,
+  GECKOTERMINAL_MIN_REQUEST_INTERVAL_MS,
   GeckoTerminalAdapterError,
   GeckoTerminalPoolAdapter
 } from "../packages/market-data/dist/providers/geckoterminal.js";
@@ -62,6 +64,23 @@ function response(body, init = {}) {
     ...init
   });
 }
+
+test("public API request pacing fails closed inside the conservative interval", () => {
+  assert.equal(GECKOTERMINAL_MIN_REQUEST_INTERVAL_MS, 7_000);
+  const first = assessGeckoTerminalRequestPacing(1_000, 0);
+  assert.deepEqual(first, {
+    canStartRequest: true,
+    nextAllowedAtMs: 8_000,
+    reasonCode: "REQUEST_INTERVAL_ELAPSED"
+  });
+  assert.deepEqual(assessGeckoTerminalRequestPacing(7_999, first.nextAllowedAtMs), {
+    canStartRequest: false,
+    nextAllowedAtMs: 8_000,
+    reasonCode: "REQUEST_INTERVAL_ACTIVE"
+  });
+  assert.equal(assessGeckoTerminalRequestPacing(8_000, first.nextAllowedAtMs).canStartRequest, true);
+  assert.equal(assessGeckoTerminalRequestPacing(-1, 0).reasonCode, "INVALID_PACING_INPUT");
+});
 
 test("normalizes exact pool and explicit market measures without inventing snapshot time", () => {
   const adapter = new GeckoTerminalPoolAdapter();
