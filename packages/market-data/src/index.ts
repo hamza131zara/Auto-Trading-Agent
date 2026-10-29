@@ -83,7 +83,10 @@ export interface FreshnessInput {
   readonly observedAt: string | null;
   readonly sourceEventAt: string | null;
   readonly nowAt: string;
+  /** Maximum age for canonical source observations. */
   readonly maxAgeMs: number;
+  /** Separate explicit bound for the provider-health snapshot itself. */
+  readonly maxHealthAgeMs: number;
   readonly maxFutureSkewMs?: number;
 }
 
@@ -601,11 +604,79 @@ function isValidAgreementPolicy(policy: ProviderAgreementPolicy): boolean {
     typeof policy.maxAgeMs === "number" &&
     Number.isFinite(policy.maxAgeMs) &&
     policy.maxAgeMs >= 0 &&
+    typeof policy.maxHealthAgeMs === "number" &&
+    Number.isFinite(policy.maxHealthAgeMs) &&
+    policy.maxHealthAgeMs >= 0 &&
     (policy.maxFutureSkewMs === undefined ||
       (typeof policy.maxFutureSkewMs === "number" &&
        Number.isFinite(policy.maxFutureSkewMs) &&
        policy.maxFutureSkewMs >= 0)) &&
     (policy.allowSyntheticFixtures === undefined || typeof policy.allowSyntheticFixtures === "boolean");
+}
+
+
+function isValidProviderHealthEvidence(input: unknown, expectedProviderId: string): input is ProviderHealthSnapshot {
+  if (!isRecord(input) ||
+      input.providerId !== expectedProviderId ||
+      typeof input.state !== "string" ||
+      !PROVIDER_HEALTH_STATES.has(input.state as ProviderHealthState) ||
+      !Number.isSafeInteger(input.consecutiveFailures) ||
+      (input.consecutiveFailures as number) < 0) {
+    return false;
+  }
+
+  const timestampFields = ["lastSuccessAt", "lastFailureAt", "lastRequestAt", "circuitOpenUntil"] as const;
+  for (const field of timestampFields) {
+    const value = input[field];
+    if (value !== null && !isUtcTimestamp(value)) return false;
+  }
+  if (input.lastLatencyMs !== null &&
+      (typeof input.lastLatencyMs !== "number" ||
+       !Number.isFinite(input.lastLatencyMs) ||
+       input.lastLatencyMs < 0)) {
+    return false;
+  }
+  if (input.lastErrorClass !== null &&
+      (typeof input.lastErrorClass !== "string" ||
+       !PROVIDER_ERRORS.has(input.lastErrorClass as ProviderErrorClass))) {
+    return false;
+  }
+
+  if (input.state === "UNKNOWN") {
+    return input.consecutiveFailures === 0 &&
+      input.lastSuccessAt === null &&
+      input.lastFailureAt === null &&
+      input.lastRequestAt === null &&
+      input.lastLatencyMs === null &&
+      input.circuitOpenUntil === null &&
+      input.lastErrorClass === null;
+  }
+
+  if (input.state === "HEALTHY") {
+    return input.consecutiveFailures === 0 &&
+      typeof input.lastSuccessAt === "string" &&
+      input.lastRequestAt === input.lastSuccessAt &&
+      input.lastLatencyMs !== null &&
+      input.circuitOpenUntil === null &&
+      input.lastErrorClass === null &&
+      (input.lastFailureAt === null ||
+       timestampMs(input.lastFailureAt as string) <= timestampMs(input.lastSuccessAt));
+  }
+
+  const failureState = input.state === "DEGRADED" ||
+    input.state === "UNAVAILABLE" ||
+    input.state === "CIRCUIT_OPEN";
+  if (!failureState ||
+      (input.consecutiveFailures as number) < 1 ||
+      typeof input.lastFailureAt !== "string" ||
+      input.lastRequestAt !== input.lastFailureAt ||
+      input.lastErrorClass === null ||
+      (input.lastSuccessAt !== null &&
+       timestampMs(input.lastSuccessAt as string) > timestampMs(input.lastFailureAt as string))) {
+    return false;
+  }
+  if (input.state === "CIRCUIT_OPEN") return typeof input.circuitOpenUntil === "string";
+  return input.circuitOpenUntil === null;
 }
 
 /** Compares canonical non-negative decimals numerically, without binary floating-point conversion. */
@@ -677,12 +748,8 @@ export function assessProviderAgreement(
         !isSafeSlug(candidate.independenceGroupId) ||
         !Number.isSafeInteger(candidate.priority) ||
         (candidate.priority as number) < 0 ||
-        !isRecord(candidate.health) ||
-        typeof candidate.health.providerId !== "string" ||
-        !isSafeSlug(candidate.health.providerId) ||
-        typeof candidate.health.state !== "string" ||
-        !PROVIDER_HEALTH_STATES.has(candidate.health.state as ProviderHealthState) ||
-        typeof candidate.snapshot === "undefined") {
+        typeof candidate.snapshot === "undefined" ||
+        !isValidProviderHealthEvidence(candidate.health, candidate.providerId)) {
       return result("INVALID_INPUT", [], [], [], ["INVALID_CANDIDATE_METADATA"]);
     }
     if (providerIds.has(candidate.providerId)) {
@@ -710,6 +777,18 @@ export function assessProviderAgreement(
 
   for (const candidate of orderedCandidates) {
     const reasons: string[] = [];
+    if (candidate.health.state === "HEALTHY") {
+      const lastHealthRequestAt = candidate.health.lastRequestAt!;
+      const healthFreshness = assessFreshness({
+        retrievedAt: lastHealthRequestAt,
+        observedAt: lastHealthRequestAt,
+        sourceEventAt: lastHealthRequestAt,
+        nowAt: policy.nowAt,
+        maxAgeMs: policy.maxHealthAgeMs,
+        ...(policy.maxFutureSkewMs === undefined ? {} : { maxFutureSkewMs: policy.maxFutureSkewMs })
+      });
+      if (healthFreshness.state !== "FRESH") reasons.push("PROVIDER_HEALTH_" + healthFreshness.state);
+    }
     if (candidate.snapshot === null) {
       reasons.push("NO_OBSERVATION");
     } else {
