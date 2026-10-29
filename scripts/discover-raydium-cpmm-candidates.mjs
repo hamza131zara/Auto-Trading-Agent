@@ -204,7 +204,10 @@ function checkRpcAccounts(payload, requestId, expectedAddresses) {
       classification: account.owner === RAYDIUM_CPMM_PROGRAM_ID
         ? (!account.executable &&
             account.space === 637 &&
-            account.data[0].length === Math.ceil(account.space / 3) * 4
+            account.data[0].length === Math.ceil(account.space / 3) * 4 &&
+            Buffer.from(account.data[0], "base64").length === 637 &&
+            [0xf7, 0xed, 0xe3, 0xf5, 0xd7, 0xc3, 0xde, 0x46]
+              .every((byte, byteIndex) => Buffer.from(account.data[0], "base64")[byteIndex] === byte)
               ? "RAYDIUM_CPMM"
               : "RAYDIUM_CPMM_ACCOUNT_SHAPE_MISMATCH")
         : account.owner === "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
