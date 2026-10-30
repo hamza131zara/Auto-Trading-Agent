@@ -119,10 +119,10 @@ The leading diagnostic pool remains far below both unchanged thresholds. The ind
 - [x] Add an immutable reviewed provider-source registry for DEX Screener, GeckoTerminal/CoinGecko, Pyth Hermes, Raydium API, Birdeye and shared Solana RPC.
 - [x] Give CoinGecko and GeckoTerminal the same upstream family; do not count product aliases as independent sources.
 - [x] Define role-specific event/observation/slot/none timestamp semantics. Retrieval time cannot satisfy missing source-event freshness.
-- [x] Add \`assessProviderAgreementWithReviewedLineage\` to bind the claimed provider/group and timestamp kind to the canonical evidence candidate before the existing comparator runs.
+- [x] Add `assessProviderAgreementWithReviewedLineage` to bind the claimed provider/group and timestamp kind to the canonical evidence candidate before the existing comparator runs.
 - [x] Add deterministic tests for unknown providers, forged family/timestamp claims, shared-family aliases, disabled/licensing-gated sources, and production approval.
 - [ ] Obtain owner-evidenced, pairwise upstream-lineage attestations for the exact indexed/reference sources.
 - [ ] Obtain written/commercial rights and owner approvals for the intended customer-facing delivery model.
 - [ ] Validate current source freshness and independent agreement on a threshold-qualified pool; none was found in discovery run #12.
 
-The implementation is an explicit BLOCKED-by-default evidence control; it is not a provider approval, live source validation, trading authorization or roadmap phase completion.
+The implementation is an explicit BLOCKED-by-default evidence control. It was merged through [PR #36](https://github.com/hamza131zara/Auto-Trading-Agent/pull/36) and verified by post-merge CI [run #249](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011278975): 239/239 tests passed, dependency audit found zero vulnerabilities, and repository validation, typecheck/build and Gitleaks passed. Both CodeQL analyses and Dependency Review also passed on the PR. This is not a provider approval, live source validation, trading authorization or roadmap phase completion.
