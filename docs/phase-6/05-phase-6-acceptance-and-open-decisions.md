@@ -181,3 +181,15 @@ This step remains offline. The migration is not applied; no provider/RPC call or
 ## Phase 6.24 — Shared provider health and recovery-probe coordination
 
 Implementation merged in [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/43), commit `9ccae49`. Post-merge CI [#274](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41024455297) passed 262/262 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks; both CodeQL analyses and Dependency Review passed on the PR. The migration is committed but unapplied, no DB driver or credentials are included, and live PostgreSQL multi-connection integration remains an explicit gate before multi-process deployment. No provider/RPC calls or spend; trading remains unauthorized.
+
+
+## Phase 6.25 — Real PostgreSQL integration and distributed recovery verification
+
+- [x] Add a loopback-only PostgreSQL integration harness that refuses non-local hosts and any database other than `ata_phase6_test`.
+- [x] Add a dedicated CI workflow with a disposable PostgreSQL 18.6 service, Node 24, and a pinned test-only `pg@8.23.1` driver; keep the driver out of application runtime dependencies and the committed lockfile.
+- [x] Exercise the actual schema migration twice, real independent worker connections, concurrent one-winner lease claims, database-backed persistence, lease expiry/reclaim and monotonic fencing.
+- [x] Verify stale-worker release/write rejection and transaction rollback preserving the health row and lease.
+- [ ] Require the dedicated PostgreSQL workflow and all ordinary CI/security checks to pass before marking Phase 6.25 verified.
+- [ ] Separately review production database TLS, pooling, backup/restore, migration ownership/rollback, monitoring and operational approval before any multi-process deployment.
+
+The integration workflow uses only its disposable local PostgreSQL service. It makes no provider/RPC calls, introduces no provider key or spend, and does not authorize database deployment, provider activation, signing, order placement or trading.
