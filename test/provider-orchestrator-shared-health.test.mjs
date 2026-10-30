@@ -62,7 +62,7 @@ class SharedHealthStoreStub {
     this.lease = {
       providerId: input.providerId,
       ownerId: input.ownerId,
-      leaseTokenHash: input.leaseTokenHash,
+      leaseToken: input.leaseToken,
       fencingToken: String(this.fencing),
       acquiredAt: this.clock.now,
       expiresAt: new Date(Date.parse(this.clock.now) + input.leaseDurationMs).toISOString()
@@ -110,7 +110,7 @@ class SharedHealthStoreStub {
     return this.lease !== null &&
       identity.providerId === this.lease.providerId &&
       identity.ownerId === this.lease.ownerId &&
-      identity.leaseTokenHash === this.lease.leaseTokenHash &&
+      identity.leaseToken === this.lease.leaseToken &&
       String(identity.fencingToken) === this.lease.fencingToken;
   }
 }
@@ -182,7 +182,7 @@ function makeOrchestrator(adapter, store, clock, ownerId, tokenHash) {
     recoveryProbeLease: {
       ownerId,
       leaseDurationMs: 5_000,
-      createLeaseTokenHash: () => tokenHash
+      createLeaseToken: () => tokenHash
     }
   });
 }
