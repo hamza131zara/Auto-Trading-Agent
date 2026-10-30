@@ -68,3 +68,8 @@ This run confirms that secret/environment binding, explicit approvals, the live 
 - The diagnostic pool has only about $578 in indexed liquidity and is not a trading candidate.
 
 The adapter and manual workflow are plumbing, not production approval. Provider plans/terms, a source freshness decision, independent feed and deviation policy, deployed binary/source matching, real provider fallback testing, and Phase 7 token-safety review remain open. `phase6Complete`, `productionProviderApprovedByThisReport`, and `tradingAuthorized` remain false.
+
+
+## Phase 6.22 — reviewed lineage gate
+
+The manual Pyth runner now calls `assessIndependentReservePriceAgreementWithReviewedLineage`. Pyth's base/USD and quote/USD observations must carry the exact `pyth-hermes` / `pyth-network` identity and publication time; indexed source time is derived from its actual event or candle observation fields. The arithmetic result is retained for diagnostics, but the new lineage gate remains `BLOCKED` while source families are unverified, DEX Screener has no trusted source timestamp, or GeckoTerminal remains disabled pending rights review. The runner reports the final critical gate as `NOT_ASSESSED` because it does not include the separate multi-provider pool-metrics agreement evidence. No thresholds/tolerance were changed, and the workflow remains manual/read-only.
