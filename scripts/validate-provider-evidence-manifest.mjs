@@ -10,7 +10,32 @@ import {
 import { dirname, isAbsolute, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const PROVIDER_EVIDENCE_MANIFEST_VERSION = "ata.provider-evidence-manifest.v1";
+export const PROVIDER_EVIDENCE_MANIFEST_VERSION = "ata.provider-evidence-manifest.v2";
+
+export const CANONICAL_PYTH_FEED_IDENTITIES = Object.freeze({
+  "SOL/USD": Object.freeze({
+    canonicalFeedId: "ef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d",
+    assetMint: "So11111111111111111111111111111111111111112"
+  }),
+  "USDC/USD": Object.freeze({
+    canonicalFeedId: "eaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+    assetMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+  })
+});
+
+export const PROVIDER_INDEPENDENCE_GROUPS = Object.freeze({
+  "dex-screener": "dex-screener-family",
+  "geckoterminal": "geckoterminal-coingecko-ecosystem",
+  "coingecko-api": "geckoterminal-coingecko-ecosystem",
+  "pyth-hermes": "pyth-network",
+  "pyth-pro": "pyth-network",
+  "raydium-api-v3": "raydium-api-v3",
+  "birdeye": "birdeye-data-platform",
+  "solana-public-shared": "solana-finalized-ledger"
+});
+const PYTH_PRO_CHANNELS = new Set(["fixed_rate@1000ms", "fixed_rate@200ms", "fixed_rate@50ms", "real_time"]);
+const PYTH_MARKET_SESSIONS = new Set(["regular", "preMarket", "postMarket", "overNight", "closed"]);
+const PYTH_FEED_STATES = new Set(["stable", "coming_soon", "inactive"]);
 
 const EVIDENCE_TYPES = new Set([
   "FEED_SYMBOLOGY",
@@ -189,7 +214,7 @@ function validateArtifact(artifact, options, label, reasons) {
   }
 }
 
-function validateReview(review, quality, label, reasons) {
+function validateReview(review, quality, label, reasons, generatedAt) {
   if (!isRecord(review) || !REVIEW_STATES.has(review.state)) {
     reasons.push(label + "_REVIEW_STATE_INVALID");
     return;
@@ -204,6 +229,8 @@ function validateReview(review, quality, label, reasons) {
     }
   } else if (!nonEmpty(review.reviewer) || !validUtc(review.reviewedAt)) {
     reasons.push(label + "_REVIEWER_OR_TIMESTAMP_MISSING");
+  } else if (validUtc(generatedAt) && Date.parse(review.reviewedAt) > Date.parse(generatedAt)) {
+    reasons.push(label + "_REVIEW_TIMESTAMP_AFTER_MANIFEST");
   }
 
   if (quality === "SECONDARY" && review.state !== "RECEIVED_UNREVIEWED" &&
@@ -218,9 +245,10 @@ function validateFeedSymbology(record, label, reasons) {
     return;
   }
   const names = new Set();
+  const lazerIds = new Set();
   for (const feed of record.feedMetadata) {
     if (!isRecord(feed) ||
-        !["SOL/USD", "USDC/USD"].includes(feed.feedName) ||
+        !Object.hasOwn(CANONICAL_PYTH_FEED_IDENTITIES, feed.feedName) ||
         names.has(feed.feedName)) {
       reasons.push(label + "_PYTH_FEED_NAME_INVALID_OR_DUPLICATED");
       continue;
@@ -228,28 +256,37 @@ function validateFeedSymbology(record, label, reasons) {
     names.add(feed.feedName);
     if (!Number.isSafeInteger(feed.pythLazerId) || feed.pythLazerId < 1) {
       reasons.push(label + "_PYTH_LAZER_ID_INVALID");
+    } else {
+      if ([101, 202].includes(feed.pythLazerId)) reasons.push(label + "_PYTH_LAZER_ID_IS_SYNTHETIC_TEST_FIXTURE");
+      if (lazerIds.has(feed.pythLazerId)) reasons.push(label + "_PYTH_LAZER_ID_DUPLICATED");
+      lazerIds.add(feed.pythLazerId);
     }
+    const expected = CANONICAL_PYTH_FEED_IDENTITIES[feed.feedName];
     if (typeof feed.canonicalFeedId !== "string" ||
         !/^[a-fA-F0-9]{64}$/.test(feed.canonicalFeedId)) {
       reasons.push(label + "_CANONICAL_FEED_ID_INVALID");
+    } else if (feed.canonicalFeedId.toLowerCase() !== expected.canonicalFeedId) {
+      reasons.push(label + "_CANONICAL_FEED_ID_DOES_NOT_MATCH_PINNED_IDENTITY");
     }
     if (typeof feed.assetMint !== "string" || !BASE58_PATTERN.test(feed.assetMint)) {
       reasons.push(label + "_ASSET_MINT_INVALID");
+    } else if (feed.assetMint !== expected.assetMint) {
+      reasons.push(label + "_ASSET_MINT_DOES_NOT_MATCH_PINNED_IDENTITY");
     }
-    if (!nonEmpty(feed.feedState)) reasons.push(label + "_FEED_STATE_MISSING");
+    if (!PYTH_FEED_STATES.has(feed.feedState)) reasons.push(label + "_FEED_STATE_INVALID");
     if (!Number.isSafeInteger(feed.minPublisherCount) || feed.minPublisherCount < 1) {
       reasons.push(label + "_MIN_PUBLISHERS_INVALID");
     }
-    if (!nonEmpty(feed.minChannel)) reasons.push(label + "_MIN_CHANNEL_MISSING");
+    if (!PYTH_PRO_CHANNELS.has(feed.minChannel)) reasons.push(label + "_MIN_CHANNEL_UNSUPPORTED");
     if (!Array.isArray(feed.marketSessions)) {
       reasons.push(label + "_MARKET_SESSIONS_INVALID");
     } else {
       const sessions = new Set();
       for (const session of feed.marketSessions) {
         if (!isRecord(session) ||
-            !nonEmpty(session.session) ||
+            !PYTH_MARKET_SESSIONS.has(session.session) ||
             sessions.has(session.session) ||
-            !nonEmpty(session.state) ||
+            !PYTH_FEED_STATES.has(session.state) ||
             !Number.isSafeInteger(session.minPublisherCount) ||
             session.minPublisherCount < 1) {
           reasons.push(label + "_MARKET_SESSION_ENTRY_INVALID");
@@ -264,7 +301,12 @@ function validateFeedSymbology(record, label, reasons) {
   }
 }
 
-function validatePublisherLineage(record, label, reasons) {
+function validatePublisherLineage(record, label, reasons, referenceLinks) {
+  if (!Array.isArray(record.providerIds) ||
+      record.providerIds.length !== 1 ||
+      record.providerIds[0] !== "pyth-pro") {
+    reasons.push(label + "_PUBLISHER_LINEAGE_PROVIDER_MUST_BE_PYTH_PRO");
+  }
   const publisher = record.publisher;
   if (!isRecord(publisher) ||
       !nonEmpty(publisher.publisherId) ||
@@ -294,6 +336,12 @@ function validatePublisherLineage(record, label, reasons) {
         !source.transformations.every(nonEmpty) ||
         !uniqueStrings(source.evidenceIds, ID_PATTERN)) {
       reasons.push(label + "_PUBLISHER_UPSTREAM_SOURCE_INVALID");
+    } else {
+      referenceLinks.push({
+        ownerId: record.evidenceId,
+        evidenceIds: source.evidenceIds,
+        reason: label + "_PUBLISHER_UPSTREAM_EVIDENCE_REFERENCE_UNKNOWN"
+      });
     }
   }
   if (publisher.upstreamDisclosure === "NOT_DISCLOSED" &&
@@ -302,20 +350,28 @@ function validatePublisherLineage(record, label, reasons) {
   }
 }
 
-function validatePairwiseAttestation(record, label, reasons) {
+function validatePairwiseAttestation(record, label, reasons, referenceLinks, generatedAt) {
   if (!Array.isArray(record.providerIds) || record.providerIds.length !== 2) {
     reasons.push(label + "_PAIRWISE_REQUIRES_EXACTLY_TWO_PROVIDERS");
     return;
+  }
+  const groups = record.providerIds.map((providerId) => PROVIDER_INDEPENDENCE_GROUPS[providerId] ?? null);
+  if (groups.some((group) => group === null)) reasons.push(label + "_PAIRWISE_UNKNOWN_PROVIDER");
+  if (groups[0] !== null && groups[1] !== null &&
+      groups[0] === groups[1] && record.pairwise?.independenceConclusion === "INDEPENDENT") {
+    reasons.push(label + "_SAME_UPSTREAM_FAMILY_CANNOT_BE_INDEPENDENT");
   }
   const pair = record.pairwise;
   if (!isRecord(pair) ||
       !Array.isArray(pair.attestations) ||
       !["NO_KNOWN_OVERLAP", "OVERLAP_IDENTIFIED", "INCOMPLETE", "UNKNOWN"].includes(pair.overlapAssessment) ||
       !["INDEPENDENT", "DEPENDENT", "UNKNOWN"].includes(pair.independenceConclusion) ||
-      !nonEmpty(pair.overlapAnalysis)) {
+      !nonEmpty(pair.overlapAnalysis) ||
+      !uniqueStrings(pair.overlapEvidenceIds, ID_PATTERN)) {
     reasons.push(label + "_PAIRWISE_EVIDENCE_INVALID");
     return;
   }
+  referenceLinks.push({ ownerId: record.evidenceId, evidenceIds: pair.overlapEvidenceIds, reason: label + "_PAIRWISE_OVERLAP_EVIDENCE_REFERENCE_UNKNOWN" });
   if (pair.attestations.length !== 2) reasons.push(label + "_PAIRWISE_ATTESTATION_COUNT_INVALID");
   const attested = new Set();
   for (const attestation of pair.attestations) {
@@ -324,18 +380,25 @@ function validatePairwiseAttestation(record, label, reasons) {
         attested.has(attestation.providerId) ||
         !nonEmpty(attestation.issuer) ||
         !validUtc(attestation.issuedAt) ||
-        !nonEmpty(attestation.attestationReference)) {
+        !nonEmpty(attestation.attestationReference) ||
+        !uniqueStrings(attestation.evidenceIds, ID_PATTERN)) {
       reasons.push(label + "_PAIRWISE_ATTESTATION_ENTRY_INVALID");
       continue;
     }
+    if (validUtc(generatedAt) && Date.parse(attestation.issuedAt) > Date.parse(generatedAt)) {
+      reasons.push(label + "_PAIRWISE_ATTESTATION_AFTER_MANIFEST");
+    }
     attested.add(attestation.providerId);
+    referenceLinks.push({ ownerId: record.evidenceId, evidenceIds: attestation.evidenceIds, reason: label + "_PAIRWISE_ATTESTATION_EVIDENCE_REFERENCE_UNKNOWN" });
   }
   if (attested.size !== 2) reasons.push(label + "_PAIRWISE_BOTH_SIDES_MUST_ATTEST");
   if (record.review?.state === "PAIRWISE_INDEPENDENCE_VERIFIED" &&
       (pair.independenceConclusion !== "INDEPENDENT" ||
        pair.overlapAssessment !== "NO_KNOWN_OVERLAP" ||
        record.quality !== "EXECUTED_OR_SIGNED" ||
-       attested.size !== 2)) {
+       attested.size !== 2 ||
+       groups.some((group) => group === null) ||
+       groups[0] === groups[1])) {
     reasons.push(label + "_PAIRWISE_VERIFIED_STATE_NOT_SUPPORTED_BY_RECORD");
   }
 }
@@ -364,6 +427,14 @@ function validateRights(record, label, reasons, generatedAt) {
   if (rights.permittedActions.some((action) => rights.prohibitedActions.includes(action))) {
     reasons.push(label + "_RIGHTS_ACTION_CONFLICT");
   }
+  if (Array.isArray(record.scope?.deliveryModels) &&
+      record.scope.deliveryModels.some((model) => !rights.deliveryModels.includes(model))) {
+    reasons.push(label + "_RIGHTS_DO_NOT_COVER_DECLARED_DELIVERY_MODEL");
+  }
+  if (Array.isArray(record.scope?.coveredActions) &&
+      record.scope.coveredActions.some((action) => !rights.permittedActions.includes(action))) {
+    reasons.push(label + "_RIGHTS_DO_NOT_COVER_DECLARED_ACTION");
+  }
   if (Date.parse(rights.effectiveFrom) > Date.parse(generatedAt)) {
     reasons.push(label + "_RIGHTS_NOT_YET_EFFECTIVE");
   }
@@ -382,7 +453,7 @@ function validateRights(record, label, reasons, generatedAt) {
   }
 }
 
-function validateOwnerDecision(record, label, reasons) {
+function validateOwnerDecision(record, label, reasons, generatedAt) {
   const decision = record.ownerDecision;
   if (!isRecord(decision) ||
       !nonEmpty(decision.decisionId) ||
@@ -398,6 +469,11 @@ function validateOwnerDecision(record, label, reasons) {
   if (record.quality !== "EXECUTED_OR_SIGNED" ||
       record.review?.state !== "OWNER_DECISION_RECORDED") {
     reasons.push(label + "_OWNER_DECISION_REQUIRES_SIGNED_REVIEWED_RECORD");
+  }
+  if (validUtc(generatedAt) && (
+      Date.parse(decision.decidedAt) > Date.parse(generatedAt) ||
+      (decision.expiresAt !== null && Date.parse(decision.expiresAt) <= Date.parse(generatedAt)))) {
+    reasons.push(label + "_OWNER_DECISION_OUTSIDE_VALIDITY_WINDOW");
   }
 }
 
@@ -429,6 +505,8 @@ export function validateProviderEvidenceManifest(input, options = {}) {
 
   const records = Array.isArray(input.records) ? input.records : [];
   const ids = new Set();
+  const recordsById = new Map();
+  const referenceLinks = [];
   for (let index = 0; index < records.length; index += 1) {
     const record = records[index];
     const label = "RECORD_" + index;
@@ -440,6 +518,11 @@ export function validateProviderEvidenceManifest(input, options = {}) {
       reasons.push(label + "_EVIDENCE_ID_INVALID_OR_DUPLICATED");
     } else {
       ids.add(record.evidenceId);
+      recordsById.set(record.evidenceId, record);
+    }
+    if (validUtc(input.generatedAt) && validUtc(record.issuedAt) &&
+        Date.parse(record.issuedAt) > Date.parse(input.generatedAt)) {
+      reasons.push(label + "_ISSUE_TIMESTAMP_AFTER_MANIFEST");
     }
     if (!Array.isArray(record.providerIds) ||
         record.providerIds.length < 1 ||
@@ -460,7 +543,7 @@ export function validateProviderEvidenceManifest(input, options = {}) {
         new Set(record.scope.coveredActions).size !== record.scope.coveredActions.length) {
       reasons.push(label + "_SCOPE_INVALID");
     }
-    validateReview(record.review, record.quality, label, reasons);
+    validateReview(record.review, record.quality, label, reasons, input.generatedAt);
     const reviewState = record.review?.state;
     const reviewStateType = {
       TECHNICAL_METADATA_VERIFIED: "FEED_SYMBOLOGY",
@@ -484,13 +567,18 @@ export function validateProviderEvidenceManifest(input, options = {}) {
       }
       validateFeedSymbology(record, label, reasons);
     } else if (record.evidenceType === "PUBLISHER_LINEAGE") {
-      validatePublisherLineage(record, label, reasons);
+      validatePublisherLineage(record, label, reasons, referenceLinks);
     } else if (record.evidenceType === "PAIRWISE_ATTESTATION") {
-      validatePairwiseAttestation(record, label, reasons);
+      validatePairwiseAttestation(record, label, reasons, referenceLinks, input.generatedAt);
     } else if (["SERVICE_TERMS", "ORDER_FORM", "WRITTEN_PERMISSION"].includes(record.evidenceType)) {
       validateRights(record, label, reasons, input.generatedAt);
     } else if (record.evidenceType === "OWNER_DECISION") {
-      validateOwnerDecision(record, label, reasons);
+      validateOwnerDecision(record, label, reasons, input.generatedAt);
+      referenceLinks.push({
+        ownerId: record.evidenceId,
+        evidenceIds: record.ownerDecision?.linkedEvidenceIds ?? [],
+        reason: "OWNER_DECISION_REFERENCES_UNKNOWN_EVIDENCE"
+      });
     }
 
     if (record.review?.state === "OWNER_DECISION_RECORDED" && record.evidenceType !== "OWNER_DECISION") {
@@ -498,10 +586,38 @@ export function validateProviderEvidenceManifest(input, options = {}) {
     }
   }
 
+  for (const link of referenceLinks) {
+    for (const evidenceId of link.evidenceIds) {
+      if (evidenceId === link.ownerId || !ids.has(evidenceId)) reasons.push(link.reason);
+    }
+  }
+
   for (const record of records) {
     if (!isRecord(record) || record.evidenceType !== "OWNER_DECISION" || !isRecord(record.ownerDecision)) continue;
-    for (const evidenceId of record.ownerDecision.linkedEvidenceIds ?? []) {
-      if (!ids.has(evidenceId)) reasons.push("OWNER_DECISION_REFERENCES_UNKNOWN_EVIDENCE");
+    const decision = record.ownerDecision;
+    const linked = (decision.linkedEvidenceIds ?? []).map((id) => recordsById.get(id)).filter(isRecord);
+    if (decision.outcome === "PROCEED_DIAGNOSTIC_ONLY") {
+      const hasTechnicalMetadata = linked.some((item) =>
+        item.evidenceType === "FEED_SYMBOLOGY" && item.review?.state === "TECHNICAL_METADATA_VERIFIED");
+      const hasDiagnosticRights = linked.some((item) =>
+        ["SERVICE_TERMS", "ORDER_FORM", "WRITTEN_PERMISSION"].includes(item.evidenceType) &&
+        item.review?.state === "RIGHTS_CLEARED_FOR_DIAGNOSTIC");
+      if (!hasTechnicalMetadata || !hasDiagnosticRights) {
+        reasons.push("OWNER_DIAGNOSTIC_DECISION_MISSING_VERIFIED_FEED_OR_RIGHTS_EVIDENCE");
+      }
+    } else if (decision.outcome === "PROCEED_PRODUCTION_SCOPE") {
+      const hasTechnicalMetadata = linked.some((item) =>
+        item.evidenceType === "FEED_SYMBOLOGY" && item.review?.state === "TECHNICAL_METADATA_VERIFIED");
+      const hasProductionRights = linked.some((item) =>
+        ["SERVICE_TERMS", "ORDER_FORM", "WRITTEN_PERMISSION"].includes(item.evidenceType) &&
+        item.review?.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE");
+      const hasIndependentPair = linked.some((item) =>
+        item.evidenceType === "PAIRWISE_ATTESTATION" &&
+        item.review?.state === "PAIRWISE_INDEPENDENCE_VERIFIED" &&
+        item.pairwise?.independenceConclusion === "INDEPENDENT");
+      if (!hasTechnicalMetadata || !hasProductionRights || !hasIndependentPair) {
+        reasons.push("OWNER_PRODUCTION_DECISION_MISSING_FEED_RIGHTS_OR_INDEPENDENCE_EVIDENCE");
+      }
     }
   }
 
