@@ -16,6 +16,7 @@ const SHA256_HEX = /^[a-f0-9]{64}$/;
 const LEASE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43,128}$/;
 const LEASE_DURATION_MIN_MS = 1_000;
 const LEASE_DURATION_MAX_MS = 300_000;
+const POSTGRES_BIGINT_MAX = 9_223_372_036_854_775_807n;
 
 export interface ProviderHealthVersionedRecord {
   readonly health: ProviderHealthSnapshot;
@@ -137,7 +138,8 @@ function isValidLeaseIdentity(input: unknown): input is RecoveryProbeLeaseIdenti
     typeof input.leaseToken === "string" &&
     LEASE_TOKEN_PATTERN.test(input.leaseToken) &&
     typeof input.fencingToken === "string" &&
-    /^[1-9][0-9]{0,18}$/.test(input.fencingToken);
+    /^[1-9][0-9]{0,18}$/.test(input.fencingToken) &&
+    BigInt(input.fencingToken) <= POSTGRES_BIGINT_MAX;
 }
 
 async function hashLeaseToken(token: string): Promise<string> {
@@ -254,6 +256,7 @@ function readLeaseRow(row: LeaseDbRow, leaseToken: string): RecoveryProbeLease {
       typeof row.lease_token_hash !== "string" ||
       !SHA256_HEX.test(row.lease_token_hash) ||
       !/^[1-9][0-9]{0,18}$/.test(fencingToken) ||
+      BigInt(fencingToken) > POSTGRES_BIGINT_MAX ||
       acquiredAt === null ||
       expiresAt === null) {
     throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
