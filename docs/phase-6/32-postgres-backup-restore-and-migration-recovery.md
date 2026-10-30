@@ -25,7 +25,7 @@ A green CI drill establishes logical dump/restore and transaction-interruption b
 
 ## Production operator runbook — not enabled by this repository change
 
-Before a real customer deployment, the owner and database operator must select the supported PostgreSQL service/version, driver, backup destination, retention, encryption and recovery objectives. Do not use CI credentials or the test helper against production.
+Before a real customer deployment, the owner and database operator must select the supported PostgreSQL service/version, driver, backup destination, retention, encryption and recovery objectives. Use the offline [Phase 6.36 backup/PITR policy preflight](36-postgres-backup-pitr-policy-preflight.md) to check the declared RPO/RTO, cadence, retention and evidence-age consistency, but treat every supplied verification state as an assertion until independently authenticated. Do not use CI credentials or the test helper against production.
 
 ### Before a schema migration
 
@@ -77,6 +77,7 @@ Encrypt the archive at rest and in transit, upload it to the approved restricted
 - [x] Apply the migration transactionally after interruption and verify a second application is idempotent.
 - [x] Drop only temporary databases created by the drill and remove the temporary archive; never upload the database dump.
 - [ ] Select and approve production backup encryption, restricted/off-site destination, retention and integrity monitoring.
+- [x] Add the offline, review-required Phase 6.36 policy evaluator for declared RPO/RTO, PITR retention, WAL lag, integrity and restore evidence.
 - [ ] Define and approve service-specific RPO/RTO and PITR requirements; complete a production-like restore drill in a separately authorized environment.
 - [ ] Approve production migration ownership, maintenance windows, rollback/forward-fix policy, monitoring and incident runbooks.
 

@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — Phase 6.35 adds an offline aggregate PostgreSQL connection-budget evaluator. Actual server/reserved-slot values, maximum runtime replicas and all service demand still require owner/operator verification; production driver, pool timeouts/lifecycle, strict client TLS verification, backups/PITR and monitoring approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
+**Status:** ACTIVE — Phase 6.36 adds an offline PostgreSQL backup/PITR recovery-policy evaluator. Actual backup encryption, restricted off-site storage, retention, WAL/PITR, integrity verification, RPO/RTO, restore evidence, production driver/TLS, monitoring and owner approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
 
 **Status:** ACTIVE — Phase 6.19/6.20 reproducible reference build and local evidence review completed; Phase 6.18 live Mainnet ProgramData comparison returned exact ELF hash MATCH at finalized slot `463153970`, with upgrade authority still present. Latest live Phase 6.14 candidate-discovery run [#12](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41005895558) completed both SOL/USDC and SOL/USDT pagination, checked 45 returned accounts, decoded 24 CPMM candidates and cross-checked all 24; zero candidates met unchanged USD 100,000 liquidity / USD 10,000 24-hour volume thresholds. Indexed source freshness remains UNKNOWN; independent price agreement, provider selection/terms/fallback, upgrade-authority policy and Phase 7 token safety remain open. Phase 6 stays active; production-provider approval and trading authorization are false.
 **Started:** 29 October 2026.
@@ -47,6 +47,7 @@
 25. [Migration governance and deployment preflight](33-migration-governance-and-deployment-preflight.md)
 26. [PostgreSQL observability, monitoring and incident controls](34-postgres-observability-monitoring-and-incident-controls.md)
 27. [PostgreSQL aggregate connection-budget preflight](35-postgres-aggregate-connection-budget-preflight.md)
+28. [PostgreSQL backup, PITR and recovery-policy preflight](36-postgres-backup-pitr-policy-preflight.md)
 
 ## Initial implementation boundary
 
