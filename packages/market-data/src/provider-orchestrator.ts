@@ -1,4 +1,6 @@
 import {
+  assessProviderAgreement,
+  assessProviderAgreementWithReviewedLineage,
   assessProviderAttemptPermission,
   initialProviderHealth,
   isSolanaPublicKey,
@@ -11,10 +13,14 @@ import type {
   MarketDataRequest,
   ProviderAttemptPermissionStatus,
   ProviderErrorClass,
+  ProviderAgreementAssessment,
+  ProviderAgreementPolicy,
   ProviderEvidenceCandidate,
   ProviderHealthPolicy,
   ProviderHealthSnapshot,
+  ProviderLineageReadinessPolicy,
   ProviderResult,
+  ReviewedProviderAgreementAssessment,
   SolanaCluster
 } from "./index.js";
 
@@ -73,6 +79,39 @@ export interface ReadOnlyMarketDataCollection {
   readonly tradingAuthorized: false;
 }
 
+export type ReadOnlyMarketDataAssessmentStatus =
+  | "READY_FOR_ON_CHAIN_VALIDATION"
+  | "DISAGREEMENT"
+  | "INSUFFICIENT_EVIDENCE"
+  | "BLOCKED"
+  | "INVALID_INPUT";
+
+export interface ReadOnlyMarketDataAssessmentPolicy {
+  readonly agreementPolicy: ProviderAgreementPolicy;
+  readonly lineagePolicy: ProviderLineageReadinessPolicy;
+}
+
+export interface ReadOnlyMarketDataAttemptSummary {
+  readonly successfulProviderIds: readonly string[];
+  readonly failedProviderIds: readonly string[];
+  readonly blockedProviderIds: readonly string[];
+  readonly reasonCodes: readonly string[];
+}
+
+export interface ReadOnlyMarketDataAssessment {
+  readonly status: ReadOnlyMarketDataAssessmentStatus;
+  /** Raw agreement is retained for diagnostics and is never an approval by itself. */
+  readonly diagnosticAgreement: ProviderAgreementAssessment;
+  /** Registry-backed assessment is the only source that may advance the evidence path. */
+  readonly reviewedAgreement: ReviewedProviderAgreementAssessment;
+  readonly attemptSummary: ReadOnlyMarketDataAttemptSummary;
+  readonly providerHealth: readonly ProviderHealthSnapshot[];
+  readonly fallbackUsed: boolean;
+  readonly canProceedToOnChainValidation: boolean;
+  readonly reasonCodes: readonly string[];
+  readonly tradingAuthorized: false;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -114,6 +153,216 @@ function classifyFailure(error: unknown, timedOut: boolean): {
     errorClass,
     retryable,
     reasonCode: "PROVIDER_REQUEST_" + errorClass
+  };
+}
+
+/**
+ * Integrates provider attempts, health/fallback outcomes, raw agreement diagnostics,
+ * and the reviewed source-lineage gate for one completed collection.
+ *
+ * The raw comparator is deliberately returned separately: DISAGREEMENT remains
+ * visible even when a provider is unhealthy or lineage is unresolved. Only the
+ * registry-backed assessment can set canProceedToOnChainValidation=true.
+ */
+export function assessReadOnlyMarketDataCollection(
+  collection: ReadOnlyMarketDataCollection,
+  policy: ReadOnlyMarketDataAssessmentPolicy
+): ReadOnlyMarketDataAssessment {
+  const invalidAgreement: ProviderAgreementAssessment = {
+    status: "INVALID_INPUT",
+    eligibleProviderIds: [],
+    rejectedProviders: [],
+    disagreementFields: [],
+    reasonCodes: ["READ_ONLY_COLLECTION_OR_POLICY_INVALID"],
+    fallbackUsed: false,
+    canProceedToOnChainValidation: false,
+    tradingAuthorized: false
+  };
+  const invalidReviewed: ReviewedProviderAgreementAssessment = {
+    status: "INVALID_INPUT",
+    lineage: {
+      status: "INVALID_INPUT",
+      candidateProviderIds: [],
+      eligibleProviderIds: [],
+      distinctIndependenceGroupCount: 0,
+      rejectedProviders: [],
+      reasonCodes: ["READ_ONLY_COLLECTION_OR_POLICY_INVALID"],
+      canProceedToProviderAgreement: false,
+      productionUseApproved: false,
+      tradingAuthorized: false
+    },
+    providerAgreement: invalidAgreement,
+    canProceedToOnChainValidation: false,
+    productionUseApproved: false,
+    reasonCodes: ["READ_ONLY_COLLECTION_OR_POLICY_INVALID"],
+    tradingAuthorized: false
+  };
+
+  const invalid = (reasonCodes: readonly string[] = ["READ_ONLY_COLLECTION_OR_POLICY_INVALID"]):
+    ReadOnlyMarketDataAssessment => ({
+      status: "INVALID_INPUT",
+      diagnosticAgreement: invalidAgreement,
+      reviewedAgreement: {
+        ...invalidReviewed,
+        reasonCodes: [...new Set(reasonCodes)],
+        lineage: { ...invalidReviewed.lineage, reasonCodes: [...new Set(reasonCodes)] },
+        providerAgreement: { ...invalidAgreement, reasonCodes: [...new Set(reasonCodes)] }
+      },
+      attemptSummary: {
+        successfulProviderIds: [],
+        failedProviderIds: [],
+        blockedProviderIds: [],
+        reasonCodes: [...new Set(reasonCodes)]
+      },
+      providerHealth: [],
+      fallbackUsed: false,
+      canProceedToOnChainValidation: false,
+      reasonCodes: [...new Set(reasonCodes)],
+      tradingAuthorized: false
+    });
+
+  if (!isRecord(collection) ||
+      !Array.isArray(collection.candidates) ||
+      collection.candidates.length === 0 ||
+      !Array.isArray(collection.observations) ||
+      !Array.isArray(collection.attempts) ||
+      !Array.isArray(collection.providerHealth) ||
+      collection.tradingAuthorized !== false ||
+      !isRecord(policy) ||
+      !isRecord(policy.agreementPolicy) ||
+      !isRecord(policy.lineagePolicy)) {
+    return invalid();
+  }
+
+  const candidateIds = new Set<string>();
+  for (const candidate of collection.candidates as readonly unknown[]) {
+    if (!isRecord(candidate) ||
+        typeof candidate.providerId !== "string" ||
+        !SAFE_SLUG.test(candidate.providerId) ||
+        candidateIds.has(candidate.providerId) ||
+        typeof candidate.independenceGroupId !== "string" ||
+        !SAFE_SLUG.test(candidate.independenceGroupId) ||
+        !Number.isSafeInteger(candidate.priority) ||
+        (candidate.priority as number) < 0 ||
+        typeof candidate.snapshot === "undefined") {
+      return invalid(["READ_ONLY_COLLECTION_CANDIDATE_INVALID"]);
+    }
+    candidateIds.add(candidate.providerId);
+  }
+
+  const observedByProvider = new Map<string, CanonicalMarketSnapshot>();
+  for (const snapshot of collection.observations as readonly unknown[]) {
+    if (!isRecord(snapshot) ||
+        typeof snapshot.provenance?.providerId !== "string" ||
+        !SAFE_SLUG.test(snapshot.provenance.providerId) ||
+        observedByProvider.has(snapshot.provenance.providerId) ||
+        !validateCanonicalMarketSnapshot(snapshot).valid) {
+      return invalid(["READ_ONLY_COLLECTION_OBSERVATION_INVALID"]);
+    }
+    observedByProvider.set(snapshot.provenance.providerId, snapshot as unknown as CanonicalMarketSnapshot);
+  }
+  for (const candidate of collection.candidates) {
+    const observed = observedByProvider.get(candidate.providerId);
+    if (candidate.snapshot === null) {
+      if (observed !== undefined) return invalid(["READ_ONLY_COLLECTION_OBSERVATION_SET_MISMATCH"]);
+    } else if (observed === undefined ||
+        observed.observationId !== candidate.snapshot.observationId ||
+        observed.provenance.providerId !== candidate.providerId) {
+      return invalid(["READ_ONLY_COLLECTION_OBSERVATION_SET_MISMATCH"]);
+    }
+  }
+  if (observedByProvider.size !== collection.observations.length) {
+    return invalid(["READ_ONLY_COLLECTION_OBSERVATION_SET_MISMATCH"]);
+  }
+
+  const successfulProviderIds: string[] = [];
+  const failedProviderIds: string[] = [];
+  const blockedProviderIds: string[] = [];
+  const attemptReasons: string[] = [];
+  for (const attempt of collection.attempts as readonly unknown[]) {
+    if (!isRecord(attempt) ||
+        typeof attempt.providerId !== "string" ||
+        !candidateIds.has(attempt.providerId) ||
+        typeof attempt.outcome !== "string" ||
+        !["OBSERVATION_NORMALIZED", "REQUEST_FAILED", "NORMALIZATION_FAILED", "INVALID_OBSERVATION", "BLOCKED"].includes(attempt.outcome) ||
+        !Array.isArray(attempt.reasonCodes) ||
+        !attempt.reasonCodes.every((code) => typeof code === "string" && /^[A-Z0-9_]{1,64}$/.test(code))) {
+      return invalid(["READ_ONLY_COLLECTION_ATTEMPT_INVALID"]);
+    }
+    if (attempt.outcome === "OBSERVATION_NORMALIZED") successfulProviderIds.push(attempt.providerId);
+    if (attempt.outcome === "REQUEST_FAILED" ||
+        attempt.outcome === "NORMALIZATION_FAILED" ||
+        attempt.outcome === "INVALID_OBSERVATION") failedProviderIds.push(attempt.providerId);
+    if (attempt.outcome === "BLOCKED") blockedProviderIds.push(attempt.providerId);
+    attemptReasons.push(...attempt.reasonCodes);
+  }
+
+  const diagnosticAgreement = assessProviderAgreement(
+    collection.candidates,
+    policy.agreementPolicy
+  );
+  const lineageCandidates = collection.candidates.map((candidate) => {
+    const snapshot = candidate.snapshot;
+    const timestampKind =
+      snapshot !== null && snapshot.sourceEventAt !== null
+        ? "EVENT" as const
+        : snapshot !== null && snapshot.observedAt !== null
+          ? "OBSERVATION" as const
+          : "NONE" as const;
+    return {
+      providerId: candidate.providerId,
+      independenceGroupId: candidate.independenceGroupId,
+      role: "POOL_METRICS" as const,
+      timestampKind
+    };
+  });
+  const reviewedAgreement = assessProviderAgreementWithReviewedLineage({
+    candidates: collection.candidates,
+    lineageCandidates,
+    lineagePolicy: policy.lineagePolicy,
+    agreementPolicy: policy.agreementPolicy
+  });
+
+  let status: ReadOnlyMarketDataAssessmentStatus;
+  if (diagnosticAgreement.status === "INVALID_INPUT" || reviewedAgreement.status === "INVALID_INPUT") {
+    status = "INVALID_INPUT";
+  } else if (diagnosticAgreement.status === "DISAGREEMENT") {
+    status = "DISAGREEMENT";
+  } else if (diagnosticAgreement.status === "INSUFFICIENT_EVIDENCE" ||
+             diagnosticAgreement.status === "NO_ACCEPTABLE_PROVIDER") {
+    status = "INSUFFICIENT_EVIDENCE";
+  } else if (reviewedAgreement.canProceedToOnChainValidation) {
+    status = "READY_FOR_ON_CHAIN_VALIDATION";
+  } else {
+    status = "BLOCKED";
+  }
+
+  const fallbackUsed = diagnosticAgreement.fallbackUsed;
+  const reasonCodes = [...new Set([
+    ...attemptReasons,
+    ...diagnosticAgreement.reasonCodes,
+    ...reviewedAgreement.reasonCodes,
+    ...(reviewedAgreement.canProceedToOnChainValidation
+      ? []
+      : ["REVIEWED_PROVIDER_LINEAGE_GATE_NOT_READY"])
+  ])];
+  return {
+    status,
+    diagnosticAgreement,
+    reviewedAgreement,
+    attemptSummary: {
+      successfulProviderIds: [...new Set(successfulProviderIds)],
+      failedProviderIds: [...new Set(failedProviderIds)],
+      blockedProviderIds: [...new Set(blockedProviderIds)],
+      reasonCodes: [...new Set(attemptReasons)]
+    },
+    providerHealth: collection.providerHealth.map((item) => ({ ...item })),
+    fallbackUsed,
+    canProceedToOnChainValidation:
+      status === "READY_FOR_ON_CHAIN_VALIDATION" &&
+      reviewedAgreement.canProceedToOnChainValidation,
+    reasonCodes,
+    tradingAuthorized: false
   };
 }
 
