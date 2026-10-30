@@ -198,29 +198,6 @@ test("Pyth Pro applies session-specific minimum publisher counts", () => {
   assert.deepEqual(result.errors, ["PUBLISHER_QUORUM_UNMET"]);
 });
 
-test("Pyth Pro applies session-specific minimum publisher counts", () => {
-  const adapter = makeAdapter(async () => new Response("{}"));
-  const preMarketFeeds = payload().parsed.priceFeeds.map((item) => ({
-    ...item,
-    marketSession: "preMarket",
-    publisherCount: 4
-  }));
-  const result = adapter.normalize({
-    providerId: "pyth-pro",
-    adapterVersion: "1.0.0",
-    channel: CHANNEL,
-    requestedFeeds: FEEDS,
-    requestedAt: "2026-10-30T07:59:59.000Z",
-    retrievedAt: "2026-10-30T08:00:01.000Z",
-    rawPayloadSha256: "f".repeat(64),
-    payload: payload({ priceFeeds: preMarketFeeds }),
-    synthetic: false
-  });
-
-  assert.deepEqual(result.observations, []);
-  assert.deepEqual(result.errors, ["PUBLISHER_QUORUM_UNMET"]);
-});
-
 test("missing publisher count or feed-generation timestamp fails closed", () => {
   const noPublisherCount = { ...payload().parsed.priceFeeds[0] };
   delete noPublisherCount.publisherCount;
