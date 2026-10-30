@@ -684,7 +684,7 @@ export class ReadOnlyMarketDataOrchestrator {
             outcome: updated.updated ? "REQUEST_FAILED" : "BLOCKED",
             reasonCodes: updated.updated ? [failure.reasonCode] : [updated.reasonCode],
             latencyMs: Math.max(0, Date.now() - startedMs)
-          }, recoveryLease);
+          });
           continue;
         }
 
@@ -727,7 +727,7 @@ export class ReadOnlyMarketDataOrchestrator {
             outcome: updated.updated ? "NORMALIZATION_FAILED" : "BLOCKED",
             reasonCodes: updated.updated ? [...new Set(codes)] : [updated.reasonCode],
             latencyMs: Math.max(0, Date.now() - startedMs)
-          }, recoveryLease);
+          });
           continue;
         }
 
