@@ -36,7 +36,7 @@ test("calculates worst-case aggregate pool usage across every declared service",
   assert.deepEqual(report.headroom, {
     remainingConnections: 30,
     requiredConnections: 20,
-    utilizationPercent: 64.71
+    utilizationPercent: "64.71"
   });
   assert.deepEqual(report.reasonCodes, []);
   assert.ok(report.humanReviewRequired.length >= 5);

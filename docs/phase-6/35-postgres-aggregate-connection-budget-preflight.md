@@ -31,7 +31,7 @@ The arithmetic is:
 
     remainingHeadroom = usableConnectionBudget - plannedTotalConnections
 
-All numeric fields are validated bounded integers and aggregate multiplication is performed with BigInt before conversion to safe report numbers. Missing categories, extra fields (including DSNs/credential-shaped fields), negative/fractional counts and a fully consumed reserved budget are rejected. No missing service demand is silently treated as zero.
+All numeric fields are validated bounded integers and aggregate multiplication is performed with BigInt. The utilization percentage is emitted as an exact two-decimal string, avoiding floating-point overflow for deliberately oversized plans. Missing categories, extra fields (including DSNs/credential-shaped fields), negative/fractional counts and a fully consumed reserved budget are rejected. No missing service demand is silently treated as zero.
 
 ## Result semantics
 

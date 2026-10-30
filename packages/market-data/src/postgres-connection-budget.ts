@@ -162,6 +162,9 @@ export function assessPostgresConnectionBudget(
   const utilizationBasisPoints =
     (plannedTotalConnections * 20_000n + usableConnectionBudget) /
     (usableConnectionBudget * 2n);
+  const utilizationWhole = utilizationBasisPoints / 100n;
+  const utilizationFraction = String(utilizationBasisPoints % 100n).padStart(2, "0");
+  const utilizationPercent = String(utilizationWhole) + "." + utilizationFraction;
 
   return Object.freeze({
     status,
@@ -183,7 +186,7 @@ export function assessPostgresConnectionBudget(
     headroom: Object.freeze({
       remainingConnections: Number(remainingConnections),
       requiredConnections: input.minimumHeadroomConnections,
-      utilizationPercent: Number(utilizationBasisPoints) / 100
+      utilizationPercent
     }),
     reasonCodes: Object.freeze(reasonCodes),
     humanReviewRequired: HUMAN_REVIEW_REQUIRED,
