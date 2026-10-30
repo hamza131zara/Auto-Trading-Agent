@@ -162,3 +162,10 @@ A separate, disabled Pyth Pro latest-price adapter now validates feed-generation
 Pyth Pro and its Hermes-compatible endpoint share the same pyth-network family. Five routers are redundant aggregation/signature paths over the common publisher-update stream; they do not count as five independent publisher data sources. Pyth publisherCount is not a source independence attestation.
 
 The public terms review keeps all providers unapproved: DEX Screener customer-facing access/redistribution needs clarification; CoinGecko standard paid commercial use supports attributed display but not raw/API redistribution; Birdeye remains excluded absent written permission; Raydium use rights remain unreviewed; and Pyth Pro plan/customer data rights remain owner decisions. No provider API/RPC calls, keys, activation or spend were used. See [Phase 6.26](26-pyth-pro-freshness-and-provider-rights-review.md).
+
+
+## Phase 6.27 — Provider lineage and commercial-rights evidence intake
+
+The next owner-evidence gate is now specified as a controlled intake workflow. It lists the exact Pyth SOL/USD and USDC/USD symbology fields, publisher-level upstream source disclosure, symmetric pairwise independence evidence, and provider-specific plan/contract rights needed for the actual customer experience. Evidence receipt, technical review, lineage independence, diagnostic rights and production rights are separate states; none automatically changes runtime approvals.
+
+No owner artifacts have been received or approved by this step. Provider profiles remain UNVERIFIED/UNAPPROVED, spend remains USD $0, no provider/RPC calls or credentials are introduced, and trading remains unauthorized. See [Phase 6.27](27-provider-lineage-and-commercial-rights-evidence-intake.md).

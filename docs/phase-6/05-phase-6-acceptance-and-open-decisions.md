@@ -211,3 +211,18 @@ The integration workflow uses only its disposable local PostgreSQL service. It m
 - [ ] Do not change the USD 100,000 liquidity threshold, USD 10,000 24-hour volume threshold or 10-bps diagnostic tolerance; retain the historical 63-bps disagreement.
 
 Implementation and fixtures make no provider/RPC request, create no API key, incur no spend, and do not activate adapters. All provider profiles remain UNVERIFIED/UNAPPROVED, Phase 6 remains ACTIVE, and trading is unauthorized.
+
+
+## Phase 6.27 — Provider lineage and commercial-use evidence intake
+
+- [x] Define a controlled evidence record, source-quality classes, artifact digest/provenance fields and restricted-storage rules.
+- [x] Define the exact Pyth SOL/USD and USDC/USD symbology fields and named publisher-level upstream lineage required before a diagnostic.
+- [x] Define symmetric pairwise independence review, overlap analysis and explicit UNKNOWN treatment; Pyth Pro and Hermes remain one `pyth-network` family.
+- [x] Define provider-specific account, plan, contract, attribution, retention, display, export, API, redistribution and multi-customer rights evidence requirements.
+- [x] Separate technical metadata verification, independent-source review, diagnostic rights, production rights and owner decisions.
+- [ ] Receive and verify the actual owner-reviewed Pyth feed metadata and publisher source inventory; synthetic fixture IDs 101/202 remain non-production examples.
+- [ ] Receive provider-use permissions for the exact diagnostic and customer delivery model.
+- [ ] Complete a two-way lineage attestation for the selected Pyth/indexed-source pair.
+- [ ] Record a separate owner decision before proposing any manual read-only provider diagnostic.
+
+See [Phase 6.27 — Evidence intake](27-provider-lineage-and-commercial-rights-evidence-intake.md). This is a documentation/control-preparation step only: it makes no provider/API/RPC request, changes no runtime registry approvals, adds no key or spend, and leaves the 10-bps tolerance, historical 63-bps disagreement, existing liquidity/volume thresholds and trading prohibition unchanged.
