@@ -141,3 +141,8 @@ A composed assessment now validates orchestration candidates, normalized observa
 ## Phase 6.24 — Shared health and recovery-probe leases
 
 An optional driver-neutral PostgreSQL store now persists provider health and coordinates circuit-recovery probes using database-clock atomic leases, expiry/reclaim and monotonically increasing fencing tokens. The orchestrator loads shared health and requires the distributed lease for recovery; stale workers cannot publish results. Only token digests are stored. The SQL migration is committed but unapplied, no driver is bundled, and real PostgreSQL multi-connection integration remains an explicit deployment gate. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).
+
+
+## Phase 6.24 — Shared provider health and recovery-probe leases
+
+Merged through [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/43), commit `9ccae49`. Post-merge CI [#274](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41024455297) passed 262/262 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks. Both CodeQL analyses and Dependency Review passed on the PR. The migration remains unapplied, no driver or database credentials are included, and real PostgreSQL multi-connection integration remains a gate before multi-process deployment. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).
