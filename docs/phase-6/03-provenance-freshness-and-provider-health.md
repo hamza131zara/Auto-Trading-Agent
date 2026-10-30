@@ -37,3 +37,6 @@ The Pyth USD reference pair is one `USD_REFERENCE` source family with publicatio
 ## Phase 6.24 — Shared provider health and recovery-probe coordination
 
 The optional `PostgresProviderHealthStore` persists sanitized provider health/version state and coordinates recovery probes with a single-winner PostgreSQL lease. Lease expiry, claim and renewal use the database clock; every reclaim increments a fencing token; recovery health update and lease release are transactional. The orchestrator can inject the store and must win a shared lease after circuit cooldown before sending a recovery probe. Raw one-time tokens are never stored; only SHA-256 digests are persisted. No driver is bundled and no database migration has been applied. Real PostgreSQL multi-connection integration remains required before multi-process deployment. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).
+
+
+Phase 6.24 implementation and CI evidence: [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/43), post-merge [CI #274](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41024455297) passed 262/262 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks. The migration remains unapplied; driver selection and a real PostgreSQL multi-connection integration run are still required before multi-process deployment.
