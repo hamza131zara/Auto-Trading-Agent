@@ -183,3 +183,8 @@ Stop and keep the relevant gate blocked when metadata is missing, publishers are
 ## Phase 6.28 follow-up
 
 The evidence intake requirements now have an offline structural validator. It accepts a versioned manifest, checks Pyth feed metadata, publisher disclosure, bilateral attestations and provider rights records, and can recompute local artifact SHA-256 values under a bounded artifact root. The validator never promotes provider approvals or authorizes trading. See [Phase 6.28](28-provider-evidence-manifest-validator.md).
+
+
+## Phase 6.29 follow-up — canonical identity and lineage consistency
+
+The v2 evidence-manifest contract binds Pyth SOL/USD and USDC/USD records to the exact feed-ID/mint identities pinned by the Pyth Pro adapter. Pairwise independence claims are checked against the canonical provider source-family registry, preventing Pyth Pro/Hermes and GeckoTerminal/CoinGecko aliases from being asserted as independent. Publisher, bilateral-attestation and overlap records must link to artifacts present in the same manifest. Rights scope and owner decisions are checked against linked evidence. No real owner artifacts are included; see [Phase 6.29](29-canonical-evidence-binding-and-lineage-consistency.md).

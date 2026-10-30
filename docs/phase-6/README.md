@@ -174,3 +174,8 @@ No owner artifacts have been received or approved by this step. Provider profile
 ## Phase 6.28 — Provider evidence manifest validator
 
 An offline validator now checks the structure and internal consistency of a versioned provider-evidence manifest: Pyth feed-pair metadata, publisher disclosure, two-sided pairwise attestations, commercial-rights scope and local artifact digests. It rejects credential-bearing fields and unsafe local artifact paths. A successful result means `STRUCTURALLY_VALID_NOT_AN_APPROVAL` only; it cannot establish authenticity, publisher independence, legal permission or production readiness and does not mutate provider flags. No real owner evidence or permissions have been supplied. See [Phase 6.28](28-provider-evidence-manifest-validator.md).
+
+
+## Phase 6.29 — Canonical evidence binding and lineage consistency
+
+The evidence manifest is now version 2. Its validator binds Pyth metadata to the adapter's exact SOL/USD and USDC/USD feed IDs and mainnet mints, checks pairwise independence against the canonical source-family registry, requires cross-record evidence references, and prevents rights scopes or owner decisions from exceeding linked evidence. Pyth Pro/Hermes and GeckoTerminal/CoinGecko remain same-family aliases and cannot be declared independent. No real owner evidence or permission has been added. See [Phase 6.29](29-canonical-evidence-binding-and-lineage-consistency.md).
