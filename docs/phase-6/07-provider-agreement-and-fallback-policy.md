@@ -110,3 +110,10 @@ The source registry and reviewed-lineage wrapper are specified in [Phase 6.21](2
 ## Phase 6.22 — Pyth and final critical gate integration
 
 The reserve/Pyth comparator is now wrapped by `assessIndependentReservePriceAgreementWithReviewedLineage`, which checks Pyth provider/family identity, publication timestamps, indexed source role and actual source timestamp kind against the Phase 6.21 registry. The final evidence path must call `assessCriticalMarketDataEvidenceGateWithReviewedLineage`, which recomputes both provider-agreement and independent-price lineage assessments internally. A diagnostic arithmetic `AGREED` result is insufficient while upstream pairwise attestations, source freshness or provider rights are unresolved. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).
+
+
+## Phase 6.23 — Orchestrated health, fallback and disagreement assessment
+
+The read-only provider orchestrator now has a composed assessment boundary in its own module. It validates that candidate snapshots, normalized observations, provider health and attempts refer to the same registrations, then returns raw agreement diagnostics separately from the Phase 6.21 reviewed-lineage assessment. A raw AGREED result does not grant progression. Only the reviewed result can allow the next independent on-chain evidence stage.
+
+The deterministic integration suite covers rate-limit and timeout fallback, fallback disagreement, stale/missing source timestamps, circuit opening/cooldown, recovery probe disagreement, and non-retryable authentication lockout. The orchestrator remains process-local; a distributed health store and shared recovery-probe lease remain requirements before multi-process production deployment. See Phase 6.23 (23-provider-resilience-integration.md).
