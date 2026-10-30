@@ -1,6 +1,6 @@
 # Phase 6.18 — Raydium CPMM deployed-program integrity evidence
 
-**Status:** Implemented and CI-verified in [run #234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764): 204/204 tests passed, typecheck/build and repository validation passed, dependency audit reported zero vulnerabilities, and Gitleaks passed. It is not a production verification result: no reviewed reference .so hash has been supplied, and CI made no ProgramData read. Phase 6 remains active.
+**Status:** The one-off read-only Mainnet ProgramData comparison completed with MATCH in [live validation run #4](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41004294300), in addition to fixture-only CI [run #234](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40944936764). The live result verified byte equality to the independently reviewed Phase 6.19 reference ELF at finalized context slot 463153970; the live result is historical to that slot. The deployed program still has an upgrade authority, market-source freshness remains UNKNOWN, independent price comparison remains NOT_ASSESSED, and Phase 6 remains active. Production-provider approval and trading authorization remain false.
 
 ## Why this check is separate
 
@@ -30,3 +30,31 @@ A successful comparison verifies byte equality with the supplied reference hash 
 ## Next step: establish the reference artifact
 
 Phase 6.19 adds a separate manual-only [pinned source build evidence workflow](19-raydium-reference-build-evidence.md). It is designed to create and compare two clean builds from the exact pinned source revision before a reference hash and byte length are entered into this ProgramData comparison. It does not perform the ProgramData read and does not imply that the source is the currently deployed revision.
+
+## First live ProgramData comparison — 2026-10-30
+
+[Manual GitHub Actions run #4](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41004294300) completed the one-off read-only DEX Screener + Solana Mainnet RPC validation with top-level MATCH. The job completed successfully and all operator acknowledgement gates were affirmative.
+
+| Evidence field | Observed value |
+|---|---|
+| Scope | READ_ONLY_SOLANA_MAINNET_ACCOUNT_IDENTITY |
+| Top-level identity | MATCH; identityGatePassed: true; no mismatch fields |
+| Program deployment comparison | MATCH; programDeploymentVerificationPassed: true |
+| Reference ELF SHA-256 | 2a90c3302d1907dc9b8bd0b000e4620166e671316a440f10add0b4ba08f28b3d |
+| Expected / observed ELF length | 722632 / 722632 bytes |
+| Expected / observed ELF SHA-256 | Identical |
+| ProgramData padding | 71192 bytes; all zero |
+| RPC commitment / provider | finalized / solana-public-shared |
+| Identity bundle / ProgramData context slot | 463153970 / 463153970 |
+| Program deployment slot | 452376460 |
+| Upgrade authority | Present; program remains upgradeable |
+| Synthetic evidence | false |
+| Phase 6 complete / production provider approved / trading authorized | false / false / false |
+
+The live workflow read the Program account and its linked ProgramData account, decoded the loader metadata, hashed exactly the supplied ELF length after the loader prefix, and verified the remaining allocation bytes were zero. Raw account bytes were not included in the report. The run log records public pool/mint/vault identities and public-chain validation metadata; no wallet private key, signing credential, or API secret was used.
+
+**Interpretation:** this is a successful byte-for-byte match between the reviewed reference build and the deployed Raydium CPMM ELF at finalized slot 463153970. It is not a guarantee that the code will remain unchanged: the upgrade authority is still present and can upgrade the program after this observation. Any future use must revalidate the deployment hash at the relevant time.
+
+The associated DEX Screener response did not provide trusted source/event timestamps (sourceFreshness: UNKNOWN). The live indexed liquidity was approximately USD 569.56 and 24-hour volume approximately USD 430.90, far below the existing candidate-discovery thresholds. The on-chain reserve ratio is not an executable quote, and the independent reserve/price comparison remained NOT_ASSESSED. This pool remains a diagnostic target only, not a trading candidate.
+
+No transaction was signed or submitted. The workflow performed only explicitly approved read-only GET/RPC requests. Phase 6 remains active; Phase 7 token-safety review, independent fresh price evidence, provider selection/terms/fallback, and an upgrade-authority decision remain separate gates.
