@@ -1077,127 +1077,137 @@ export interface ProviderSourceProfile {
   readonly evidenceReferences: readonly string[];
 }
 
+function freezeProviderSourceProfile(profile: ProviderSourceProfile): ProviderSourceProfile {
+  return Object.freeze({
+    ...profile,
+    independentlyVerifiedWithGroups: Object.freeze([...profile.independentlyVerifiedWithGroups]),
+    supportedRoles: Object.freeze([...profile.supportedRoles]),
+    timestampKindsByRole: Object.freeze({ ...profile.timestampKindsByRole }),
+    evidenceReferences: Object.freeze([...profile.evidenceReferences])
+  });
+}
+
 const PROVIDER_SOURCE_PROFILES: readonly ProviderSourceProfile[] = Object.freeze([
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "dex-screener",
     independenceGroupId: "dex-screener-family",
     upstreamOrganization: "DEX Screener",
     sourceProduct: "Pair API",
     lineageDisclosure: "UNDISCLOSED",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["POOL_METRICS", "INDEXED_PRICE"]),
-    timestampKindsByRole: Object.freeze({ POOL_METRICS: "NONE", INDEXED_PRICE: "NONE" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["POOL_METRICS", "INDEXED_PRICE"],
+    timestampKindsByRole: { POOL_METRICS: "NONE", INDEXED_PRICE: "NONE" },
     diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
     commercialRights: "TERMS_AND_QUOTA_REVIEW_REQUIRED",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze(["https://docs.dexscreener.com/api/reference"])
+    evidenceReferences: ["https://docs.dexscreener.com/api/reference"]
   }),
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "geckoterminal",
     independenceGroupId: "geckoterminal-coingecko-ecosystem",
     upstreamOrganization: "Gecko Labs / CoinGecko ecosystem",
     sourceProduct: "GeckoTerminal pool API and exact-pool OHLCV API",
     lineageDisclosure: "VENDOR_FAMILY_DOCUMENTED",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["POOL_METRICS", "INDEXED_PRICE"]),
-    timestampKindsByRole: Object.freeze({ POOL_METRICS: "NONE", INDEXED_PRICE: "OBSERVATION" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["POOL_METRICS", "INDEXED_PRICE"],
+    timestampKindsByRole: { POOL_METRICS: "NONE", INDEXED_PRICE: "OBSERVATION" },
     diagnosticAccess: "DISABLED_PENDING_TERMS",
     commercialRights: "API_SPECIFIC_TERMS_REVIEW_REQUIRED",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze([
+    evidenceReferences: [
       "https://api.geckoterminal.com/docs/index.html",
       "https://www.geckoterminal.com/terms-conditions",
       "https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses"
-    ])
+    ]
   }),
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "coingecko-api",
     independenceGroupId: "geckoterminal-coingecko-ecosystem",
     upstreamOrganization: "CoinGecko / Gecko Labs ecosystem",
     sourceProduct: "CoinGecko API",
     lineageDisclosure: "VENDOR_FAMILY_DOCUMENTED",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["INDEXED_PRICE"]),
-    timestampKindsByRole: Object.freeze({ INDEXED_PRICE: "OBSERVATION" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["INDEXED_PRICE"],
+    timestampKindsByRole: { INDEXED_PRICE: "OBSERVATION" },
     diagnosticAccess: "DISABLED_PENDING_TERMS",
     commercialRights: "CUSTOM_LICENSE_REQUIRED_FOR_REDISTRIBUTION",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze([
+    evidenceReferences: [
       "https://www.coingecko.com/en/api_terms",
       "https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses"
-    ])
+    ]
   }),
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "pyth-hermes",
     independenceGroupId: "pyth-network",
     upstreamOrganization: "Pyth Network",
     sourceProduct: "Hermes SOL/USD and USDC/USD reference feeds",
     lineageDisclosure: "MULTI_PUBLISHER_AGGREGATION_DOCUMENTED",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["USD_REFERENCE"]),
-    timestampKindsByRole: Object.freeze({ USD_REFERENCE: "EVENT" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["USD_REFERENCE"],
+    timestampKindsByRole: { USD_REFERENCE: "EVENT" },
     diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
     commercialRights: "PLAN_SPECIFIC_RIGHTS_REVIEW_REQUIRED",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze([
+    evidenceReferences: [
       "https://docs.pyth.network/api-reference/pyth-core/hermes/timestamp_price_updates",
       "https://github.com/pyth-network/pyth-gitbook/blob/main/how-pyth-works/design-overview.md",
       "https://www.pyth.network/legal",
       "https://www.pyth.network/price-feeds"
-    ])
+    ]
   }),
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "raydium-api-v3",
     independenceGroupId: "raydium-api-v3",
     upstreamOrganization: "Raydium",
     sourceProduct: "Pool-by-mint indexed API",
     lineageDisclosure: "INDEXED_POOL_CATALOG",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["POOL_METRICS"]),
-    timestampKindsByRole: Object.freeze({ POOL_METRICS: "NONE" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["POOL_METRICS"],
+    timestampKindsByRole: { POOL_METRICS: "NONE" },
     diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
     commercialRights: "UNREVIEWED",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze(["https://docs.raydium.io/"])
+    evidenceReferences: ["https://docs.raydium.io/"]
   }),
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "birdeye",
     independenceGroupId: "birdeye-data-platform",
     upstreamOrganization: "Birdeye / Wings Lab",
     sourceProduct: "Price and OHLCV API candidate (not integrated)",
     lineageDisclosure: "VENDOR_FAMILY_DOCUMENTED",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["INDEXED_PRICE"]),
-    timestampKindsByRole: Object.freeze({ INDEXED_PRICE: "OBSERVATION" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["INDEXED_PRICE"],
+    timestampKindsByRole: { INDEXED_PRICE: "OBSERVATION" },
     diagnosticAccess: "DISABLED_PENDING_WRITTEN_PERMISSION",
     commercialRights: "WRITTEN_PERMISSION_REQUIRED",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze([
+    evidenceReferences: [
       "https://docs.birdeye.so/reference/get-defi-price",
       "https://docs.birdeye.so/reference/get-defi-v3-ohlcv-pair",
       "https://birdeye.so/data-api/terms-of-service"
-    ])
+    ]
   }),
-  Object.freeze({
+  freezeProviderSourceProfile({
     providerId: "solana-public-shared",
     independenceGroupId: "solana-finalized-ledger",
     upstreamOrganization: "Solana network",
     sourceProduct: "Shared public Mainnet RPC",
     lineageDisclosure: "NATIVE_FINALIZED_LEDGER",
     independenceReview: "UNVERIFIED",
-    independentlyVerifiedWithGroups: Object.freeze([]),
-    supportedRoles: Object.freeze(["ON_CHAIN_STATE"]),
-    timestampKindsByRole: Object.freeze({ ON_CHAIN_STATE: "SLOT" }),
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["ON_CHAIN_STATE"],
+    timestampKindsByRole: { ON_CHAIN_STATE: "SLOT" },
     diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
     commercialRights: "SHARED_ENDPOINT_NOT_APPROVED_FOR_PRODUCTION",
     productionUseApproved: false,
-    evidenceReferences: Object.freeze(["https://solana.com/docs/rpc"])
+    evidenceReferences: ["https://solana.com/docs/rpc"]
   })
 ]);
 
@@ -1461,7 +1471,14 @@ export function assessProviderAgreementWithReviewedLineage(
 
   const evidenceByProvider = new Map<string, ProviderEvidenceCandidate>();
   for (const candidate of input.candidates) {
-    if (!isRecord(candidate) || !isSafeSlug(candidate.providerId) || evidenceByProvider.has(candidate.providerId)) {
+    if (!isRecord(candidate) ||
+        !isSafeSlug(candidate.providerId) ||
+        !isSafeSlug(candidate.independenceGroupId) ||
+        !Number.isSafeInteger(candidate.priority) ||
+        (candidate.priority as number) < 0 ||
+        typeof candidate.snapshot === "undefined" ||
+        !isValidProviderHealthEvidence(candidate.health, candidate.providerId) ||
+        evidenceByProvider.has(candidate.providerId)) {
       const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
       const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_AGREEMENT_CANDIDATE_INVALID"]);
       return {
@@ -1474,7 +1491,7 @@ export function assessProviderAgreementWithReviewedLineage(
         tradingAuthorized: false
       };
     }
-    evidenceByProvider.set(candidate.providerId, candidate);
+    evidenceByProvider.set(candidate.providerId, candidate as unknown as ProviderEvidenceCandidate);
   }
 
   const boundLineageCandidates: ProviderLineageCandidate[] = [];
