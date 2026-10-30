@@ -742,3 +742,311 @@ export async function assessPostgresProviderHealthDatabaseReadiness(
     throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
   }
 }
+
+
+/**
+ * Policy-driven, read-only PostgreSQL operational snapshot.
+ * Query text, connection strings, client addresses and request parameters are never selected.
+ * A separate role with pg_read_all_stats is required for complete database-wide visibility.
+ */
+export interface PostgresProviderHealthMonitoringPolicy {
+  readonly maxConnectionUtilizationPercent: number;
+  readonly maxOldestOpenTransactionSeconds: number;
+  readonly maxLongestActiveQuerySeconds: number;
+  readonly maxIdleInTransactionCount: number;
+  readonly maxOldestIdleInTransactionSeconds: number;
+  readonly maxLockWaitCount: number;
+  readonly maxDeadlocksSinceStatsReset: number;
+  readonly maxDatabaseSizeBytes: string;
+}
+
+export type PostgresProviderHealthMonitoringStatus =
+  | "BLOCKED"
+  | "ALERT_REVIEW_REQUIRED"
+  | "MONITORING_SCOPE_LIMITED_REVIEW_REQUIRED"
+  | "TECHNICAL_MONITORING_CHECKS_PASSED_REVIEW_REQUIRED";
+
+export interface PostgresProviderHealthOperationalMonitoring {
+  readonly status: PostgresProviderHealthMonitoringStatus;
+  readonly monitoringRole: string;
+  readonly activityVisibility: "DATABASE_WIDE" | "CURRENT_ROLE_ONLY";
+  readonly activityTrackingEnabled: boolean;
+  readonly metrics: Readonly<{
+    currentDatabaseConnections: number;
+    maxConnections: number;
+    connectionUtilizationPercent: number;
+    activeQueryCount: number;
+    oldestOpenTransactionSeconds: number;
+    longestActiveQuerySeconds: number;
+    idleInTransactionCount: number;
+    oldestIdleInTransactionSeconds: number;
+    lockWaitCount: number;
+    deadlocksSinceStatsReset: number;
+    statsResetAt: string | null;
+    databaseSizeBytes: string;
+    sampledAt: string;
+  }>;
+  readonly thresholdBreaches: readonly string[];
+  readonly reasonCodes: readonly string[];
+  readonly humanReviewRequired: readonly string[];
+  readonly providerHealthMonitoringApproved: false;
+  readonly providerActivationAuthorized: false;
+  readonly tradingAuthorized: false;
+}
+
+interface PostgresProviderHealthMonitoringRow extends Record<string, unknown> {
+  monitoring_role: unknown;
+  role_is_superuser: unknown;
+  has_read_all_stats: unknown;
+  activity_tracking_enabled: unknown;
+  current_database_connections: unknown;
+  max_connections: unknown;
+  active_query_count: unknown;
+  oldest_open_transaction_seconds: unknown;
+  longest_active_query_seconds: unknown;
+  idle_in_transaction_count: unknown;
+  oldest_idle_in_transaction_seconds: unknown;
+  lock_wait_count: unknown;
+  deadlocks_since_stats_reset: unknown;
+  stats_reset_at: unknown;
+  database_size_bytes: unknown;
+  sampled_at: unknown;
+}
+
+const POSTGRES_PROVIDER_HEALTH_MONITORING_SQL = [
+  "WITH monitoring_role AS (",
+  "  SELECT",
+  "    current_user::text AS monitoring_role,",
+  "    COALESCE((SELECT rolsuper FROM pg_roles WHERE rolname = current_user), false) AS role_is_superuser,",
+  "    pg_has_role(current_user, 'pg_read_all_stats', 'MEMBER') AS has_read_all_stats,",
+  "    current_setting('track_activities')::boolean AS activity_tracking_enabled,",
+  "    current_setting('max_connections')::integer AS max_connections,",
+  "    statement_timestamp() AS sampled_at",
+  "),",
+  "activity AS (",
+  "  SELECT",
+  "    count(*) FILTER (WHERE datname = current_database())::text AS current_database_connections,",
+  "    count(*) FILTER (WHERE datname = current_database() AND pid <> pg_backend_pid() AND state = 'active')::text AS active_query_count,",
+  "    COALESCE(MAX(FLOOR(EXTRACT(EPOCH FROM (statement_timestamp() - xact_start)))) FILTER (WHERE datname = current_database() AND pid <> pg_backend_pid() AND xact_start IS NOT NULL), 0)::text AS oldest_open_transaction_seconds,",
+  "    COALESCE(MAX(FLOOR(EXTRACT(EPOCH FROM (statement_timestamp() - query_start)))) FILTER (WHERE datname = current_database() AND pid <> pg_backend_pid() AND state = 'active' AND query_start IS NOT NULL), 0)::text AS longest_active_query_seconds,",
+  "    count(*) FILTER (WHERE datname = current_database() AND state LIKE 'idle in transaction%')::text AS idle_in_transaction_count,",
+  "    COALESCE(MAX(FLOOR(EXTRACT(EPOCH FROM (statement_timestamp() - xact_start)))) FILTER (WHERE datname = current_database() AND state LIKE 'idle in transaction%' AND xact_start IS NOT NULL), 0)::text AS oldest_idle_in_transaction_seconds,",
+  "    count(*) FILTER (WHERE datname = current_database() AND pid <> pg_backend_pid() AND wait_event_type = 'Lock')::text AS lock_wait_count",
+  "  FROM pg_stat_activity",
+  "),",
+  "database_stats AS (",
+  "  SELECT deadlocks::text AS deadlocks_since_stats_reset, stats_reset",
+  "  FROM pg_stat_database",
+  "  WHERE datname = current_database()",
+  ")",
+  "SELECT",
+  "  monitoring_role.monitoring_role,",
+  "  monitoring_role.role_is_superuser,",
+  "  monitoring_role.has_read_all_stats,",
+  "  monitoring_role.activity_tracking_enabled,",
+  "  monitoring_role.max_connections::text AS max_connections,",
+  "  activity.current_database_connections,",
+  "  activity.active_query_count,",
+  "  activity.oldest_open_transaction_seconds,",
+  "  activity.longest_active_query_seconds,",
+  "  activity.idle_in_transaction_count,",
+  "  activity.oldest_idle_in_transaction_seconds,",
+  "  activity.lock_wait_count,",
+  "  database_stats.deadlocks_since_stats_reset,",
+  "  database_stats.stats_reset AS stats_reset_at,",
+  "  pg_database_size(current_database())::text AS database_size_bytes,",
+  "  monitoring_role.sampled_at",
+  "FROM monitoring_role CROSS JOIN activity CROSS JOIN database_stats"
+].join("\n");
+
+const POSTGRES_PROVIDER_HEALTH_MONITORING_REVIEW_ITEMS = Object.freeze([
+  "DEDICATED_MONITORING_IDENTITY_AND_PG_READ_ALL_STATS_APPROVAL",
+  "OWNER_APPROVED_ALERT_THRESHOLDS_AND_EVALUATION_CADENCE",
+  "ALERT_DESTINATION_ON_CALL_ACKNOWLEDGEMENT_AND_ESCALATION",
+  "APPLICATION_POOL_LIMITS_AND_AGGREGATE_CONNECTION_BUDGET",
+  "CLIENT_TLS_CERTIFICATE_CHAIN_AND_HOSTNAME_VERIFICATION",
+  "BACKUP_ENCRYPTION_RETENTION_PITR_AND_RESTORE_EVIDENCE",
+  "OWNER_OPERATIONAL_APPROVAL"
+] as const);
+
+function parseMonitoringPolicy(
+  value: unknown
+): PostgresProviderHealthMonitoringPolicy | null {
+  if (!isRecord(value)) return null;
+  const keys = [
+    "maxConnectionUtilizationPercent",
+    "maxOldestOpenTransactionSeconds",
+    "maxLongestActiveQuerySeconds",
+    "maxIdleInTransactionCount",
+    "maxOldestIdleInTransactionSeconds",
+    "maxLockWaitCount",
+    "maxDeadlocksSinceStatsReset",
+    "maxDatabaseSizeBytes"
+  ];
+  const actualKeys = Object.keys(value).sort();
+  const expectedKeys = [...keys].sort();
+  if (actualKeys.length !== expectedKeys.length ||
+      !actualKeys.every((key, index) => key === expectedKeys[index])) return null;
+
+  const numericKeys = keys.slice(0, 7) as readonly (keyof Omit<
+    PostgresProviderHealthMonitoringPolicy,
+    "maxDatabaseSizeBytes"
+  >)[];
+  for (const key of numericKeys) {
+    const minimum = key === "maxConnectionUtilizationPercent" ? 1 : 0;
+    const maximum = key === "maxConnectionUtilizationPercent" ? 100 : Number.MAX_SAFE_INTEGER;
+    const field = value[key];
+    if (typeof field !== "number" || !Number.isSafeInteger(field) ||
+        field < minimum || field > maximum) return null;
+  }
+  if (typeof value.maxDatabaseSizeBytes !== "string" ||
+      !/^(?:0|[1-9][0-9]{0,39})$/.test(value.maxDatabaseSizeBytes)) return null;
+
+  return value as unknown as PostgresProviderHealthMonitoringPolicy;
+}
+
+function requireMonitoringInteger(value: unknown): number {
+  const parsed = parseSafeInteger(value);
+  if (parsed === null) throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+  return parsed;
+}
+
+function requireMonitoringTimestamp(value: unknown, nullable = false): string | null {
+  if (nullable && value === null) return null;
+  const parsed = toIsoTimestamp(value);
+  if (parsed === null) throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+  return parsed;
+}
+
+/**
+ * Use one read-only aggregate query through an already-connected monitoring client.
+ * No connection creation, role switch, configuration change, write, notification,
+ * provider request, Solana RPC request or trading authorization is performed.
+ * Thresholds are mandatory caller-supplied policy; no production defaults exist.
+ */
+export async function assessPostgresProviderHealthOperationalMonitoring(
+  client: Pick<PostgresQueryClient, "query">,
+  policyInput: PostgresProviderHealthMonitoringPolicy
+): Promise<PostgresProviderHealthOperationalMonitoring> {
+  if (!isRecord(client) || typeof client.query !== "function" ||
+      parseMonitoringPolicy(policyInput) === null) {
+    throw new ProviderHealthStoreError("INVALID_INPUT");
+  }
+  const policy = policyInput;
+
+  try {
+    const result = await client.query<PostgresProviderHealthMonitoringRow>(
+      POSTGRES_PROVIDER_HEALTH_MONITORING_SQL
+    );
+    if (!Array.isArray(result.rows) || result.rows.length !== 1) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+    const row = result.rows[0]!;
+    if (typeof row.monitoring_role !== "string" ||
+        row.monitoring_role.trim().length === 0 ||
+        row.monitoring_role.length > 128) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+
+    const roleIsSuperuser = parsePostgresBoolean(row.role_is_superuser);
+    const hasReadAllStats = parsePostgresBoolean(row.has_read_all_stats);
+    const activityTrackingEnabled = parsePostgresBoolean(row.activity_tracking_enabled);
+    if (roleIsSuperuser === null || hasReadAllStats === null || activityTrackingEnabled === null) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+
+    const currentDatabaseConnections = requireMonitoringInteger(row.current_database_connections);
+    const maxConnections = requireMonitoringInteger(row.max_connections);
+    if (maxConnections < 1) throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+
+    const activeQueryCount = requireMonitoringInteger(row.active_query_count);
+    const oldestOpenTransactionSeconds = requireMonitoringInteger(row.oldest_open_transaction_seconds);
+    const longestActiveQuerySeconds = requireMonitoringInteger(row.longest_active_query_seconds);
+    const idleInTransactionCount = requireMonitoringInteger(row.idle_in_transaction_count);
+    const oldestIdleInTransactionSeconds = requireMonitoringInteger(row.oldest_idle_in_transaction_seconds);
+    const lockWaitCount = requireMonitoringInteger(row.lock_wait_count);
+    const deadlocksSinceStatsReset = requireMonitoringInteger(row.deadlocks_since_stats_reset);
+    if (typeof row.database_size_bytes !== "string" ||
+        !/^(?:0|[1-9][0-9]{0,39})$/.test(row.database_size_bytes)) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+
+    const statsResetAt = requireMonitoringTimestamp(row.stats_reset_at, true);
+    const sampledAt = requireMonitoringTimestamp(row.sampled_at);
+    const databaseWideVisibility = roleIsSuperuser || hasReadAllStats;
+    const connectionUtilizationPercent =
+      Math.round((currentDatabaseConnections / maxConnections) * 10_000) / 100;
+
+    const metrics = Object.freeze({
+      currentDatabaseConnections,
+      maxConnections,
+      connectionUtilizationPercent,
+      activeQueryCount,
+      oldestOpenTransactionSeconds,
+      longestActiveQuerySeconds,
+      idleInTransactionCount,
+      oldestIdleInTransactionSeconds,
+      lockWaitCount,
+      deadlocksSinceStatsReset,
+      statsResetAt,
+      databaseSizeBytes: row.database_size_bytes,
+      sampledAt
+    });
+
+    const thresholdBreaches: string[] = [];
+    if (currentDatabaseConnections * 100 >
+        maxConnections * policy.maxConnectionUtilizationPercent) {
+      thresholdBreaches.push("CONNECTION_UTILIZATION_ABOVE_THRESHOLD");
+    }
+    if (oldestOpenTransactionSeconds > policy.maxOldestOpenTransactionSeconds) {
+      thresholdBreaches.push("OLDEST_OPEN_TRANSACTION_ABOVE_THRESHOLD");
+    }
+    if (longestActiveQuerySeconds > policy.maxLongestActiveQuerySeconds) {
+      thresholdBreaches.push("LONGEST_ACTIVE_QUERY_ABOVE_THRESHOLD");
+    }
+    if (idleInTransactionCount > policy.maxIdleInTransactionCount) {
+      thresholdBreaches.push("IDLE_IN_TRANSACTION_COUNT_ABOVE_THRESHOLD");
+    }
+    if (oldestIdleInTransactionSeconds > policy.maxOldestIdleInTransactionSeconds) {
+      thresholdBreaches.push("OLDEST_IDLE_IN_TRANSACTION_ABOVE_THRESHOLD");
+    }
+    if (lockWaitCount > policy.maxLockWaitCount) {
+      thresholdBreaches.push("LOCK_WAIT_COUNT_ABOVE_THRESHOLD");
+    }
+    if (deadlocksSinceStatsReset > policy.maxDeadlocksSinceStatsReset) {
+      thresholdBreaches.push("DEADLOCKS_SINCE_STATS_RESET_ABOVE_THRESHOLD");
+    }
+    if (BigInt(row.database_size_bytes) > BigInt(policy.maxDatabaseSizeBytes)) {
+      thresholdBreaches.push("DATABASE_SIZE_ABOVE_THRESHOLD");
+    }
+
+    const activityVisibility = databaseWideVisibility ? "DATABASE_WIDE" : "CURRENT_ROLE_ONLY";
+    const reasonCodes = [...thresholdBreaches];
+    if (!databaseWideVisibility) reasonCodes.push("POSTGRES_ACTIVITY_VISIBILITY_LIMITED");
+    if (!activityTrackingEnabled) reasonCodes.push("POSTGRES_ACTIVITY_TRACKING_DISABLED");
+
+    const status: PostgresProviderHealthMonitoringStatus = thresholdBreaches.length > 0
+      ? "ALERT_REVIEW_REQUIRED"
+      : (!databaseWideVisibility || !activityTrackingEnabled)
+        ? "MONITORING_SCOPE_LIMITED_REVIEW_REQUIRED"
+        : "TECHNICAL_MONITORING_CHECKS_PASSED_REVIEW_REQUIRED";
+
+    return Object.freeze({
+      status,
+      monitoringRole: row.monitoring_role,
+      activityVisibility,
+      activityTrackingEnabled,
+      metrics,
+      thresholdBreaches: Object.freeze(thresholdBreaches),
+      reasonCodes: Object.freeze(reasonCodes),
+      humanReviewRequired: POSTGRES_PROVIDER_HEALTH_MONITORING_REVIEW_ITEMS,
+      providerHealthMonitoringApproved: false as const,
+      providerActivationAuthorized: false as const,
+      tradingAuthorized: false as const
+    });
+  } catch (error) {
+    if (error instanceof ProviderHealthStoreError) throw error;
+    // Driver errors can include SQL, database identifiers or credential-bearing URLs.
+    throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+  }
+}
