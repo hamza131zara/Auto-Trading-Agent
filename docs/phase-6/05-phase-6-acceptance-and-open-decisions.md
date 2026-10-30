@@ -320,3 +320,17 @@ The manifest protects against accidental or unreviewed SQL-file drift only when 
 - [ ] Approve operational thresholds, sampling cadence, monitoring retention, alert receiver, on-call acknowledgement/escalation and incident exercises.
 
 The feature is a measurement/evaluation primitive, not a hosted monitoring service. It makes no production connection and does not enable database deployment, provider activation or trading. Phase 6 remains ACTIVE. See [Phase 6.34](34-postgres-observability-monitoring-and-incident-controls.md).
+
+
+## Phase 6.35 — PostgreSQL aggregate connection-budget preflight
+
+- [x] Add an offline capacity evaluator for aggregate runtime replica/pool demand and monitoring, migration and other-service connections.
+- [x] Subtract declared reserved server slots and a separately declared safety buffer before evaluating usable capacity.
+- [x] Require a caller-supplied minimum headroom and return distinct fail-closed outcomes for over-capacity and insufficient headroom.
+- [x] Reject missing/extra/credential-shaped fields, invalid integer counts and invalid reserved-capacity plans.
+- [x] Use BigInt for exact aggregate pool multiplication and return immutable review-required reports; provider/deployment/trading authorization remains false.
+- [ ] Independently verify all declared server settings and maximum shared workload against the target environment.
+- [ ] Select/review the production driver and test its pool/timeouts/shutdown and strict client TLS verification.
+- [ ] Obtain explicit owner/database-operator approval of a real capacity plan.
+
+The evaluator is offline and driver-neutral. It does not open a database connection, select/configure a pool, create credentials or modify runtime state. A passing arithmetic report is not production evidence or approval. Phase 6 remains ACTIVE. See [Phase 6.35](35-postgres-aggregate-connection-budget-preflight.md).
