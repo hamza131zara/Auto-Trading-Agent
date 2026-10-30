@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented on branch \`phase6-pyth-lineage-critical-gate\`; awaiting CI and code review. No live provider calls or RPC requests were made by this change. No key was created or requested, provider activation remains disabled, spending remains USD $0, and trading authorization remains false.
+Merged through [PR #39](https://github.com/hamza131zara/Auto-Trading-Agent/pull/39), commit `c2636b885f39f2fdfdac518f71ac144367770db6`. Post-merge CI [run #263](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41012644552) passed 245/245 tests, repository validation, typecheck/build, dependency audit (zero vulnerabilities), and Gitleaks. PR #39 also passed both CodeQL analyses and Dependency Review. No live provider calls or RPC requests were made by this change. No key was created or requested, provider activation remains disabled, spending remains USD $0, and trading authorization remains false.
 
 ## Purpose
 
@@ -12,26 +12,26 @@ The existing arithmetic comparator remains unchanged and available for determini
 
 ## Pyth reference lineage
 
-\`assessIndependentReservePriceAgreementWithReviewedLineage\`:
-- Requires base/USD and quote/USD observations to identify the exact \`approvedProviderId\` and \`approvedIndependenceGroupId\` from the comparison policy.
+`assessIndependentReservePriceAgreementWithReviewedLineage`:
+- Requires base/USD and quote/USD observations to identify the exact `approvedProviderId` and `approvedIndependenceGroupId` from the comparison policy.
 - Requires both reference observations to come from the same approved provider family and to carry valid publication timestamps.
-- Resolves the reference source as the registry role \`USD_REFERENCE\` with timestamp kind \`EVENT\`.
-- Resolves the indexed USD/base source as role \`INDEXED_PRICE\`; timestamp kind is derived from \`indexedSourceEventAt\`, then \`indexedSourceObservedAt\`, or \`NONE\`. Retrieval time cannot upgrade a missing source timestamp.
-- Runs the original reserve/reference and indexed/reference arithmetic comparator for diagnostics. The outer assessment remains \`BLOCKED\` unless source lineage is registry-ready and the comparison is \`AGREED\` with complete evidence.
-- Always returns \`tradingAuthorized: false\`.
+- Resolves the reference source as the registry role `USD_REFERENCE` with timestamp kind `EVENT`.
+- Resolves the indexed USD/base source as role `INDEXED_PRICE`; timestamp kind is derived from `indexedSourceEventAt`, then `indexedSourceObservedAt`, or `NONE`. Retrieval time cannot upgrade a missing source timestamp.
+- Runs the original reserve/reference and indexed/reference arithmetic comparator for diagnostics. The outer assessment remains `BLOCKED` unless source lineage is registry-ready and the comparison is `AGREED` with complete evidence.
+- Always returns `tradingAuthorized: false`.
 
 Current result is intentionally blocked: Pyth's source lineage remains unverified and no mutually attested upstream pair exists. DEX Screener's current indexed-price profile has no source event/observation timestamp. GeckoTerminal OHLCV may supply a candle-boundary observation for price only, but its current diagnostic access remains disabled pending terms/rights review.
 
 ## Final critical market-data gate
 
-\`assessCriticalMarketDataEvidenceGateWithReviewedLineage\` receives the raw provider-agreement input and independent-comparison input, then recomputes both reviewed-lineage wrappers internally. It does not trust pre-computed caller-supplied ready flags. It can return \`READY_FOR_ON_CHAIN_VALIDATION\` only when:
+`assessCriticalMarketDataEvidenceGateWithReviewedLineage` receives the raw provider-agreement input and independent-comparison input, then recomputes both reviewed-lineage wrappers internally. It does not trust pre-computed caller-supplied ready flags. It can return `READY_FOR_ON_CHAIN_VALIDATION` only when:
 1. provider agreement passed its reviewed source-lineage gate;
 2. independent reserve/Pyth comparison passed its reviewed source-lineage gate;
 3. the existing provider agreement and comparison assessments satisfy the original internal consistency checks.
 
 That result only permits the next distinct on-chain evidence stage. It does not authorize an order, transaction signature, deployment, or trade.
 
-The Pyth manual runner does not contain the multi-provider pool-metrics agreement evidence required by the final gate. Its report therefore records the reviewed Pyth/indexed lineage result and explicitly marks the final critical gate \`NOT_ASSESSED\` with \`PROVIDER_AGREEMENT_EVIDENCE_NOT_INCLUDED_IN_PYTH_REFERENCE_RUNNER\`; it must not synthesize missing provider agreement data.
+The Pyth manual runner does not contain the multi-provider pool-metrics agreement evidence required by the final gate. Its report therefore records the reviewed Pyth/indexed lineage result and explicitly marks the final critical gate `NOT_ASSESSED` with `PROVIDER_AGREEMENT_EVIDENCE_NOT_INCLUDED_IN_PYTH_REFERENCE_RUNNER`; it must not synthesize missing provider agreement data.
 
 ## Current source readiness
 
@@ -47,7 +47,7 @@ No source pair currently has mutual owner-attested upstream independence. Do not
 
 ## Regression coverage
 
-\`test/phase6-reviewed-lineage-gates.test.mjs\` covers:
+`test/phase6-reviewed-lineage-gates.test.mjs` covers:
 - arithmetic agreement with unverified lineage remains blocked;
 - missing DEX Screener source time stays NONE;
 - GeckoTerminal candle start remains OBSERVATION and its disabled terms state blocks;
