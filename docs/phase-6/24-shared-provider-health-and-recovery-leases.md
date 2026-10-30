@@ -48,3 +48,8 @@ The store is process-agnostic but the current orchestrator's local in-flight set
 ## Safety and open approvals
 
 Provider profiles remain `UNVERIFIED`, production approvals remain false, and all diagnostic terms/rights gates remain unchanged. This shared store does not turn provider health into source independence or freshness, and it cannot authorize trading. The DEX/Raydium pool thresholds and 10-bps Pyth diagnostic tolerance are unchanged. No production database configuration or credentials have been introduced.
+
+
+## Follow-on real-engine verification
+
+Phase 6.25 adds the actual PostgreSQL engine gate in [the real PostgreSQL integration runbook](25-real-postgres-integration.md). The fake-pool tests above remain valuable unit-level coverage, but should not be counted as real database concurrency evidence. Do not approve multi-process deployment until the 6.25 workflow passes and operational database decisions are reviewed separately.

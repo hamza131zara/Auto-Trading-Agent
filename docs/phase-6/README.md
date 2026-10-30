@@ -38,6 +38,7 @@
 18. [Raydium CPMM deployed-program integrity evidence](18-raydium-program-deployment-integrity.md)
 19. [Pinned Raydium source build and reference hash evidence](19-raydium-reference-build-evidence.md)
 20. [Local review of pinned Raydium reference-build evidence](20-reference-build-evidence-review.md)
+21. [Real PostgreSQL integration and distributed recovery verification](25-real-postgres-integration.md)
 
 ## Initial implementation boundary
 
@@ -146,3 +147,8 @@ An optional driver-neutral PostgreSQL store now persists provider health and coo
 ## Phase 6.24 — Shared provider health and recovery-probe leases
 
 Merged through [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/43), commit `9ccae49`. Post-merge CI [#274](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41024455297) passed 262/262 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks. Both CodeQL analyses and Dependency Review passed on the PR. The migration remains unapplied, no driver or database credentials are included, and real PostgreSQL multi-connection integration remains a gate before multi-process deployment. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).
+
+
+## Real PostgreSQL shared-health verification
+
+Phase 6.25 adds a dedicated CI workflow using an ephemeral PostgreSQL 18.6 service and two independent database connections. It covers real concurrent recovery-lease claims, expiry/reclaim fencing, stale-worker rejection, persistence across store instances and transaction rollback. See [the Phase 6.25 runbook](25-real-postgres-integration.md). This integration gate is separate from the existing fake-pool unit tests and does not approve a production database deployment or trading.
