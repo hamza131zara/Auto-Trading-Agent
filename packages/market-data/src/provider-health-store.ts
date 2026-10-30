@@ -328,6 +328,12 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
         ? initialProviderHealth(input.providerId)
         : readHealthRow(healthResult.rows[0]!).health;
 
+      // Once a circuit is open, only the worker holding the current distributed
+      // recovery lease may write the probe result back to shared health state.
+      if (previous.state === "CIRCUIT_OPEN" && input.recoveryLease === undefined) {
+        throw new ProviderHealthStoreError("RECOVERY_LEASE_NOT_OWNED");
+      }
+
       if (input.recoveryLease !== undefined) {
         const lease = input.recoveryLease;
         const leaseResult = await client.query<LeaseDbRow>(
