@@ -52,7 +52,7 @@ export interface PostgresConnectionBudgetAssessment {
   readonly headroom: Readonly<{
     remainingConnections: number;
     requiredConnections: number;
-    utilizationPercent: number;
+    utilizationPercent: string;
   }>;
   readonly reasonCodes: readonly string[];
   readonly humanReviewRequired: readonly string[];
