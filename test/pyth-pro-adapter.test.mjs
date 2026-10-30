@@ -18,6 +18,7 @@ const FEEDS = [
     feedName: "SOL/USD",
     assetId: PYTH_PRO_WRAPPED_SOL_MINT,
     minPublisherCount: 3,
+    feedState: "stable",
     minChannel: "fixed_rate@1000ms",
     minPublisherCountBySession: { regular: 4, preMarket: 5 }
   },
@@ -27,6 +28,7 @@ const FEEDS = [
     feedName: "USDC/USD",
     assetId: PYTH_PRO_USDC_MAINNET_MINT,
     minPublisherCount: 2,
+    feedState: "stable",
     minChannel: "fixed_rate@1000ms"
   }
 ];
@@ -249,6 +251,46 @@ test("feed binding and minimum update channel are required and exact", () => {
     ],
     channel: "fixed_rate@200ms"
   }), (error) => error instanceof PythProAdapterError && error.code === "INVALID_CONFIGURATION");
+});
+
+test("Pyth Pro rejects an inactive feed and a non-live market session", () => {
+  assert.throws(() => new PythProUsdPriceAdapter({
+    apiKey: "test-only-key",
+    feedBindings: [
+      { ...FEEDS[0], feedState: "coming_soon" },
+      FEEDS[1]
+    ],
+    channel: CHANNEL
+  }), (error) => error instanceof PythProAdapterError && error.code === "INVALID_CONFIGURATION");
+
+  const inactiveSessionFeeds = [
+    { ...FEEDS[0], sessionStateBySession: { preMarket: "inactive" } },
+    FEEDS[1]
+  ];
+  const adapter = new PythProUsdPriceAdapter({
+    apiKey: "test-only-key",
+    feedBindings: inactiveSessionFeeds,
+    channel: CHANNEL,
+    fetchImpl: async () => new Response("{}")
+  });
+  const preMarketFeeds = payload().parsed.priceFeeds.map((item) => ({
+    ...item,
+    marketSession: "preMarket",
+    publisherCount: 5
+  }));
+  const result = adapter.normalize({
+    providerId: "pyth-pro",
+    adapterVersion: "1.0.0",
+    channel: CHANNEL,
+    requestedFeeds: inactiveSessionFeeds,
+    requestedAt: "2026-10-30T07:59:59.000Z",
+    retrievedAt: "2026-10-30T08:00:01.000Z",
+    rawPayloadSha256: "9".repeat(64),
+    payload: payload({ priceFeeds: preMarketFeeds }),
+    synthetic: false
+  });
+  assert.deepEqual(result.observations, []);
+  assert.deepEqual(result.errors, ["SESSION_NOT_ACTIVE"]);
 });
 
 test("missing key and provider HTTP errors are rejected without leaking credentials or bodies", async () => {
