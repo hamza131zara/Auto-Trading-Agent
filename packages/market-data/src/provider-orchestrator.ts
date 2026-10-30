@@ -456,7 +456,7 @@ export class ReadOnlyMarketDataOrchestrator {
           (typeof options.recoveryProbeLease?.ownerId !== "string" ||
            !SAFE_WORKER_ID.test(options.recoveryProbeLease.ownerId) ||
            !Number.isSafeInteger(options.recoveryProbeLease.leaseDurationMs) ||
-           options.recoveryProbeLease.leaseDurationMs < 1_000 ||
+           options.recoveryProbeLease.leaseDurationMs < options.requestTimeoutMs + 1_000 ||
            options.recoveryProbeLease.leaseDurationMs > 300_000 ||
            typeof options.recoveryProbeLease.createLeaseTokenHash !== "function"))) {
       throw new RangeError("Invalid provider orchestration policy.");
