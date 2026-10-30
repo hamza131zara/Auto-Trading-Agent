@@ -28,6 +28,8 @@ export type PythProChannel =
   | "fixed_rate@200ms"
   | "fixed_rate@1000ms";
 
+export type PythProMarketSession = "regular" | "preMarket" | "postMarket" | "overNight" | "closed";
+
 export interface PythProFeedBinding {
   /** Stable numeric pyth_lazer_id obtained from reviewed Pyth symbology metadata. */
   readonly pythLazerId: number;
@@ -39,6 +41,8 @@ export interface PythProFeedBinding {
   readonly minPublisherCount: number;
   /** Feed-level min_channel from the reviewed Pyth symbology response. */
   readonly minChannel: PythProChannel;
+  /** Session-specific overrides from the reviewed feed metadata, when present. */
+  readonly minPublisherCountBySession?: Readonly<Partial<Record<PythProMarketSession, number>>>;
 }
 
 export interface PythProUsdPriceObservation extends IndependentUsdPriceObservation {
@@ -56,6 +60,7 @@ export interface PythProUsdPriceObservation extends IndependentUsdPriceObservati
   readonly requestId: string;
   readonly adapterVersion: string;
   readonly channel: PythProChannel;
+  readonly marketSession: PythProMarketSession;
 }
 
 export type PythProFailureCode =
@@ -158,7 +163,12 @@ function validateFeedBindings(value: unknown): value is readonly PythProFeedBind
       typeof binding.minPublisherCount === "number" &&
       Number.isSafeInteger(binding.minPublisherCount) &&
       binding.minPublisherCount >= 1 &&
-      isChannel(binding.minChannel);
+      isChannel(binding.minChannel) &&
+      (binding.minPublisherCountBySession === undefined ||
+        (isRecord(binding.minPublisherCountBySession) &&
+          Object.entries(binding.minPublisherCountBySession).every(([session, count]) =>
+            ["regular", "preMarket", "postMarket", "overNight", "closed"].includes(session) &&
+            typeof count === "number" && Number.isSafeInteger(count) && count >= 1)));
   };
 
   return bindings.length === 2 &&
@@ -357,7 +367,7 @@ export class PythProUsdPriceAdapter {
       priceFeedIds: this.bindings.map((binding) => binding.pythLazerId),
       channel: this.channel,
       formats: [],
-      properties: ["price", "exponent", "confidence", "publisherCount", "feedUpdateTimestamp"]
+      properties: ["price", "exponent", "confidence", "publisherCount", "feedUpdateTimestamp", "marketSession"]
     };
     const timeoutSignal = AbortSignal.timeout(this.timeoutMs);
     const combinedSignal = AbortSignal.any([signal, timeoutSignal]);
@@ -464,12 +474,20 @@ export class PythProUsdPriceAdapter {
         continue;
       }
 
+      const marketSession = item.marketSession;
+      if (typeof marketSession !== "string" ||
+          !["regular", "preMarket", "postMarket", "overNight", "closed"].includes(marketSession)) {
+        errors.push("INVALID_RESPONSE");
+        continue;
+      }
+      const session = marketSession as PythProMarketSession;
+      const sessionMinimum = binding.minPublisherCountBySession?.[session] ?? binding.minPublisherCount;
       const publisherCount = item.publisherCount;
       if (typeof publisherCount !== "number" || !Number.isSafeInteger(publisherCount) || publisherCount < 0) {
         errors.push("PUBLISHER_COUNT_INVALID");
         continue;
       }
-      if (publisherCount < binding.minPublisherCount) {
+      if (publisherCount < sessionMinimum) {
         errors.push("PUBLISHER_QUORUM_UNMET");
         continue;
       }
@@ -521,13 +539,14 @@ export class PythProUsdPriceAdapter {
         synthetic: envelope.synthetic,
         pythLazerId: binding.pythLazerId,
         publisherCount,
-        minPublisherCount: binding.minPublisherCount,
+        minPublisherCount: sessionMinimum,
         feedUpdateTimestampUnixMicros: feedUpdateTimestampUs,
         updateTimestampUnixMicros: updateTimestampUs,
         rawPayloadSha256: envelope.rawPayloadSha256.toLowerCase(),
         requestId: "pyth-pro:" + envelope.retrievedAt + ":" + envelope.rawPayloadSha256.slice(0, 12),
         adapterVersion: PYTH_PRO_ADAPTER_VERSION,
-        channel: envelope.channel
+        channel: envelope.channel,
+        marketSession
       });
     }
 
