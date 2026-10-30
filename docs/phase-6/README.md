@@ -131,3 +131,8 @@ The Pyth reserve-price path now uses the Phase 6.21 provider registry. Base/USD 
 ## Phase 6.23 — Provider resilience integration
 
 The read-only collection now has a composed assessment that validates attempt/health/observation consistency and keeps raw provider agreement diagnostics separate from the registry-backed lineage result. Rate-limit, fallback disagreement, stale/missing timestamps, circuit cooldown, recovery disagreement and authentication lockout are covered by deterministic tests. The current unverified provider registry still blocks evidence progression. Multi-process shared health persistence and probe leases remain open. See Phase 6.23 (23-provider-resilience-integration.md).
+
+
+## Phase 6.23 — Provider resilience integration
+
+A composed assessment now validates orchestration candidates, normalized observations, provider health and attempts; reports raw agreement separately from reviewed source lineage; and only permits progression through the reviewed gate. Deterministic tests cover rate limits, fallback disagreement, stale/missing timestamps, circuit cooldown, recovery disagreement and auth lockout. Shared health persistence and distributed recovery-probe leasing remain open before multi-process production. See [Phase 6.23](23-provider-resilience-integration.md). Merged through [PR #41](https://github.com/hamza131zara/Auto-Trading-Agent/pull/41); post-merge CI [#269](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41022186170) passed 251/251 tests and all repository checks. Both CodeQL analyses and Dependency Review passed on the PR.

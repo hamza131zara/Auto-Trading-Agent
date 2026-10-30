@@ -150,3 +150,14 @@ The Pyth runner explicitly reports the final critical gate as `NOT_ASSESSED` bec
 - [ ] Design and verify shared health persistence and distributed recovery-probe leases before any multi-process production deployment.
 
 Current registry profiles remain unverified, so diagnostic agreement cannot advance the reviewed gate. No live provider or RPC request was made; no key, spend, adapter activation, order or transaction is introduced.
+
+
+## Phase 6.23 — Provider resilience integration
+
+- [x] Add a composed orchestrator assessment that validates collection candidates, observations, health and attempts, and reports raw agreement diagnostics separately from reviewed source-lineage readiness.
+- [x] Add deterministic integration coverage for retryable rate limits, fallback disagreement, stale/missing source times, circuit cooldown, recovery disagreement and non-retryable authentication lockout.
+- [x] Verify that diagnostic arithmetic agreement cannot set evidence progression when the reviewed lineage registry remains unverified.
+- [ ] Obtain owner-evidenced mutual upstream attestations and provider rights before any indexed source can pass the reviewed gate.
+- [ ] Design shared health persistence and a distributed recovery-probe lease before multi-process production deployment.
+
+Merged in [PR #41](https://github.com/hamza131zara/Auto-Trading-Agent/pull/41). Post-merge CI [#269](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41022186170) passed 251/251 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks; both CodeQL analyses and Dependency Review passed on the PR. No live provider/RPC calls or spend; trading remains unauthorized.
