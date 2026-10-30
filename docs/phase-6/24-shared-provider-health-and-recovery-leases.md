@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented on branch phase6-shared-provider-health-store; awaiting CI and code review. This change adds a driver-neutral PostgreSQL store, schema migration and orchestrator integration. It does not connect to a database or apply the migration. No provider/RPC calls, API credentials, spending, provider activation, signing or trading were performed.
+Merged through [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/43), commit `9ccae49c0981303ac1d31bef5226317dcb29e318`. Post-merge CI [run #274](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41024455297) passed 262/262 tests, repository validation, typecheck/build, dependency audit (zero vulnerabilities), and Gitleaks. PR #43 also passed Dependency Review and both CodeQL analyses. This change adds a driver-neutral PostgreSQL store, schema migration and orchestrator integration. It does not connect to a database or apply the migration. No provider/RPC calls, API credentials, spending, provider activation, signing or trading were performed.
 
 ## Why this step is required
 
