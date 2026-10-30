@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   assessProviderLineageReadiness,
+  assessProviderAgreementWithReviewedLineage,
   getProviderSourceProfile,
   listProviderSourceProfiles
 } from "../packages/market-data/dist/index.js";
@@ -188,4 +189,133 @@ test("invalid lineage policy and malformed candidates fail closed", () => {
   ], diagnosticPolicy);
   assert.equal(malformed.status, "INVALID_INPUT");
   assert.equal(malformed.tradingAuthorized, false);
+});
+
+
+test("reviewed agreement wrapper binds caller groups and timestamp claims to canonical evidence", () => {
+  const originalEvidence = {
+    providerId: "dex-screener",
+    independenceGroupId: "dex-screener-family",
+    priority: 0,
+    health: {
+      providerId: "dex-screener",
+      state: "HEALTHY",
+      consecutiveFailures: 0,
+      lastSuccessAt: "2026-10-29T00:00:56.000Z",
+      lastFailureAt: null,
+      lastRequestAt: "2026-10-29T00:00:56.000Z",
+      lastLatencyMs: 12,
+      circuitOpenUntil: null,
+      lastErrorClass: null
+    },
+    snapshot: (() => {
+      const value = structuredClone(original);
+      value.provenance.providerId = "dex-screener";
+      value.provenance.synthetic = false;
+      value.observedAt = "2026-10-29T00:00:55.000Z";
+      value.sourceEventAt = null;
+      value.retrievedAt = "2026-10-29T00:00:56.000Z";
+      return value;
+    })()
+  };
+  const pythEvidence = {
+    providerId: "pyth-hermes",
+    independenceGroupId: "pyth-network",
+    priority: 1,
+    health: {
+      providerId: "pyth-hermes",
+      state: "HEALTHY",
+      consecutiveFailures: 0,
+      lastSuccessAt: "2026-10-29T00:00:56.000Z",
+      lastFailureAt: null,
+      lastRequestAt: "2026-10-29T00:00:56.000Z",
+      lastLatencyMs: 12,
+      circuitOpenUntil: null,
+      lastErrorClass: null
+    },
+    snapshot: (() => {
+      const value = structuredClone(original);
+      value.provenance.providerId = "pyth-hermes";
+      value.provenance.synthetic = false;
+      value.observedAt = "2026-10-29T00:00:55.000Z";
+      value.sourceEventAt = "2026-10-29T00:00:55.000Z";
+      value.retrievedAt = "2026-10-29T00:00:56.000Z";
+      return value;
+    })()
+  };
+  const result = assessProviderAgreementWithReviewedLineage({
+    candidates: [originalEvidence, pythEvidence],
+    lineageCandidates: [
+      { providerId: "dex-screener", independenceGroupId: "dex-screener-family", role: "POOL_METRICS", timestampKind: "NONE" },
+      { providerId: "pyth-hermes", independenceGroupId: "pyth-network", role: "POOL_METRICS", timestampKind: "EVENT" }
+    ],
+    lineagePolicy: diagnosticPolicy,
+    agreementPolicy: {
+      nowAt: "2026-10-29T00:01:00.000Z",
+      maxAgeMs: 60_000,
+      maxHealthAgeMs: 60_000
+    }
+  });
+
+  assert.equal(result.status, "NO_ACCEPTABLE_PROVIDER");
+  assert.equal(result.canProceedToOnChainValidation, false);
+  assert.equal(result.tradingAuthorized, false);
+  assert.ok(result.reasonCodes.includes("REVIEWED_PROVIDER_LINEAGE_GATE_BLOCKED"));
+  assert.ok(result.lineage.rejectedProviders.some((item) =>
+    item.providerId === "pyth-hermes" &&
+    item.reasonCodes.includes("PROVIDER_ROLE_NOT_SUPPORTED")
+  ));
+});
+
+test("reviewed agreement wrapper refuses caller timestamp claims that differ from observed evidence", () => {
+  const evidence = {
+    ...structuredClone(original),
+    observationId: "lineage-binding",
+    retrievedAt: "2026-10-29T00:00:56.000Z",
+    observedAt: "2026-10-29T00:00:55.000Z",
+    sourceEventAt: null
+  };
+  evidence.provenance.providerId = "dex-screener";
+  evidence.provenance.synthetic = false;
+  const health = {
+    providerId: "dex-screener",
+    state: "HEALTHY",
+    consecutiveFailures: 0,
+    lastSuccessAt: "2026-10-29T00:00:56.000Z",
+    lastFailureAt: null,
+    lastRequestAt: "2026-10-29T00:00:56.000Z",
+    lastLatencyMs: 12,
+    circuitOpenUntil: null,
+    lastErrorClass: null
+  };
+  const result = assessProviderAgreementWithReviewedLineage({
+    candidates: [{
+      providerId: "dex-screener",
+      independenceGroupId: "dex-screener-family",
+      priority: 0,
+      health,
+      snapshot: evidence
+    }],
+    lineageCandidates: [{
+      providerId: "dex-screener",
+      independenceGroupId: "dex-screener-family",
+      role: "POOL_METRICS",
+      timestampKind: "NONE"
+    }],
+    lineagePolicy: {
+      ...diagnosticPolicy,
+      minimumIndependentGroups: 2,
+      requireSourceTimestamp: false
+    },
+    agreementPolicy: {
+      nowAt: "2026-10-29T00:01:00.000Z",
+      maxAgeMs: 60_000,
+      maxHealthAgeMs: 60_000
+    }
+  });
+  assert.equal(result.status, "NO_ACCEPTABLE_PROVIDER");
+  assert.ok(result.lineage.rejectedProviders.some((item) =>
+    item.providerId === "dex-screener" &&
+    item.reasonCodes.includes("SOURCE_TIMESTAMP_KIND_PROFILE_MISMATCH")
+  ));
 });
