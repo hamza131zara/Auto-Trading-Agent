@@ -56,3 +56,12 @@ No source pair currently has mutual owner-attested upstream independence. Do not
 - malformed final-gate inputs cannot advance.
 
 The Phase 6.22 wrappers are pure functions. No adapters are activated, no network I/O occurs, no environment secrets are read, and no signer/order path exists.
+
+
+## Phase 6.26 follow-up — Pyth Pro freshness fields
+
+The legacy Hermes-compatible observation records publish_time but does not validate the Pyth Pro publisherCount or feedUpdateTimestamp fields. Pyth's current payload contract explains that a feed price may be carried forward when no new aggregation is produced. A current REST update timestamp is not enough to prove the price itself is current.
+
+A separate, disabled Pyth Pro adapter now requires the reviewed numeric pyth_lazer_id ↔ canonical feed ID ↔ mint binding, feed channel, default and session-specific publisher minimums, publisherCount, marketSession and feedUpdateTimestamp. It rejects carried-forward values and under-quorum observations before returning a price observation. It shares the pyth-network group with the Hermes-compatible profile; the two interfaces are not independent.
+
+The adapter does not infer real feed IDs or minimums. The owner must review actual Pyth symbology metadata and service entitlements before a manual diagnostic. It is not wired to the manual runner, no Pyth API key is configured, no live request was made, and the historical 63-bps reserve/reference disagreement versus the 10-bps diagnostic tolerance is unchanged. See [Phase 6.26](26-pyth-pro-freshness-and-provider-rights-review.md), [Pyth payload reference](https://docs.pyth.network/pro/payload-reference), and [Pyth symbology](https://docs.pyth.network/pro/symbology-reference).
