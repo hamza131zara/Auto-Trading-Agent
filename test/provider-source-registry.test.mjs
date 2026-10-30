@@ -50,6 +50,13 @@ test("built-in provider registry records source family, timestamp semantics and 
   assert.equal(pyth.timestampKindsByRole.USD_REFERENCE, "EVENT");
   assert.equal(pyth.independenceReview, "UNVERIFIED");
 
+  const pythPro = getProviderSourceProfile("pyth-pro");
+  assert.ok(pythPro);
+  assert.equal(pythPro.independenceGroupId, pyth.independenceGroupId);
+  assert.equal(pythPro.independenceReview, "UNVERIFIED");
+  assert.equal(pythPro.timestampKindsByRole.USD_REFERENCE, "EVENT");
+  assert.equal(pythPro.productionUseApproved, false);
+
   assert.ok(profiles.every((item) => item.productionUseApproved === false));
   assert.ok(profiles.every((item) => item.independentlyVerifiedWithGroups.length === 0));
 });
