@@ -179,3 +179,7 @@ An offline validator now checks the structure and internal consistency of a vers
 ## Phase 6.29 — Canonical evidence binding and lineage consistency
 
 The evidence manifest is now version 2. Its validator binds Pyth metadata to the adapter's exact SOL/USD and USDC/USD feed IDs and mainnet mints, checks pairwise independence against the canonical source-family registry, requires cross-record evidence references, and prevents rights scopes or owner decisions from exceeding linked evidence. Pyth Pro/Hermes and GeckoTerminal/CoinGecko remain same-family aliases and cannot be declared independent. No real owner evidence or permission has been added. See [Phase 6.29](29-canonical-evidence-binding-and-lineage-consistency.md).
+
+## Phase 6.30 — Offline provider-evidence packaging
+
+A local-only v2 manifest packager now computes bounded SHA-256 digests for owner-supplied LOCAL_FILE artifacts, checks supplied digests, and runs the canonical validator before writing. It refuses symlink/traversal paths, repository-local evidence locations, output overwrite and credential-bearing metadata keys. It writes only the manifest metadata, never artifact contents, and has no network, provider, RPC, credential, wallet, or trading path. No owner evidence has been received or approved; all providers remain unapproved and Phase 6 remains ACTIVE. See [Phase 6.30](30-offline-provider-evidence-packaging.md).
