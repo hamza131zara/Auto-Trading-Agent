@@ -126,3 +126,8 @@ A fail-closed provider registry and combined lineage/agreement wrapper now defin
 ## Phase 6.22 — Pyth and critical market-data lineage
 
 The Pyth reserve-price path now uses the Phase 6.21 provider registry. Base/USD and quote/USD feed identity/publication times are checked against the Pyth profile; indexed price timestamps are classified from the actual event/observation fields. A composed final gate recomputes both provider-agreement and independent-price lineage before any on-chain evidence progression. Current providers remain unverified and blocked; the manual Pyth report marks the final critical gate not assessed when multi-provider agreement evidence is absent. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md). It was merged in [PR #39](https://github.com/hamza131zara/Auto-Trading-Agent/pull/39); post-merge CI [#263](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41012644552) passed 245/245 tests, zero vulnerabilities, typecheck/build, repository validation and Gitleaks. Both CodeQL analyses and Dependency Review passed on the PR.
+
+
+## Phase 6.23 — Provider resilience integration
+
+The read-only collection now has a composed assessment that validates attempt/health/observation consistency and keeps raw provider agreement diagnostics separate from the registry-backed lineage result. Rate-limit, fallback disagreement, stale/missing timestamps, circuit cooldown, recovery disagreement and authentication lockout are covered by deterministic tests. The current unverified provider registry still blocks evidence progression. Multi-process shared health persistence and probe leases remain open. See Phase 6.23 (23-provider-resilience-integration.md).
