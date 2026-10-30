@@ -84,7 +84,7 @@ function providerEvidence(providerId, independenceGroupId, priority, sourceEvent
   const snapshot = structuredClone(snapshotFixture);
   snapshot.provenance.providerId = providerId;
   snapshot.provenance.synthetic = false;
-  snapshot.observedAt = "2026-10-29T12:44:55.000Z";
+  snapshot.observedAt = null;
   snapshot.sourceEventAt = sourceEventAt;
   snapshot.retrievedAt = "2026-10-29T12:44:56.000Z";
   return {
