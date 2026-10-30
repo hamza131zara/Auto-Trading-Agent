@@ -176,3 +176,8 @@ Merged in [PR #41](https://github.com/hamza131zara/Auto-Trading-Agent/pull/41). 
 - [ ] Only then approve shared-store configuration for a multi-process deployment.
 
 This step remains offline. The migration is not applied; no provider/RPC call or spending occurs; provider and trading approvals remain false.
+
+
+## Phase 6.24 — Shared provider health and recovery-probe coordination
+
+Implementation merged in [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/43), commit `9ccae49`. Post-merge CI [#274](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41024455297) passed 262/262 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks; both CodeQL analyses and Dependency Review passed on the PR. The migration is committed but unapplied, no DB driver or credentials are included, and live PostgreSQL multi-connection integration remains an explicit gate before multi-process deployment. No provider/RPC calls or spend; trading remains unauthorized.
