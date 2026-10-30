@@ -243,7 +243,18 @@ test("concurrent workers have one atomic recovery lease winner", async () => {
     })
   ]);
   assert.equal(claims.filter((item) => item !== null).length, 1);
-  assert.ok(claims.some((item) => item?.fencingToken === "1"));
+  const winner = claims.find((item) => item !== null);
+  assert.equal(winner.fencingToken, "1");
+  const persisted = (await store.get(PROVIDER));
+  assert.ok(persisted);
+  const leaseRow = (await store.claimRecoveryProbe({
+    providerId: PROVIDER,
+    ownerId: OWNER_A,
+    leaseToken: "c".repeat(64),
+    leaseDurationMs: 5_000
+  }));
+  assert.equal(leaseRow, null);
+  assert.notEqual(winner.leaseToken, winner.leaseTokenHash);
 });
 
 test("expired leases can be reclaimed with a strictly higher fencing token", async () => {
