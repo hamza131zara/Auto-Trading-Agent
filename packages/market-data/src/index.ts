@@ -1399,6 +1399,202 @@ export function assessProviderLineageReadiness(
   );
 }
 
+
+export interface ReviewedProviderAgreementInput {
+  readonly candidates: readonly ProviderEvidenceCandidate[];
+  readonly lineageCandidates: readonly ProviderLineageCandidate[];
+  readonly lineagePolicy: ProviderLineageReadinessPolicy;
+  readonly agreementPolicy: ProviderAgreementPolicy;
+}
+
+export interface ReviewedProviderAgreementAssessment {
+  readonly status: ProviderAgreementStatus;
+  readonly lineage: ProviderLineageReadinessAssessment;
+  readonly providerAgreement: ProviderAgreementAssessment;
+  readonly canProceedToOnChainValidation: boolean;
+  readonly productionUseApproved: boolean;
+  readonly reasonCodes: readonly string[];
+  readonly tradingAuthorized: false;
+}
+
+/**
+ * Mandatory composition for callers that need to use provider agreement as evidence.
+ * It binds every source-family/role/timestamp claim to the exact evidence candidate
+ * before running the existing agreement comparator. A caller cannot provide a
+ * different registry candidate list than the observations being compared.
+ */
+export function assessProviderAgreementWithReviewedLineage(
+  input: ReviewedProviderAgreementInput
+): ReviewedProviderAgreementAssessment {
+  const makeBlockedAgreement = (
+    status: ProviderAgreementStatus,
+    reasons: readonly string[],
+    rejected: readonly RejectedProviderEvidence[] = []
+  ): ProviderAgreementAssessment => ({
+    status,
+    eligibleProviderIds: [],
+    rejectedProviders: [...rejected],
+    disagreementFields: [],
+    reasonCodes: [...new Set(reasons)],
+    fallbackUsed: false,
+    canProceedToOnChainValidation: false,
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !Array.isArray(input.candidates) ||
+      !Array.isArray(input.lineageCandidates) ||
+      input.candidates.length !== input.lineageCandidates.length ||
+      input.candidates.length === 0) {
+    const invalidLineage = assessProviderLineageReadiness([], input?.lineagePolicy as ProviderLineageReadinessPolicy);
+    const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_AGREEMENT_INPUT_INVALID"]);
+    return {
+      status: "INVALID_INPUT",
+      lineage: invalidLineage,
+      providerAgreement: invalidAgreement,
+      canProceedToOnChainValidation: false,
+      productionUseApproved: false,
+      reasonCodes: ["REVIEWED_PROVIDER_AGREEMENT_INPUT_INVALID"],
+      tradingAuthorized: false
+    };
+  }
+
+  const evidenceByProvider = new Map<string, ProviderEvidenceCandidate>();
+  for (const candidate of input.candidates) {
+    if (!isRecord(candidate) || !isSafeSlug(candidate.providerId) || evidenceByProvider.has(candidate.providerId)) {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_AGREEMENT_CANDIDATE_INVALID"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["REVIEWED_PROVIDER_AGREEMENT_CANDIDATE_INVALID"],
+        tradingAuthorized: false
+      };
+    }
+    evidenceByProvider.set(candidate.providerId, candidate);
+  }
+
+  const boundLineageCandidates: ProviderLineageCandidate[] = [];
+  for (const claim of input.lineageCandidates) {
+    if (!isRecord(claim) || !isSafeSlug(claim.providerId)) {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_LINEAGE_CLAIM_INVALID"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["REVIEWED_PROVIDER_LINEAGE_CLAIM_INVALID"],
+        tradingAuthorized: false
+      };
+    }
+    const evidence = evidenceByProvider.get(claim.providerId);
+    if (evidence === undefined || evidence.independenceGroupId !== claim.independenceGroupId) {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_LINEAGE_EVIDENCE_BINDING_MISMATCH"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["REVIEWED_PROVIDER_LINEAGE_EVIDENCE_BINDING_MISMATCH"],
+        tradingAuthorized: false
+      };
+    }
+
+    let actualTimestampKind: ProviderSourceTimestampKind = "NONE";
+    if (evidence.snapshot !== null && isRecord(evidence.snapshot)) {
+      if (evidence.snapshot.sourceEventAt !== null && evidence.snapshot.sourceEventAt !== undefined) {
+        actualTimestampKind = "EVENT";
+      } else if (evidence.snapshot.observedAt !== null && evidence.snapshot.observedAt !== undefined) {
+        actualTimestampKind = "OBSERVATION";
+      }
+    }
+    if (claim.role !== "POOL_METRICS" && claim.role !== "INDEXED_PRICE") {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["PROVIDER_AGREEMENT_ROLE_UNSUPPORTED"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["PROVIDER_AGREEMENT_ROLE_UNSUPPORTED"],
+        tradingAuthorized: false
+      };
+    }
+    boundLineageCandidates.push({
+      providerId: claim.providerId,
+      independenceGroupId: claim.independenceGroupId,
+      role: claim.role,
+      timestampKind: actualTimestampKind
+    });
+  }
+
+  if (new Set(boundLineageCandidates.map((item) => item.providerId)).size !== input.candidates.length ||
+      input.candidates.some((candidate) => !boundLineageCandidates.some((claim) => claim.providerId === candidate.providerId))) {
+    const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+    const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_LINEAGE_CANDIDATE_SET_MISMATCH"]);
+    return {
+      status: "INVALID_INPUT",
+      lineage: invalidLineage,
+      providerAgreement: invalidAgreement,
+      canProceedToOnChainValidation: false,
+      productionUseApproved: false,
+      reasonCodes: ["REVIEWED_PROVIDER_LINEAGE_CANDIDATE_SET_MISMATCH"],
+      tradingAuthorized: false
+    };
+  }
+
+  const lineage = assessProviderLineageReadiness(boundLineageCandidates, input.lineagePolicy);
+  if (lineage.status !== "READY_FOR_EVIDENCE_COMPARISON" || !lineage.canProceedToProviderAgreement) {
+    const rejected = lineage.rejectedProviders.map((item) => ({
+      providerId: item.providerId,
+      reasonCodes: item.reasonCodes
+    }));
+    const providerAgreement = makeBlockedAgreement(
+      "NO_ACCEPTABLE_PROVIDER",
+      ["REVIEWED_PROVIDER_LINEAGE_GATE_BLOCKED", ...lineage.reasonCodes],
+      rejected
+    );
+    return {
+      status: providerAgreement.status,
+      lineage,
+      providerAgreement,
+      canProceedToOnChainValidation: false,
+      productionUseApproved: false,
+      reasonCodes: providerAgreement.reasonCodes,
+      tradingAuthorized: false
+    };
+  }
+
+  const providerAgreement = assessProviderAgreement(input.candidates, input.agreementPolicy);
+  const canProceed = providerAgreement.canProceedToOnChainValidation &&
+    lineage.canProceedToProviderAgreement &&
+    (input.lineagePolicy.purpose !== "PRODUCTION" || lineage.productionUseApproved);
+  const reasonCodes = canProceed
+    ? providerAgreement.reasonCodes
+    : [...providerAgreement.reasonCodes, "REVIEWED_PROVIDER_LINEAGE_GATE_NOT_READY"];
+  return {
+    status: providerAgreement.status,
+    lineage,
+    providerAgreement: {
+      ...providerAgreement,
+      canProceedToOnChainValidation: canProceed,
+      tradingAuthorized: false
+    },
+    canProceedToOnChainValidation: canProceed,
+    productionUseApproved: lineage.productionUseApproved,
+    reasonCodes: [...new Set(reasonCodes)],
+    tradingAuthorized: false
+  };
+}
+
 interface EvaluatedProviderEvidence {
   readonly providerId: string;
   readonly priority: number;
