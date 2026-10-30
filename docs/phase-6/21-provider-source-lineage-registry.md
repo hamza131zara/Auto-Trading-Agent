@@ -2,29 +2,29 @@
 
 ## Status
 
-Implemented on the isolated branch \`phase6-provider-lineage-registry\`; awaiting CI and code review. This is a provider-neutral evidence gate only. No provider is enabled, no API credentials are created, no external market-data request is made, spend remains USD $0, and trading authorization remains false.
+Merged into `main` through [PR #36](https://github.com/hamza131zara/Auto-Trading-Agent/pull/36), commit `d5ea1dbdd1a485bba559c94791ba2d5989ab9cde`. Post-merge CI [run #?](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011278975) passed 239/239 tests, repository validation, typecheck/build, dependency audit (zero vulnerabilities) and Gitleaks. PR CodeQL [run #36](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011147219) passed both Actions and JavaScript/TypeScript analyses. Dependency Review passed [run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011152466). This is a provider-neutral evidence gate only. No provider is enabled, no API credentials are created, no external market-data request is made, spend remains USD $0, and trading authorization remains false.
 
 ## Why this gate exists
 
-The earlier provider agreement comparator correctly required distinct \`independenceGroupId\` values, fresh event/observation timestamps, healthy providers and exact agreement. However, the group identifier was supplied by the caller. Different strings or vendor names alone do not demonstrate different underlying data lineage.
+The earlier provider agreement comparator correctly required distinct `independenceGroupId` values, fresh event/observation timestamps, healthy providers and exact agreement. However, the group identifier was supplied by the caller. Different strings or vendor names alone do not demonstrate different underlying data lineage.
 
-Phase 6.21 adds a reviewed in-repository source registry and \`assessProviderAgreementWithReviewedLineage\`. The wrapper binds every provider ID and source-family claim to its registry profile, derives timestamp kind from the actual canonical snapshot, and invokes the lower-level agreement comparator only when the lineage gate passes.
+Phase 6.21 adds a reviewed in-repository source registry and `assessProviderAgreementWithReviewedLineage`. The wrapper binds every provider ID and source-family claim to its registry profile, derives timestamp kind from the actual canonical snapshot, and invokes the lower-level agreement comparator only when the lineage gate passes.
 
-The lower-level \`assessProviderAgreement\` remains a pure comparator for unit tests and specialized callers. It must not be used alone to promote an operational candidate. Evidence-promotion callers should use the reviewed-lineage wrapper and the independent reserve/USD plus on-chain gates.
+The lower-level `assessProviderAgreement` remains a pure comparator for unit tests and specialized callers. It must not be used alone to promote an operational candidate. Evidence-promotion callers should use the reviewed-lineage wrapper and the independent reserve/USD plus on-chain gates.
 
 ## Provider registry snapshot
 
 | Provider ID | Upstream family | Role | Timestamp semantics | Diagnostic access | Customer/production status |
 |---|---|---|---|---|---|
-| \`dex-screener\` | DEX Screener family | Pool metrics, indexed price | None for current observation/event time | One-off manual acknowledgement | Terms/quota review required; not approved |
-| \`geckoterminal\` | GeckoTerminal/CoinGecko ecosystem | Pool metrics, indexed price | None for pool metrics; candle-start OBSERVATION for exact-pool OHLCV price | Disabled pending terms | API-specific terms and customer distribution review; not approved |
-| \`coingecko-api\` | Same GeckoTerminal/CoinGecko ecosystem | Indexed price | OBSERVATION only where endpoint supplies it | Disabled pending terms | Custom license may be needed for redistribution; not approved |
-| \`pyth-hermes\` | Pyth Network | USD reference | EVENT (feed publish time) | One-off manual acknowledgement | Plan/usage rights review; not approved |
-| \`raydium-api-v3\` | Raydium API | Pool catalogue/metrics | No current source event timestamp | One-off manual acknowledgement | Commercial/API policy review; not approved |
-| \`birdeye\` | Birdeye data platform | Exact-pair indexed price candidate | OBSERVATION for price only | Disabled pending written permission | Written permission required; not integrated |
-| \`solana-public-shared\` | Solana finalized ledger | On-chain account state | SLOT | One-off manual acknowledgement | Shared endpoint not approved for production |
+| `dex-screener` | DEX Screener family | Pool metrics, indexed price | None for current observation/event time | One-off manual acknowledgement | Terms/quota review required; not approved |
+| `geckoterminal` | GeckoTerminal/CoinGecko ecosystem | Pool metrics, indexed price | None for pool metrics; candle-start OBSERVATION for exact-pool OHLCV price | Disabled pending terms | API-specific terms and customer distribution review; not approved |
+| `coingecko-api` | Same GeckoTerminal/CoinGecko ecosystem | Indexed price | OBSERVATION only where endpoint supplies it | Disabled pending terms | Custom license may be needed for redistribution; not approved |
+| `pyth-hermes` | Pyth Network | USD reference | EVENT (feed publish time) | One-off manual acknowledgement | Plan/usage rights review; not approved |
+| `raydium-api-v3` | Raydium API | Pool catalogue/metrics | No current source event timestamp | One-off manual acknowledgement | Commercial/API policy review; not approved |
+| `birdeye` | Birdeye data platform | Exact-pair indexed price candidate | OBSERVATION for price only | Disabled pending written permission | Written permission required; not integrated |
+| `solana-public-shared` | Solana finalized ledger | On-chain account state | SLOT | One-off manual acknowledgement | Shared endpoint not approved for production |
 
-Registry claims are intentionally conservative and are not declarations of legally or technically proven independence. All providers currently have \`independenceReview: UNVERIFIED\`, empty pairwise attestations, and \`productionUseApproved: false\`. GeckoTerminal and CoinGecko share one source family and cannot count as two independent providers. Provider aliases or sibling products must share their common upstream family.
+Registry claims are intentionally conservative and are not declarations of legally or technically proven independence. All providers currently have `independenceReview: UNVERIFIED`, empty pairwise attestations, and `productionUseApproved: false`. GeckoTerminal and CoinGecko share one source family and cannot count as two independent providers. Provider aliases or sibling products must share their common upstream family.
 
 ## Gate semantics
 
@@ -39,9 +39,9 @@ The reviewed lineage gate requires:
 - source timestamp evidence when policy requires it;
 - commercial customer-distribution rights and explicit production approval for production purpose.
 
-Missing or unknown timestamps are never converted from retrieval time. GeckoTerminal's exact-pool OHLCV candle-start boundary is an observation timestamp for price comparison only; it is not the event time for pool-details liquidity/reserve/volume. DEX Screener, Raydium API and GeckoTerminal pool metrics remain \`NONE\` for source-event time in this registry.
+Missing or unknown timestamps are never converted from retrieval time. GeckoTerminal's exact-pool OHLCV candle-start boundary is an observation timestamp for price comparison only; it is not the event time for pool-details liquidity/reserve/volume. DEX Screener, Raydium API and GeckoTerminal pool metrics remain `NONE` for source-event time in this registry.
 
-The combined wrapper binds the lineage candidate set one-to-one to the canonical provider evidence candidates. It derives \`EVENT\`, \`OBSERVATION\`, or \`NONE\` from \`sourceEventAt\` / \`observedAt\` and ignores a caller's attempted timestamp-kind promotion. A provider not present in the reviewed registry is rejected.
+The combined wrapper binds the lineage candidate set one-to-one to the canonical provider evidence candidates. It derives `EVENT`, `OBSERVATION`, or `NONE` from `sourceEventAt` / `observedAt` and ignores a caller's attempted timestamp-kind promotion. A provider not present in the reviewed registry is rejected.
 
 ## Explicit current result
 
@@ -51,7 +51,7 @@ Birdeye remains disabled pending written permission for the intended multi-custo
 
 ## Tests and safety boundaries
 
-\`test/provider-source-registry.test.mjs\` covers:
+`test/provider-source-registry.test.mjs` covers:
 - provider registry contents, roles and timestamp semantics;
 - distinct vendor names without mutual upstream attestations;
 - CoinGecko/GeckoTerminal shared-family rejection;
