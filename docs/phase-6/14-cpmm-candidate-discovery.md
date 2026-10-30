@@ -76,6 +76,27 @@ The workflow is manual-only; regular CI does not call Raydium, DEX Screener or S
 - `scanIncomplete: true` or status `*_PARTIAL_SCAN` means the report must not recommend a pool; a pair query may have another page, the RPC account cap may truncate results, or the DEX Screener cross-check cap may leave CPMM candidates unevaluated. The current DEX Screener cap is 50 candidates.
 - `recommendedFollowUpPoolAddress` is only the top candidate that passed both indexed thresholds, the exact pair check and the on-chain CPMM identity check in a complete scan. It is a candidate for further validation, not a trading recommendation.
 
+
+## Latest repeated discovery — run #12 — 2026-10-30
+
+[Manual workflow run #12](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41005895558) completed successfully against the pinned Raydium API v3, finalized Solana RPC and exact-address DEX Screener cross-checks. This is a complete scan, not a provider/build failure.
+
+| Evidence | Run #12 result |
+|---|---:|
+| SOL/USDC Raydium API records | 31; one terminal page |
+| SOL/USDT Raydium API records | 14; one terminal page |
+| Returned pool accounts checked at finalized RPC | 45 |
+| Accounts decoded as Raydium CPMM | 24 |
+| Exact DEX Screener pool-address cross-checks | 24 |
+| Scan completeness | Complete; no RPC truncation; no un-cross-checked CPMM candidates |
+| Threshold-qualified candidates | 0 |
+| Recommended follow-up pool | null |
+| Finalized RPC context slot | 463159019 |
+
+The report status is CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED and synthetic is false. The leading diagnostic SOL/USDC pool (47hq28mcL7q5GhBg7epyGF2dnuJd4MKFt8QhT7CzYUp4) showed approximately USD 569.56 liquidity and USD 415.92 24-hour volume in Raydium; DEX Screener showed approximately USD 569.77 liquidity and USD 440.32 24-hour volume for the same exact pair. Those values are far below the unchanged USD 100,000 liquidity and USD 10,000 24-hour-volume triage thresholds.
+
+All candidate observations retain sourceFreshness UNKNOWN because the indexed sources did not provide a trusted source-event timestamp. This successful scan does not qualify a trading pool, establish independent price agreement, or authorize lowering thresholds. The diagnostic pool remains non-tradable; recommendedFollowUpPoolAddress is null. No wallet, signer, transaction or order path was used.
+
 ## Next gates after discovery
 
 1. Run the full identity workflow for the selected pool and exact mint identities.
