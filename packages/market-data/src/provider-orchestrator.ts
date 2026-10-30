@@ -508,7 +508,7 @@ export class ReadOnlyMarketDataOrchestrator {
     this.options = options;
   }
 
-  /** Current process-local health; multi-process deployments must persist health and a shared lease. */
+  /** Last loaded health snapshot. With a shared store, collect() refreshes it before provider attempts. */
   getProviderHealth(): readonly ProviderHealthSnapshot[] {
     return this.providers.map(({ adapter }) => ({ ...this.health.get(adapter.providerId)! }));
   }
