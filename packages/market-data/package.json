@@ -23,6 +23,10 @@
     "./providers/geckoterminal": {
       "types": "./dist/providers/geckoterminal.d.ts",
       "import": "./dist/providers/geckoterminal.js"
+    },
+    "./provider-health-store": {
+      "types": "./dist/provider-health-store.d.ts",
+      "import": "./dist/provider-health-store.js"
     }
   },
   "scripts": {
