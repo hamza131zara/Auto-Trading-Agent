@@ -56,3 +56,8 @@ A read-only reference adapter targets the documented pair lookup route `GET /lat
 - The adapter is read-only and never calls Solana RPC, evaluates token safety, submits transactions or authorizes trades. Unit tests use a mocked fetch and synthetic response fixtures; CI does not call the external API.
 
 Before any production use, re-check the official endpoint/schema, terms, quota and rate-limit bucket, and define independent on-chain confirmation and provider fallback/disagreement behavior. A syntactically valid indexed observation is not proof that a pool is authentic or that any market measure is safe to trade on.
+
+
+## Phase 6.21 — Reviewed source lineage
+
+Every evidence-promotion path must bind provider IDs and upstream source-family groups to the Phase 6.21 registry using `assessProviderAgreementWithReviewedLineage`. Caller-supplied family labels alone are not proof of independent upstream data. Source timestamp semantics are role-specific and derived from the canonical snapshot. No source profile is production-approved; provider activation remains disabled pending rights and owner review. See [Phase 6.21](21-provider-source-lineage-registry.md).
