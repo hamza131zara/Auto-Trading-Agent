@@ -215,6 +215,15 @@ test("release packet rejects migration-set mismatch and missing backup evidence"
   assert.ok(result.errors.some((error) => error.includes("backup.reference")));
 });
 
+test("release packet accepts valid numeric UTC offsets", () => {
+  const packet = validReleasePacket(repositoryInventory.migrationSetSha256);
+  packet.preconditions.backup.verifiedAt = "2030-01-01T13:00:00+05:00";
+  const result = evaluateMigrationReleasePacket(packet, {
+    migrationSetSha256: repositoryInventory.migrationSetSha256
+  });
+  assert.equal(result.ok, true, result.errors?.join("; "));
+});
+
 test("release packet rejects impossible calendar timestamps", () => {
   const packet = validReleasePacket(repositoryInventory.migrationSetSha256);
   packet.maintenanceWindow.startsAt = "2030-02-31T01:00:00Z";

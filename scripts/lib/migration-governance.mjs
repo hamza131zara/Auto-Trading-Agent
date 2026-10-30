@@ -247,8 +247,8 @@ function requireTimestamp(value, path, errors) {
   const hour = Number(match[4]);
   const minute = Number(match[5]);
   const second = Number(match[6]);
-  const zoneHour = match[8] ? Number(match[8]) : 0;
-  const zoneMinute = match[9] ? Number(match[9]) : 0;
+  const zoneHour = match[9] ? Number(match[9]) : 0;
+  const zoneMinute = match[10] ? Number(match[10]) : 0;
   const calendar = new Date(Date.UTC(year, month - 1, day));
   const validCalendar = calendar.getUTCFullYear() === year &&
     calendar.getUTCMonth() === month - 1 &&
