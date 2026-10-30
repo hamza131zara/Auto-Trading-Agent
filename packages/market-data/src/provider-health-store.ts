@@ -761,7 +761,6 @@ export interface PostgresProviderHealthMonitoringPolicy {
 }
 
 export type PostgresProviderHealthMonitoringStatus =
-  | "BLOCKED"
   | "ALERT_REVIEW_REQUIRED"
   | "MONITORING_SCOPE_LIMITED_REVIEW_REQUIRED"
   | "TECHNICAL_MONITORING_CHECKS_PASSED_REVIEW_REQUIRED";
@@ -818,7 +817,7 @@ const POSTGRES_PROVIDER_HEALTH_MONITORING_SQL = [
   "  SELECT",
   "    current_user::text AS monitoring_role,",
   "    COALESCE((SELECT rolsuper FROM pg_roles WHERE rolname = current_user), false) AS role_is_superuser,",
-  "    pg_has_role(current_user, 'pg_read_all_stats', 'MEMBER') AS has_read_all_stats,",
+  "    pg_has_role(current_user, 'pg_read_all_stats', 'USAGE') AS has_read_all_stats,",
   "    current_setting('track_activities')::boolean AS activity_tracking_enabled,",
   "    current_setting('max_connections')::integer AS max_connections,",
   "    statement_timestamp() AS sampled_at",

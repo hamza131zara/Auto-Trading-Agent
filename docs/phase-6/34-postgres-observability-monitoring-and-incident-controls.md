@@ -17,7 +17,7 @@ The function assessPostgresProviderHealthOperationalMonitoring(client, policy) e
 
 The statement never selects query text, connection strings, client addresses, request parameters or credential material. Driver errors are mapped to a stable sanitized store error. All values are validated before a report is returned.
 
-A dedicated monitoring identity with pg_read_all_stats membership (or a PostgreSQL superuser during the disposable CI test) is required for database-wide activity visibility. An ordinary runtime role is reported as CURRENT_ROLE_ONLY; the function will not misrepresent a partial view as complete. Activity collection also requires track_activities to be enabled.
+A dedicated monitoring identity with effective pg_read_all_stats privileges (or a PostgreSQL superuser during the disposable CI test) is required for database-wide activity visibility. An ordinary runtime role is reported as CURRENT_ROLE_ONLY; the function will not misrepresent a partial view as complete. Activity collection also requires track_activities to be enabled.
 
 ## Threshold and status behavior
 
@@ -26,7 +26,7 @@ No production thresholds are hard-coded. The caller must supply every limit: con
 - ALERT_REVIEW_REQUIRED: one or more caller-supplied limits are exceeded. Escalate through the separately configured on-call process; do not treat this result as an automated remediation instruction.
 - MONITORING_SCOPE_LIMITED_REVIEW_REQUIRED: no measured breach, but the current role cannot see all sessions or track_activities is disabled.
 - TECHNICAL_MONITORING_CHECKS_PASSED_REVIEW_REQUIRED: current snapshot is complete and no supplied limit is exceeded. This is not a deployment approval or guarantee of healthy future operation.
-- BLOCKED: client, policy or database response is invalid. A failed snapshot must not be recorded as a healthy sample.
+A malformed client, policy or database response rejects with a sanitized error. A failed snapshot must not be recorded as a healthy sample.
 
 Connection utilization is a database-wide aggregate where visibility allows it; it is not a substitute for validating each application's pool size, reserved connection slots, aggregate worker count or connection acquisition timeouts. Deadlocks are cumulative since stats_reset, not a rate; compare successive snapshots or use an external time-series system before treating an increase as a new incident.
 
