@@ -193,3 +193,21 @@ Implementation merged in [PR #43](https://github.com/hamza131zara/Auto-Trading-A
 - [ ] Separately review production database TLS, pooling, backup/restore, migration ownership/rollback, monitoring and operational approval before any multi-process deployment.
 
 The integration workflow uses only its disposable local PostgreSQL service. It makes no provider/RPC calls, introduces no provider key or spend, and does not authorize database deployment, provider activation, signing, order placement or trading.
+
+
+## Phase 6.26 — Pyth Pro freshness evidence and provider-rights review
+
+- [x] Add a separate Pyth Pro adapter using exact numeric feed IDs bound to canonical SOL/USD and USDC/USD feed IDs and mint identities.
+- [x] Require an explicitly configured channel no faster than the exact feed's reviewed minimum channel.
+- [x] Request and validate publisherCount, feedUpdateTimestamp and marketSession; reject carried-forward prices and missing/under-quorum data.
+- [x] Support feed-level and market-session-specific publisher minimums from a reviewed Pyth symbology snapshot.
+- [x] Keep Pyth Pro and the Hermes-compatible endpoint in the same pyth-network independence group.
+- [x] Add synthetic tests for request construction, exact identities, fresh feed timestamp, carried-forward rejection, publisher quorum, session-specific quorum, channel constraints, missing key and sanitized failures.
+- [x] Review public provider terms and technical evidence for DEX Screener, CoinGecko/GeckoTerminal, Birdeye, Raydium and Pyth Pro; record exact unresolved customer-delivery rights in [Phase 6.26](26-pyth-pro-freshness-and-provider-rights-review.md).
+- [ ] Obtain the actual owner-reviewed Pyth SOL/USD and USDC/USD pyth_lazer_id, min_publishers, min_channel, market_sessions and feed-state metadata; test fixture IDs 101/202 are not production IDs.
+- [ ] Obtain written/contracted Pyth Pro service rights for the chosen feeds, channel, frequency, quotas, attribution, retention and the exact customer experience before any diagnostic key/API request.
+- [ ] Obtain publisher-level upstream lineage for Pyth and pairwise mutual upstream attestations with any selected indexed provider. Five router signatures and publisherCount do not prove source independence.
+- [ ] Resolve DEX Screener third-party access/redistribution, CoinGecko reusable-data rights, Birdeye written permission, Raydium commercial terms and exact display/export/use model before enabling any provider.
+- [ ] Do not change the USD 100,000 liquidity threshold, USD 10,000 24-hour volume threshold or 10-bps diagnostic tolerance; retain the historical 63-bps disagreement.
+
+Implementation and fixtures make no provider/RPC request, create no API key, incur no spend, and do not activate adapters. All provider profiles remain UNVERIFIED/UNAPPROVED, Phase 6 remains ACTIVE, and trading is unauthorized.
