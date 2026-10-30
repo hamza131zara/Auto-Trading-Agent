@@ -1053,7 +1053,8 @@ export type ProviderCommercialRights =
   | "PLAN_SPECIFIC_RIGHTS_REVIEW_REQUIRED"
   | "CUSTOM_LICENSE_REQUIRED_FOR_REDISTRIBUTION"
   | "WRITTEN_PERMISSION_REQUIRED"
-  | "SHARED_ENDPOINT_NOT_APPROVED_FOR_PRODUCTION";
+  | "SHARED_ENDPOINT_NOT_APPROVED_FOR_PRODUCTION"
+  | "APPROVED_FOR_CUSTOMER_DISTRIBUTION";
 
 export interface ProviderSourceProfile {
   readonly providerId: string;
@@ -1292,6 +1293,7 @@ export function assessProviderLineageReadiness(
   const providerIds = new Set<string>();
   const groupIds = new Set<string>();
   const rejected: RejectedProviderLineageCandidate[] = [];
+  const matchedProfiles: ProviderSourceProfile[] = [];
   const acceptedProfiles: ProviderSourceProfile[] = [];
   const globalReasons: string[] = [];
 
@@ -1313,6 +1315,7 @@ export function assessProviderLineageReadiness(
     if (profile === null) {
       reasons.push("UNKNOWN_PROVIDER_SOURCE_PROFILE");
     } else {
+      matchedProfiles.push(profile);
       if (candidate.independenceGroupId !== profile.independenceGroupId) {
         reasons.push("PROVIDER_INDEPENDENCE_GROUP_MISMATCH");
       }
@@ -1339,14 +1342,7 @@ export function assessProviderLineageReadiness(
         }
       } else {
         if (!profile.productionUseApproved) reasons.push("PRODUCTION_PROVIDER_NOT_APPROVED");
-        if (profile.commercialRights !== "UNREVIEWED" &&
-            profile.commercialRights !== "TERMS_AND_QUOTA_REVIEW_REQUIRED" &&
-            profile.commercialRights !== "API_SPECIFIC_TERMS_REVIEW_REQUIRED" &&
-            profile.commercialRights !== "PLAN_SPECIFIC_RIGHTS_REVIEW_REQUIRED" &&
-            profile.commercialRights !== "CUSTOM_LICENSE_REQUIRED_FOR_REDISTRIBUTION" &&
-            profile.commercialRights !== "WRITTEN_PERMISSION_REQUIRED") {
-          reasons.push("CUSTOMER_DATA_RIGHTS_NOT_CLEARED");
-        } else {
+        if (profile.commercialRights !== "APPROVED_FOR_CUSTOMER_DISTRIBUTION") {
           reasons.push("CUSTOMER_DATA_RIGHTS_NOT_CLEARED");
         }
       }
@@ -1370,13 +1366,15 @@ export function assessProviderLineageReadiness(
   }
 
   // Independence is a pairwise attestation, not a count of distinct vendor labels.
-  const profilesByGroup = new Map(acceptedProfiles.map((profile) => [profile.independenceGroupId, profile]));
-  for (let left = 0; left < acceptedProfiles.length; left += 1) {
-    for (let right = left + 1; right < acceptedProfiles.length; right += 1) {
-      const a = acceptedProfiles[left]!;
-      const b = acceptedProfiles[right]!;
-      const aAttests = a.independentlyVerifiedWithGroups.includes(b.independenceGroupId);
-      const bAttests = b.independentlyVerifiedWithGroups.includes(a.independenceGroupId);
+  for (let left = 0; left < matchedProfiles.length; left += 1) {
+    for (let right = left + 1; right < matchedProfiles.length; right += 1) {
+      const a = matchedProfiles[left]!;
+      const b = matchedProfiles[right]!;
+      if (a.independenceGroupId === b.independenceGroupId) continue;
+      const aAttests = a.independenceReview === "OWNER_ATTESTED" &&
+        a.independentlyVerifiedWithGroups.includes(b.independenceGroupId);
+      const bAttests = b.independenceReview === "OWNER_ATTESTED" &&
+        b.independentlyVerifiedWithGroups.includes(a.independenceGroupId);
       if (!aAttests || !bAttests) globalReasons.push("UPSTREAM_LINEAGE_PAIR_NOT_MUTUALLY_ATTESTED");
     }
   }
