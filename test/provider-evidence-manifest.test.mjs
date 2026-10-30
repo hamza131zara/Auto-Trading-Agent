@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -288,6 +288,11 @@ test("local artifact traversal and symlink escapes are rejected", () => {
     });
     const traversal = validateProviderEvidenceManifest(makeManifest([record]), { artifactRoot: root });
     assert.ok(traversal.reasonCodes.includes("RECORD_0_LOCAL_ARTIFACT_PATH_INVALID"));
+
+    symlinkSync(secretPath, join(root, "outside-link.json"));
+    record.artifact.locator = "outside-link.json";
+    const symlink = validateProviderEvidenceManifest(makeManifest([record]), { artifactRoot: root });
+    assert.ok(symlink.reasonCodes.includes("RECORD_0_LOCAL_ARTIFACT_NOT_REGULAR_FILE"));
   } finally {
     rmSync(root, { recursive: true, force: true });
     rmSync(outside, { recursive: true, force: true });

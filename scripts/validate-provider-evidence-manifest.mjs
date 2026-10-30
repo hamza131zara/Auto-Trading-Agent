@@ -331,7 +331,7 @@ function validatePairwiseAttestation(record, label, reasons) {
     attested.add(attestation.providerId);
   }
   if (attested.size !== 2) reasons.push(label + "_PAIRWISE_BOTH_SIDES_MUST_ATTEST");
-  if (record.review.state === "PAIRWISE_INDEPENDENCE_VERIFIED" &&
+  if (record.review?.state === "PAIRWISE_INDEPENDENCE_VERIFIED" &&
       (pair.independenceConclusion !== "INDEPENDENT" ||
        pair.overlapAssessment !== "NO_KNOWN_OVERLAP" ||
        record.quality !== "EXECUTED_OR_SIGNED" ||
@@ -370,13 +370,13 @@ function validateRights(record, label, reasons, generatedAt) {
   if (rights.expiresAt !== null && Date.parse(rights.expiresAt) <= Date.parse(generatedAt)) {
     reasons.push(label + "_RIGHTS_EXPIRED");
   }
-  if ((record.review.state === "RIGHTS_CLEARED_FOR_DIAGNOSTIC" ||
-       record.review.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE") &&
+  if ((record.review?.state === "RIGHTS_CLEARED_FOR_DIAGNOSTIC" ||
+       record.review?.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE") &&
       (!["EXECUTED_OR_SIGNED", "FIRST_PARTY_ACCOUNT"].includes(record.quality) ||
        rights.permittedActions.length === 0)) {
     reasons.push(label + "_RIGHTS_CLEARED_STATE_REQUIRES_EXECUTED_OR_ACCOUNT_EVIDENCE");
   }
-  if (record.review.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE" &&
+  if (record.review?.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE" &&
       rights.deliveryModels.length === 0) {
     reasons.push(label + "_PRODUCTION_RIGHTS_DELIVERY_SCOPE_MISSING");
   }
