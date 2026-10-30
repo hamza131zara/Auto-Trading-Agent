@@ -112,3 +112,17 @@ A passing local review is a candidate for human provenance review; it is not cry
 - [x] Verify the scan is complete (`scanIncomplete: false`), no accounts are truncated, no CPMM candidates remain un-cross-checked, and the result is `CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED` with `thresholdQualifiedCount: 0` and no recommended follow-up pool.
 
 The leading diagnostic pool remains far below both unchanged thresholds. The indexed source freshness remains UNKNOWN, and this discovery run is not price agreement, token-safety approval, production-provider approval, or trading authorization.
+
+
+## Phase 6.21 — Reviewed provider lineage and source-time gate
+
+- [x] Add an immutable reviewed provider-source registry for DEX Screener, GeckoTerminal/CoinGecko, Pyth Hermes, Raydium API, Birdeye and shared Solana RPC.
+- [x] Give CoinGecko and GeckoTerminal the same upstream family; do not count product aliases as independent sources.
+- [x] Define role-specific event/observation/slot/none timestamp semantics. Retrieval time cannot satisfy missing source-event freshness.
+- [x] Add \`assessProviderAgreementWithReviewedLineage\` to bind the claimed provider/group and timestamp kind to the canonical evidence candidate before the existing comparator runs.
+- [x] Add deterministic tests for unknown providers, forged family/timestamp claims, shared-family aliases, disabled/licensing-gated sources, and production approval.
+- [ ] Obtain owner-evidenced, pairwise upstream-lineage attestations for the exact indexed/reference sources.
+- [ ] Obtain written/commercial rights and owner approvals for the intended customer-facing delivery model.
+- [ ] Validate current source freshness and independent agreement on a threshold-qualified pool; none was found in discovery run #12.
+
+The implementation is an explicit BLOCKED-by-default evidence control; it is not a provider approval, live source validation, trading authorization or roadmap phase completion.
