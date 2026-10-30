@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
+
+const fixture = JSON.parse(
+  readFileSync(new URL("./fixtures/market-data/replay-v1.json", import.meta.url), "utf8")
+);
+const original = fixture.cases.find((item) => item.caseId === "fresh-source").snapshot;
 import {
   assessProviderLineageReadiness,
   assessProviderAgreementWithReviewedLineage,
