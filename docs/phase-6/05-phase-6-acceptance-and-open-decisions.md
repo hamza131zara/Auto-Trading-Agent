@@ -198,11 +198,11 @@ The integration workflow uses only its disposable local PostgreSQL service. It m
 ## Phase 6.26 — Pyth Pro freshness evidence and provider-rights review
 
 - [x] Add a separate Pyth Pro adapter using exact numeric feed IDs bound to canonical SOL/USD and USDC/USD feed IDs and mint identities.
-- [x] Require an explicitly configured channel no faster than the exact feed's reviewed minimum channel.
+- [x] Require a stable feed lifecycle state, any configured active market-session state, and an explicitly configured channel no faster than the exact feed's reviewed minimum channel.
 - [x] Request and validate publisherCount, feedUpdateTimestamp and marketSession; reject carried-forward prices and missing/under-quorum data.
 - [x] Support feed-level and market-session-specific publisher minimums from a reviewed Pyth symbology snapshot.
 - [x] Keep Pyth Pro and the Hermes-compatible endpoint in the same pyth-network independence group.
-- [x] Add synthetic tests for request construction, exact identities, fresh feed timestamp, carried-forward rejection, publisher quorum, session-specific quorum, channel constraints, missing key and sanitized failures.
+- [x] Add synthetic tests for request construction, exact identities, fresh feed timestamp, carried-forward rejection, publisher quorum, session-specific quorum, feed/session lifecycle state, channel constraints, missing key and sanitized failures.
 - [x] Review public provider terms and technical evidence for DEX Screener, CoinGecko/GeckoTerminal, Birdeye, Raydium and Pyth Pro; record exact unresolved customer-delivery rights in [Phase 6.26](26-pyth-pro-freshness-and-provider-rights-review.md).
 - [ ] Obtain the actual owner-reviewed Pyth SOL/USD and USDC/USD pyth_lazer_id, min_publishers, min_channel, market_sessions and feed-state metadata; test fixture IDs 101/202 are not production IDs.
 - [ ] Obtain written/contracted Pyth Pro service rights for the chosen feeds, channel, frequency, quotas, attribution, retention and the exact customer experience before any diagnostic key/API request.
