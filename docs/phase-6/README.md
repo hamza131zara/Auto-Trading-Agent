@@ -169,3 +169,8 @@ The public terms review keeps all providers unapproved: DEX Screener customer-fa
 The next owner-evidence gate is now specified as a controlled intake workflow. It lists the exact Pyth SOL/USD and USDC/USD symbology fields, publisher-level upstream source disclosure, symmetric pairwise independence evidence, and provider-specific plan/contract rights needed for the actual customer experience. Evidence receipt, technical review, lineage independence, diagnostic rights and production rights are separate states; none automatically changes runtime approvals.
 
 No owner artifacts have been received or approved by this step. Provider profiles remain UNVERIFIED/UNAPPROVED, spend remains USD $0, no provider/RPC calls or credentials are introduced, and trading remains unauthorized. See [Phase 6.27](27-provider-lineage-and-commercial-rights-evidence-intake.md).
+
+
+## Phase 6.28 — Provider evidence manifest validator
+
+An offline validator now checks the structure and internal consistency of a versioned provider-evidence manifest: Pyth feed-pair metadata, publisher disclosure, two-sided pairwise attestations, commercial-rights scope and local artifact digests. It rejects credential-bearing fields and unsafe local artifact paths. A successful result means `STRUCTURALLY_VALID_NOT_AN_APPROVAL` only; it cannot establish authenticity, publisher independence, legal permission or production readiness and does not mutate provider flags. No real owner evidence or permissions have been supplied. See [Phase 6.28](28-provider-evidence-manifest-validator.md).

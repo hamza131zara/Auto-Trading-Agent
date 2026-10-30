@@ -178,3 +178,8 @@ Stop and keep the relevant gate blocked when metadata is missing, publishers are
 - The historical 63-bps Pyth reserve/reference disagreement remains unresolved and must remain visible.
 - No adapter activation, production database connection, wallet, signer, transaction, order or trading capability is added.
 - Phase 6 remains **ACTIVE**. Phase 6.27 prepares the owner evidence workflow; it does not close the evidence gates or complete Phase 6.
+
+
+## Phase 6.28 follow-up
+
+The evidence intake requirements now have an offline structural validator. It accepts a versioned manifest, checks Pyth feed metadata, publisher disclosure, bilateral attestations and provider rights records, and can recompute local artifact SHA-256 values under a bounded artifact root. The validator never promotes provider approvals or authorizes trading. See [Phase 6.28](28-provider-evidence-manifest-validator.md).
