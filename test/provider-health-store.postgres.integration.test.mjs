@@ -19,7 +19,8 @@ function assertDisposableLocalDatabase(raw) {
   }
   const host = parsed.hostname.replace(/^\[|\]$/g, "");
   const database = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
-  if (!["localhost", "127.0.0.1", "::1"].includes(host) ||
+  if (!["postgres:", "postgresql:"].includes(parsed.protocol) ||
+      !["localhost", "127.0.0.1", "::1"].includes(host) ||
       database !== "ata_phase6_test" ||
       (parsed.port !== "" && parsed.port !== "5432")) {
     throw new Error("PostgreSQL integration tests only permit the local ata_phase6_test database on port 5432");
@@ -167,6 +168,26 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
     const reclaimStore = firstClaims[0] ? storeB : storeA;
     assert.ok(originalLease);
 
+    const databaseClock = await adminPool.query("SELECT clock_timestamp() AS now");
+    const expiryRemainingMs = Date.parse(originalLease.expiresAt) -
+      new Date(databaseClock.rows[0]?.now).getTime();
+    assert.ok(expiryRemainingMs > 0 && expiryRemainingMs <= LEASE_DURATION_MS,
+      "lease expiry must be calculated from PostgreSQL clock_timestamp()");
+
+    const originalIdentity = {
+      providerId: originalLease.providerId,
+      ownerId: originalLease.ownerId,
+      leaseToken: originalLease.leaseToken,
+      fencingToken: originalLease.fencingToken
+    };
+    const renewedLease = await originalStore.renewRecoveryProbeLease({
+      ...originalIdentity,
+      leaseDurationMs: 1_500
+    });
+    assert.ok(renewedLease, "the current owner must renew an active lease");
+    assert.ok(Date.parse(renewedLease.expiresAt) > Date.parse(originalLease.expiresAt),
+      "renewal must extend expiry using the database clock");
+
     const persistedLease = await adminPool.query(
       "SELECT owner_id, lease_token_hash, fencing_token, acquired_at, expires_at " +
       "FROM public.provider_recovery_probe_leases WHERE provider_id = $1",
@@ -181,7 +202,7 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
     const healthFromFreshStore = await restartedStore.get(providerId);
     assert.equal(healthFromFreshStore?.health.state, "CIRCUIT_OPEN");
 
-    await sleep(LEASE_DURATION_MS + 250);
+    await sleep(1_750);
     const reclaimedLease = await reclaimStore.claimRecoveryProbe({
       providerId,
       ownerId: originalLease.ownerId === "worker-a" ? "worker-b" : "worker-a",
@@ -192,12 +213,11 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
     assert.ok(BigInt(reclaimedLease.fencingToken) > BigInt(originalLease.fencingToken),
       "every reclaim must advance the fencing token");
 
-    const staleIdentity = {
-      providerId: originalLease.providerId,
-      ownerId: originalLease.ownerId,
-      leaseToken: originalLease.leaseToken,
-      fencingToken: originalLease.fencingToken
-    };
+    const staleIdentity = originalIdentity;
+    assert.equal(await originalStore.renewRecoveryProbeLease({
+      ...staleIdentity,
+      leaseDurationMs: LEASE_DURATION_MS
+    }), null, "the expired worker must not renew the replacement worker's lease");
     assert.equal(await originalStore.releaseRecoveryProbeLease(staleIdentity), false,
       "the expired worker must not release the replacement worker's lease");
 
