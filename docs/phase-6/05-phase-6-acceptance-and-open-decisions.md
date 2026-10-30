@@ -187,7 +187,7 @@ Implementation merged in [PR #43](https://github.com/hamza131zara/Auto-Trading-A
 
 - [x] Add a loopback-only PostgreSQL integration harness that refuses non-local hosts and any database other than `ata_phase6_test`.
 - [x] Add a dedicated CI workflow with a disposable PostgreSQL 18.6 service, Node 24, and a pinned test-only `pg@8.23.1` driver; keep the driver out of application runtime dependencies and the committed lockfile.
-- [x] Exercise the actual schema migration twice, real independent worker connections, concurrent one-winner lease claims, database-backed persistence, lease expiry/reclaim and monotonic fencing.
+- [x] Exercise the actual schema migration twice, real independent worker connections, concurrent one-winner lease claims, database-backed persistence, database-clock lease renewal, expiry/reclaim and monotonic fencing.
 - [x] Verify stale-worker release/write rejection and transaction rollback preserving the health row and lease.
 - [ ] Require the dedicated PostgreSQL workflow and all ordinary CI/security checks to pass before marking Phase 6.25 verified.
 - [ ] Separately review production database TLS, pooling, backup/restore, migration ownership/rollback, monitoring and operational approval before any multi-process deployment.
