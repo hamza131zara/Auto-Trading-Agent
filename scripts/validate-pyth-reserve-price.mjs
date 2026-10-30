@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import {
-  assessIndependentReservePriceAgreement
+  assessIndependentReservePriceAgreementWithReviewedLineage
 } from "../packages/market-data/dist/index.js";
 import {
   PythHermesAdapterError,
@@ -194,30 +194,47 @@ async function main() {
   if (indexedPriceEvidence.synthetic) { emitFailure("INDEXED_PRICE_EVIDENCE_SYNTHETIC", 1); return; }
   const nowAt = [baseUsd.retrievedAt, quoteUsd.retrievedAt, indexedPriceEvidence.retrievedAt]
     .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
-  const comparison = assessIndependentReservePriceAgreement({
-    baseMint: target.baseMint, quoteMint: target.quoteMint,
-    reserveRatioQuotePerBase: identityReport.onChainReserves.reserveRatioQuotePerBase,
-    indexedPriceUsdPerBase: indexedPriceEvidence.priceUsdPerBase,
-    indexedProviderId: indexedPriceEvidence.providerId,
-    indexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId,
-    indexedSourceEventAt: indexedPriceEvidence.sourceEventAt,
-    indexedSourceObservedAt: indexedPriceEvidence.sourceObservedAt,
-    indexedRetrievedAt: indexedPriceEvidence.retrievedAt,
-    indexedSynthetic: indexedPriceEvidence.synthetic,
-    baseUsd, quoteUsd,
-    policy: {
-      nowAt, maxSourceAgeMs: target.maxReferenceSourceAgeMs,
-      maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
-      maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
-      maxFutureSkewMs: target.maxFutureSkewMs, maxDeviationBps: target.maxDeviationBps,
-      approvedProviderId: "pyth-hermes", approvedIndependenceGroupId: "pyth-network",
-      expectedBaseFeedId: PYTH_SOL_USD_FEED_ID, expectedQuoteFeedId: PYTH_USDC_USD_FEED_ID,
-      ...(indexedPriceEvidence.providerId === "geckoterminal" ? {
-        approvedIndexedProviderId: indexedPriceEvidence.providerId,
-        approvedIndexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId
-      } : {})
+  const reviewedComparison = assessIndependentReservePriceAgreementWithReviewedLineage({
+    comparisonInput: {
+      baseMint: target.baseMint,
+      quoteMint: target.quoteMint,
+      reserveRatioQuotePerBase: identityReport.onChainReserves.reserveRatioQuotePerBase,
+      indexedPriceUsdPerBase: indexedPriceEvidence.priceUsdPerBase,
+      indexedProviderId: indexedPriceEvidence.providerId,
+      indexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId,
+      indexedSourceEventAt: indexedPriceEvidence.sourceEventAt,
+      indexedSourceObservedAt: indexedPriceEvidence.sourceObservedAt,
+      indexedRetrievedAt: indexedPriceEvidence.retrievedAt,
+      indexedSynthetic: indexedPriceEvidence.synthetic,
+      baseUsd,
+      quoteUsd,
+      policy: {
+        nowAt,
+        maxSourceAgeMs: target.maxReferenceSourceAgeMs,
+        maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
+        maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
+        maxFutureSkewMs: target.maxFutureSkewMs,
+        maxDeviationBps: target.maxDeviationBps,
+        approvedProviderId: "pyth-hermes",
+        approvedIndependenceGroupId: "pyth-network",
+        expectedBaseFeedId: PYTH_SOL_USD_FEED_ID,
+        expectedQuoteFeedId: PYTH_USDC_USD_FEED_ID,
+        ...(indexedPriceEvidence.providerId === "geckoterminal" ? {
+          approvedIndexedProviderId: indexedPriceEvidence.providerId,
+          approvedIndexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId
+        } : {})
+      }
+    },
+    lineagePolicy: {
+      purpose: "DIAGNOSTIC",
+      minimumIndependentGroups: 2,
+      requireSourceTimestamp: true,
+      oneOffDiagnosticAcknowledged:
+        process.env.CONFIRM_INDEXED_SOURCE_REVIEW === "yes" &&
+        process.env.CONFIRM_PYTH_PROVIDER_REVIEW === "yes"
     }
   });
+  const comparison = reviewedComparison.comparison;
 
   const report = {
     schemaVersion: "ata.phase6.pyth-reserve-validation.v1",
@@ -293,6 +310,19 @@ async function main() {
       providerSelectionApprovedByThisReport: false
     },
     comparison,
+    reviewedLineageGate: {
+      status: reviewedComparison.status,
+      canProceedToCriticalEvidenceGate: reviewedComparison.canProceedToCriticalEvidenceGate,
+      reasonCodes: reviewedComparison.reasonCodes,
+      lineage: reviewedComparison.lineage,
+      tradingAuthorized: false
+    },
+    criticalMarketDataEvidenceGate: {
+      status: "NOT_ASSESSED",
+      reasonCodes: ["PROVIDER_AGREEMENT_EVIDENCE_NOT_INCLUDED_IN_PYTH_REFERENCE_RUNNER"],
+      canProceedToOnChainValidation: false,
+      tradingAuthorized: false
+    },
     phase6Complete: false,
     productionProviderApprovedByThisReport: false,
     tradingAuthorized: false,

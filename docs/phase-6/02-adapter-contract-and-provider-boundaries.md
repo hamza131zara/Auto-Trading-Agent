@@ -61,3 +61,8 @@ Before any production use, re-check the official endpoint/schema, terms, quota a
 ## Phase 6.21 — Reviewed source lineage
 
 Every evidence-promotion path must bind provider IDs and upstream source-family groups to the Phase 6.21 registry using `assessProviderAgreementWithReviewedLineage`. Caller-supplied family labels alone are not proof of independent upstream data. Source timestamp semantics are role-specific and derived from the canonical snapshot. No source profile is production-approved; provider activation remains disabled pending rights and owner review. See [Phase 6.21](21-provider-source-lineage-registry.md).
+
+
+## Phase 6.22 — Pyth and critical gate composition
+
+The independent reserve/Pyth comparison must use `assessIndependentReservePriceAgreementWithReviewedLineage`; the final critical-data path must use `assessCriticalMarketDataEvidenceGateWithReviewedLineage`. These wrappers bind Pyth feed identity/publication time and indexed source timestamp semantics to the Phase 6.21 registry. The final wrapper recomputes provider-agreement and price-comparison lineage checks from their raw inputs. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).

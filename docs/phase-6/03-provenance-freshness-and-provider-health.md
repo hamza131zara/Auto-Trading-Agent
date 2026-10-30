@@ -27,3 +27,8 @@ A retryable failure increments consecutive failures; reaching the configured thr
 ## Phase 6.21 — source-family lineage and timestamp semantics
 
 Freshness timestamps are now paired with a reviewed provider source profile. A vendor/product name does not prove upstream independence: source families such as CoinGecko and GeckoTerminal share one independence group. The reviewed-lineage wrapper derives EVENT/OBSERVATION/NONE from the canonical source fields and checks the source role against the profile; retrieval time cannot be substituted. All current profiles remain unverified and no production source is approved. See [Phase 6.21](21-provider-source-lineage-registry.md).
+
+
+## Phase 6.22 — independent Pyth lineage
+
+The Pyth USD reference pair is one `USD_REFERENCE` source family with publication time typed `EVENT`. The indexed source is separately typed as `EVENT`, `OBSERVATION`, or `NONE` from its actual source fields. The reviewed comparison wrapper retains arithmetic diagnostics but blocks evidence promotion until upstream families are owner-attested and timestamps/rights pass. Retrieval time is never substituted. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).

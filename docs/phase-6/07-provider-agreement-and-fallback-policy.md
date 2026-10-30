@@ -105,3 +105,8 @@ Vendor branding is not proof of upstream independence. Before any candidate can 
 ## Phase 6.21 — Reviewed provider source registry
 
 The source registry and reviewed-lineage wrapper are specified in [Phase 6.21](21-provider-source-lineage-registry.md). Provider ID/group/timestamp claims are checked against the registry and actual canonical observation. CoinGecko and GeckoTerminal share one upstream family. All provider profiles remain unverified for pairwise independence, all production approvals remain false, and timestamp-missing pool metrics remain UNKNOWN. The wrapper must be used before an agreement assessment can advance an operational candidate; the lower-level comparator alone is not a provider approval. No provider was activated or called by this change.
+
+
+## Phase 6.22 — Pyth and final critical gate integration
+
+The reserve/Pyth comparator is now wrapped by `assessIndependentReservePriceAgreementWithReviewedLineage`, which checks Pyth provider/family identity, publication timestamps, indexed source role and actual source timestamp kind against the Phase 6.21 registry. The final evidence path must call `assessCriticalMarketDataEvidenceGateWithReviewedLineage`, which recomputes both provider-agreement and independent-price lineage assessments internally. A diagnostic arithmetic `AGREED` result is insufficient while upstream pairwise attestations, source freshness or provider rights are unresolved. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).

@@ -126,3 +126,15 @@ The leading diagnostic pool remains far below both unchanged thresholds. The ind
 - [ ] Validate current source freshness and independent agreement on a threshold-qualified pool; none was found in discovery run #12.
 
 The implementation is an explicit BLOCKED-by-default evidence control. It was merged through [PR #36](https://github.com/hamza131zara/Auto-Trading-Agent/pull/36) and verified by post-merge CI [run #249](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011278975): 239/239 tests passed, dependency audit found zero vulnerabilities, and repository validation, typecheck/build and Gitleaks passed. Both CodeQL analyses and Dependency Review also passed on the PR. This is not a provider approval, live source validation, trading authorization or roadmap phase completion.
+
+
+## Phase 6.22 — Pyth comparison and final critical-gate lineage
+
+- [x] Add a reviewed-lineage wrapper around the independent reserve/Pyth comparison. It binds the base/USD and quote/USD feeds to the exact approved Pyth profile and derives indexed timestamp kind from the actual source fields.
+- [x] Add a final critical-market-data wrapper that recomputes both the provider-agreement and independent-comparison lineage gates internally before calling the existing critical evidence gate.
+- [x] Wire the manual Pyth runner to report the reviewed lineage result while preserving the arithmetic comparison as diagnostic-only when lineage is unresolved.
+- [ ] Obtain evidence-backed mutual owner attestations for the actual upstream indexed/reference source pair.
+- [ ] Resolve provider commercial rights, plan/quota, retention and intended customer distribution before any diagnostic provider activation or production approval.
+- [ ] Run the final critical gate on real provider-agreement evidence and a qualifying pool after discovery produces one; run #12 found none.
+
+The Pyth runner explicitly reports the final critical gate as `NOT_ASSESSED` because it does not contain the separate multi-provider pool-metrics agreement evidence. No data is synthesized to fill that gap. These wrappers cannot authorize trading.
