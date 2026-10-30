@@ -261,3 +261,20 @@ See [Phase 6.29 — Canonical evidence binding](29-canonical-evidence-binding-an
 - [ ] Receive and human-review the actual owner-supplied Pyth feed metadata, publisher lineage, bilateral independence evidence, and provider-rights documents.
 
 The packager is offline and emits only metadata/digests; it does not copy evidence bytes, contact providers/RPC, enable providers, or mutate approvals. A successful result is STRUCTURALLY_VALID_NOT_AN_APPROVAL only. No real owner evidence has been supplied. Provider profiles remain UNVERIFIED/UNAPPROVED, spend remains USD $0, existing thresholds and diagnostic tolerance are unchanged, and trading remains unauthorized. Phase 6 remains ACTIVE. See [Phase 6.30](30-offline-provider-evidence-packaging.md).
+
+
+## Phase 6.31 — PostgreSQL runtime-role and transport preflight
+
+- [x] Add a one-query read-only preflight using the already-connected runtime role; do not open a new connection or mutate database state.
+- [x] Require both provider-health tables, a non-superuser runtime role with no ownership/membership of table-owner roles, public-schema USAGE, and SELECT/INSERT/UPDATE on both tables.
+- [x] Reject excess DELETE/TRUNCATE/REFERENCES/TRIGGER table privileges and CREATE privileges on the public schema or current database.
+- [x] Check backend transport encryption, while explicitly recording that the SQL query cannot verify the client driver's certificate-chain or hostname validation.
+- [x] Keep the strongest passing result at TECHNICAL_CHECKS_PASSED_REVIEW_REQUIRED; the function never approves production deployment or trading.
+- [x] Add unit coverage and a real PostgreSQL CI test using a disposable NOLOGIN role with narrowly granted permissions. The local CI transport is plaintext and is correctly reported BLOCKED.
+- [ ] Select and review the production database driver and verify the actual client TLS certificate/hostname policy.
+- [ ] Approve deployment-specific connection-pool limits/timeouts and capacity across runtime instances.
+- [ ] Approve encrypted backups, retention/PITR and a successful restore drill.
+- [ ] Separate migration ownership from runtime permissions and approve migration/rollback procedures.
+- [ ] Configure and test database monitoring, alerts and incident runbooks; obtain owner operational approval.
+
+The preflight is diagnostic only. It contacts no provider or Solana RPC endpoint, creates no production credentials, performs no migration/write, incurs no spend and cannot authorize provider activation or trading. Phase 6 remains ACTIVE.
