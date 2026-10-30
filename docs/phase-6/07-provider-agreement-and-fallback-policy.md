@@ -85,3 +85,18 @@ The first live Pyth read confirms both the reference feeds are available and fre
 ## Tests
 
 `test/provider-orchestrator.test.mjs` covers agreeing observations, primary timeout with two fallback confirmations, lone-fallback insufficiency, value disagreement, normalization/identity failures, cooldown and recovery, and simultaneous single-flight requests. `test/provider-agreement.test.mjs` covers provider agreement and independent evidence blockers. `test/market-data.test.mjs` covers circuit-open cooldown boundaries, authentication failure blocking, stale-health recheck, malformed health, and out-of-order provider results. It also covers `assessCriticalMarketDataEvidenceGate`: a complete non-synthetic indexed-provider agreement plus an agreeing independent price comparison may proceed only to on-chain validation; the recorded live Pyth disagreement (63 bps), missing DEX Screener source timestamp, incomplete evidence, and malformed authorization-shaped input block that gate. CI [#213](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/40907483897) passed 169/169 tests, typecheck, build, dependency audit, and Gitleaks. Orchestrator tests use injected stub adapters; normal CI makes no live provider or Solana RPC calls.
+
+
+## Provider legal and timestamp screening — 2026-10-30
+
+A documentation-only review of timestamped provider candidates was completed without creating credentials, activating adapters, spending funds, or making external provider requests.
+
+| Candidate | Timestamp/market evidence | Current licensing/operational decision |
+|---|---|---|
+| Birdeye Price + OHLCV V3 Pair | Price endpoint documents a per-token update time; OHLCV V3 Pair is exact-pair scoped and supports second-level intervals. | Blocked pending written permission for the customer-facing/multi-customer product. Published Terms of Service restrict personal own use and prohibit third-party redistribution/access without written consent. No key, adapter activation, or spend. |
+| GeckoTerminal / CoinGecko | Exact-pool OHLCV candle start can be retained as a price-only observation timestamp; pool-details timestamp remains unknown. | Potential future price-only evidence on an eligible paid commercial plan with attribution. Raw data/API redistribution is not included in standard commercial rights; custom license may be needed. Keep current adapter disabled until exact distribution/retention rights are cleared. |
+| Pyth Hermes | Oracle publication timestamps for SOL/USD and USDC/USD. | Existing adapter only. Prior live diagnostic comparison disagreed by 63 bps against 10 bps; keep that result and tolerance unchanged. Provider terms, key/usage and source policy remain owner decisions. |
+
+Official references reviewed on 2026-10-30: [Birdeye Price](https://docs.birdeye.so/reference/get-defi-price), [Birdeye OHLCV V3 Pair](https://docs.birdeye.so/reference/get-defi-v3-ohlcv-pair), [Birdeye pricing](https://docs.birdeye.so/docs/pricing), [Birdeye Terms](https://birdeye.so/data-api/terms-of-service), [GeckoTerminal API](https://api.geckoterminal.com/docs/index.html), [CoinGecko licensing update](https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses), and [Pyth Hermes](https://docs.pyth.network/api-reference/pyth-core/hermes).
+
+Vendor branding is not proof of upstream independence. Before any candidate can enter the live registry, verify the exact upstream source family, timestamp/observation semantics, endpoint and schema version, plan entitlement, rate limits, terms, attribution, retention, customer redistribution rights, budget, health/fallback behavior and deterministic fixtures. No provider is promoted by this screening.
