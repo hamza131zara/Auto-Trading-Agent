@@ -217,6 +217,12 @@ test("owner decision must reference evidence records present in the same manifes
     evidenceId: "P6E-OWNER-DECISION-001",
     evidenceType: "OWNER_DECISION",
     quality: "EXECUTED_OR_SIGNED",
+    review: {
+      state: "OWNER_DECISION_RECORDED",
+      reviewer: "owner",
+      reviewedAt: "2026-10-30T10:45:00Z",
+      findings: []
+    },
     ownerDecision: {
       decisionId: "OWNER-DECISION-001",
       owner: "Project owner",
