@@ -2188,7 +2188,8 @@ export function assessIndependentReservePriceAgreementWithReviewedLineage(
   }
 
   const indexedTimestampKind: ProviderSourceTimestampKind =
-    comparisonInput.indexedSourceEventAt !== null
+    comparisonInput.indexedSourceEventAt !== null &&
+      comparisonInput.indexedSourceEventAt !== undefined
       ? "EVENT"
       : comparisonInput.indexedSourceObservedAt !== undefined &&
           comparisonInput.indexedSourceObservedAt !== null
