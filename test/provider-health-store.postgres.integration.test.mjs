@@ -107,6 +107,22 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
     "integration target must be PostgreSQL 18.6 or newer within the 18.x major line");
   assert.ok(serverVersion < 190000, "integration target must remain on the PostgreSQL 18 major line");
 
+
+  const [{ rows: workerAIdentity }, { rows: workerBIdentity }] = await Promise.all([
+    workerAPool.query("SELECT pg_backend_pid() AS pid"),
+    workerBPool.query("SELECT pg_backend_pid() AS pid")
+  ]);
+  assert.notEqual(
+    workerAIdentity[0]?.pid,
+    workerBIdentity[0]?.pid,
+    "workers must use two independent PostgreSQL backend connections"
+  );
+
+  const {
+    PostgresProviderHealthStore,
+    assessPostgresProviderHealthOperationalMonitoring
+  } = await import("../packages/market-data/dist/provider-health-store.js");
+
   await t.test("read-only PostgreSQL operational monitoring reports real database metrics", async () => {
     const report = await assessPostgresProviderHealthOperationalMonitoring(adminPool, {
       maxConnectionUtilizationPercent: 99,
@@ -134,21 +150,6 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
     assert.equal(report.tradingAuthorized, false);
   });
 
-
-  const [{ rows: workerAIdentity }, { rows: workerBIdentity }] = await Promise.all([
-    workerAPool.query("SELECT pg_backend_pid() AS pid"),
-    workerBPool.query("SELECT pg_backend_pid() AS pid")
-  ]);
-  assert.notEqual(
-    workerAIdentity[0]?.pid,
-    workerBIdentity[0]?.pid,
-    "workers must use two independent PostgreSQL backend connections"
-  );
-
-  const {
-    PostgresProviderHealthStore,
-    assessPostgresProviderHealthOperationalMonitoring
-  } = await import("../packages/market-data/dist/provider-health-store.js");
   const storeA = new PostgresProviderHealthStore(workerAPool);
   const storeB = new PostgresProviderHealthStore(workerBPool);
   const restartedStore = new PostgresProviderHealthStore(restartPool);
