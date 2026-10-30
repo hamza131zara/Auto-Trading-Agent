@@ -712,7 +712,7 @@ export class ReadOnlyMarketDataOrchestrator {
               : ["ADAPTER_OBSERVATION_COUNT_INVALID"];
           const failureAt = this.options.now();
           if (!validUtcTimestamp(failureAt)) throw new TypeError("Injected clock returned an invalid UTC timestamp.");
-          const updated = this.updateHealth(providerId, {
+          const updated = await this.updateHealth(providerId, {
             kind: "FAILURE",
             at: failureAt,
             errorClass: "PARSE",
@@ -736,13 +736,13 @@ export class ReadOnlyMarketDataOrchestrator {
         if (!validation.valid || !isRecord(candidate)) {
           const failureAt = this.options.now();
           if (!validUtcTimestamp(failureAt)) throw new TypeError("Injected clock returned an invalid UTC timestamp.");
-          const updated = this.updateHealth(providerId, {
+          const updated = await this.updateHealth(providerId, {
             kind: "FAILURE",
             at: failureAt,
             errorClass: "PARSE",
             retryable: false,
             latencyMs: Math.max(0, Date.now() - startedMs)
-          });
+          }, recoveryLease);
           attempts.push({
             providerId,
             independenceGroupId: registration.independenceGroupId,
@@ -768,13 +768,13 @@ export class ReadOnlyMarketDataOrchestrator {
             snapshot.poolAddress !== target.poolAddress) {
           const failureAt = this.options.now();
           if (!validUtcTimestamp(failureAt)) throw new TypeError("Injected clock returned an invalid UTC timestamp.");
-          const updated = this.updateHealth(providerId, {
+          const updated = await this.updateHealth(providerId, {
             kind: "FAILURE",
             at: failureAt,
             errorClass: "PARSE",
             retryable: false,
             latencyMs: Math.max(0, Date.now() - startedMs)
-          });
+          }, recoveryLease);
           attempts.push({
             providerId,
             independenceGroupId: registration.independenceGroupId,
@@ -788,7 +788,7 @@ export class ReadOnlyMarketDataOrchestrator {
         }
 
         const latencyMs = Math.max(0, Date.now() - startedMs);
-        const updated = this.updateHealth(providerId, { kind: "SUCCESS", at: retrievedAt, latencyMs });
+        const updated = await this.updateHealth(providerId, { kind: "SUCCESS", at: retrievedAt, latencyMs }, recoveryLease);
         if (!updated.updated) {
           attempts.push({
             providerId,
