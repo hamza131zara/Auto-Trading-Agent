@@ -13,6 +13,7 @@ import type {
 const SAFE_PROVIDER_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_OWNER_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
 const SHA256_HEX = /^[a-f0-9]{64}$/;
+const LEASE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43,128}$/;
 const LEASE_DURATION_MIN_MS = 1_000;
 const LEASE_DURATION_MAX_MS = 300_000;
 
@@ -24,7 +25,7 @@ export interface ProviderHealthVersionedRecord {
 export interface RecoveryProbeLease {
   readonly providerId: string;
   readonly ownerId: string;
-  readonly leaseTokenHash: string;
+  readonly leaseToken: string;
   readonly fencingToken: string;
   readonly acquiredAt: string;
   readonly expiresAt: string;
@@ -33,7 +34,7 @@ export interface RecoveryProbeLease {
 export interface RecoveryProbeLeaseClaim {
   readonly providerId: string;
   readonly ownerId: string;
-  readonly leaseTokenHash: string;
+  readonly leaseToken: string;
   readonly leaseDurationMs: number;
 }
 
@@ -133,10 +134,24 @@ function isValidLeaseIdentity(input: unknown): input is RecoveryProbeLeaseIdenti
     isSafeProviderId(input.providerId) &&
     typeof input.ownerId === "string" &&
     SAFE_OWNER_ID.test(input.ownerId) &&
-    typeof input.leaseTokenHash === "string" &&
-    SHA256_HEX.test(input.leaseTokenHash) &&
+    typeof input.leaseToken === "string" &&
+    LEASE_TOKEN_PATTERN.test(input.leaseToken) &&
     typeof input.fencingToken === "string" &&
     /^[1-9][0-9]{0,18}$/.test(input.fencingToken);
+}
+
+async function hashLeaseToken(token: string): Promise<string> {
+  try {
+    const digest = await globalThis.crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(token)
+    );
+    return Array.from(new Uint8Array(digest), (value) =>
+      value.toString(16).padStart(2, "0")
+    ).join("");
+  } catch {
+    throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+  }
 }
 
 function validateLeaseDuration(value: unknown): value is number {
@@ -229,7 +244,7 @@ function readHealthRow(row: HealthDbRow): ProviderHealthVersionedRecord {
   return { health, version };
 }
 
-function readLeaseRow(row: LeaseDbRow): RecoveryProbeLease {
+function readLeaseRow(row: LeaseDbRow, leaseToken: string): RecoveryProbeLease {
   const acquiredAt = toIsoTimestamp(row.acquired_at);
   const expiresAt = toIsoTimestamp(row.expires_at);
   const fencingToken = String(row.fencing_token);
@@ -246,7 +261,7 @@ function readLeaseRow(row: LeaseDbRow): RecoveryProbeLease {
   return {
     providerId: row.provider_id,
     ownerId: row.owner_id,
-    leaseTokenHash: row.lease_token_hash,
+    leaseToken,
     fencingToken,
     acquiredAt,
     expiresAt
@@ -336,6 +351,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
 
       if (input.recoveryLease !== undefined) {
         const lease = input.recoveryLease;
+        const leaseTokenHash = await hashLeaseToken(lease.leaseToken);
         const leaseResult = await client.query<LeaseDbRow>(
           `/* recovery_lease:lock_for_result */
            SELECT provider_id, owner_id, lease_token_hash, fencing_token, acquired_at, expires_at
@@ -343,7 +359,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
             WHERE provider_id = $1 AND owner_id = $2 AND lease_token_hash = $3
               AND fencing_token = $4 AND expires_at > clock_timestamp()
             FOR UPDATE`,
-          [lease.providerId, lease.ownerId, lease.leaseTokenHash, lease.fencingToken]
+          [lease.providerId, lease.ownerId, leaseTokenHash, lease.fencingToken]
         );
         if (leaseResult.rows.length !== 1) {
           throw new ProviderHealthStoreError("RECOVERY_LEASE_NOT_OWNED");
@@ -391,6 +407,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
       let recoveryLeaseReleased = false;
       if (input.recoveryLease !== undefined) {
         const lease = input.recoveryLease;
+        const leaseTokenHash = await hashLeaseToken(lease.leaseToken);
         const released = await client.query(
           `/* recovery_lease:release_after_result */
            UPDATE public.provider_recovery_probe_leases
@@ -399,7 +416,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
             WHERE provider_id = $1 AND owner_id = $2 AND lease_token_hash = $3
               AND fencing_token = $4 AND expires_at > clock_timestamp()
             RETURNING provider_id`,
-          [lease.providerId, lease.ownerId, lease.leaseTokenHash, lease.fencingToken]
+          [lease.providerId, lease.ownerId, leaseTokenHash, lease.fencingToken]
         );
         if (released.rows.length !== 1) {
           throw new ProviderHealthStoreError("RECOVERY_LEASE_NOT_OWNED");
@@ -433,6 +450,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
       throw new ProviderHealthStoreError("INVALID_INPUT");
     }
     try {
+      const leaseTokenHash = await hashLeaseToken(input.leaseToken);
       const result = await this.pool.query<LeaseDbRow>(
         `/* recovery_lease:claim */
          WITH eligible_health AS (
@@ -457,9 +475,9 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
            released_at = NULL
          WHERE public.provider_recovery_probe_leases.expires_at <= clock_timestamp()
          RETURNING provider_id, owner_id, lease_token_hash, fencing_token, acquired_at, expires_at`,
-        [input.providerId, input.ownerId, input.leaseTokenHash, input.leaseDurationMs]
+        [input.providerId, input.ownerId, leaseTokenHash, input.leaseDurationMs]
       );
-      return result.rows.length === 0 ? null : readLeaseRow(result.rows[0]!);
+      return result.rows.length === 0 ? null : readLeaseRow(result.rows[0]!, input.leaseToken);
     } catch (error) {
       if (error instanceof ProviderHealthStoreError) throw error;
       throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
@@ -474,6 +492,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
       throw new ProviderHealthStoreError("INVALID_INPUT");
     }
     try {
+      const leaseTokenHash = await hashLeaseToken(input.leaseToken);
       const result = await this.pool.query<LeaseDbRow>(
         `/* recovery_lease:renew */
          UPDATE public.provider_recovery_probe_leases
@@ -481,9 +500,9 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
           WHERE provider_id = $1 AND owner_id = $2 AND lease_token_hash = $3
             AND fencing_token = $4 AND expires_at > clock_timestamp()
           RETURNING provider_id, owner_id, lease_token_hash, fencing_token, acquired_at, expires_at`,
-        [input.providerId, input.ownerId, input.leaseTokenHash, input.fencingToken, input.leaseDurationMs]
+        [input.providerId, input.ownerId, leaseTokenHash, input.fencingToken, input.leaseDurationMs]
       );
-      return result.rows.length === 0 ? null : readLeaseRow(result.rows[0]!);
+      return result.rows.length === 0 ? null : readLeaseRow(result.rows[0]!, input.leaseToken);
     } catch (error) {
       if (error instanceof ProviderHealthStoreError) throw error;
       throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
@@ -494,6 +513,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
   async releaseRecoveryProbeLease(input: RecoveryProbeLeaseIdentity): Promise<boolean> {
     if (!isValidLeaseIdentity(input)) throw new ProviderHealthStoreError("INVALID_INPUT");
     try {
+      const leaseTokenHash = await hashLeaseToken(input.leaseToken);
       const result = await this.pool.query(
         `/* recovery_lease:release */
          UPDATE public.provider_recovery_probe_leases
@@ -502,7 +522,7 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
           WHERE provider_id = $1 AND owner_id = $2 AND lease_token_hash = $3
             AND fencing_token = $4
           RETURNING provider_id`,
-        [input.providerId, input.ownerId, input.leaseTokenHash, input.fencingToken]
+        [input.providerId, input.ownerId, leaseTokenHash, input.fencingToken]
       );
       return result.rows.length === 1;
     } catch {
