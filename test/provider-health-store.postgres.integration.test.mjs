@@ -4,6 +4,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const connectionString = process.env.PG_INTEGRATION_URL;
+if (process.env.REQUIRE_PG_INTEGRATION === "true" && !connectionString) {
+  throw new Error("PG_INTEGRATION_URL is required for the dedicated PostgreSQL integration workflow");
+}
 const HEALTH_POLICY = { failureThreshold: 1, cooldownMs: 1_000 };
 const LEASE_DURATION_MS = 1_000;
 
