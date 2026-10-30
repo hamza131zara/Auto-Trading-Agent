@@ -562,7 +562,7 @@ export class PythProUsdPriceAdapter {
         requestId: "pyth-pro:" + envelope.retrievedAt + ":" + envelope.rawPayloadSha256.slice(0, 12),
         adapterVersion: PYTH_PRO_ADAPTER_VERSION,
         channel: envelope.channel,
-        marketSession
+        marketSession: session
       });
     }
 
