@@ -30,7 +30,7 @@ For a LOCAL_FILE record, the draft uses a relative, slash-separated locator unde
 ## Safety and bounded behavior
 
 - The CLI refuses input, artifact-root, and output paths inside the Git working tree. It rejects a symlinked input, artifact root, output parent, or artifact path; rejects traversal and non-regular artifacts; and refuses to overwrite an existing output.
-- The output is created with owner-only file permissions (0600 where the host filesystem supports POSIX permissions). The output parent directory must already exist.
+- The output is created with owner-only file permissions (0600 where the host filesystem supports POSIX permissions). The output parent directory must already exist. Output creation is exclusive and never overwrites an existing path; a write failure after file creation may leave a partial owner-only file that must be inspected and removed manually before retrying.
 - Local artifacts are limited to 50 MiB each and 200 MiB combined. A file that changes during hashing is rejected.
 - The manifest is checked for credential-bearing property names before packaging. Do not supply API keys, access tokens, private keys, seed phrases, wallet files, environment files, or other credentials. This is not a content scanner for the artifact files.
 - The packager emits only the manifest metadata and digests. It does not copy source files, upload data, contact providers, create subscriptions, incur spend, or mutate provider approvals.

@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 import { createHash } from "node:crypto";
 import {
-  chmodSync,
+  closeSync,
   existsSync,
+  fchmodSync,
   lstatSync,
+  openSync,
   readFileSync,
   realpathSync,
   statSync,
-  writeFileSync,
-  unlinkSync
+  writeFileSync
 } from "node:fs";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -266,14 +267,12 @@ if (process.argv[1] && resolve(process.argv[1]) === currentFile) {
       const prepared = prepareProviderEvidenceManifest(input, { artifactRoot });
       const outputPath = createPrivateOutputPath(args.output, repositoryRoot);
       const contents = JSON.stringify(prepared.manifest, null, 2) + "\n";
+      const descriptor = openSync(outputPath, "wx", 0o600);
       try {
-        writeFileSync(outputPath, contents, { encoding: "utf8", flag: "wx", mode: 0o600 });
-        chmodSync(outputPath, 0o600);
-      } catch (error) {
-        try {
-          unlinkSync(outputPath);
-        } catch {}
-        throw error;
+        writeFileSync(descriptor, contents, { encoding: "utf8" });
+        fchmodSync(descriptor, 0o600);
+      } finally {
+        closeSync(descriptor);
       }
       console.log(JSON.stringify({
         valid: prepared.report.valid,
@@ -291,3 +290,4 @@ if (process.argv[1] && resolve(process.argv[1]) === currentFile) {
     process.exitCode = error instanceof ProviderEvidenceManifestPackagingError ? error.exitCode : 2;
   }
 }
+

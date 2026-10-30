@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
 import {
   CANONICAL_PYTH_FEED_IDENTITIES,
@@ -154,3 +155,53 @@ test("packager enforces the per-artifact size bound before reading artifact byte
     );
   });
 });
+
+
+function runPackager(root, outputPath) {
+  const scriptPath = join(process.cwd(), "scripts", "package-provider-evidence-manifest.mjs");
+  return spawnSync(process.execPath, [
+    scriptPath,
+    "--input", join(root, "manifest-draft.json"),
+    "--artifact-root", join(root, "artifacts"),
+    "--output", outputPath
+  ], { cwd: process.cwd(), encoding: "utf8" });
+}
+
+test("CLI writes a private manifest outside the repository and reports non-authorization", () => {
+  withPrivateArtifact(({ root, artifactRoot }) => {
+    writeFileSync(join(root, "manifest-draft.json"), JSON.stringify(makeManifest()));
+    const outputPath = join(root, "manifest-output.json");
+    const result = runPackager(root, outputPath);
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(readFileSync(outputPath, "utf8"));
+    assert.equal(output.records[0].artifact.sha256, sha256(readFixtureBytes()));
+    assert.equal(statSync(outputPath).mode & 0o777, 0o600);
+    assert.match(result.stdout, /STRUCTURALLY_VALID_NOT_AN_APPROVAL/);
+    assert.match(result.stdout, /"tradingAuthorized": false/);
+  });
+});
+
+test("CLI refuses repository-local output and never creates it", () => {
+  withPrivateArtifact(({ root }) => {
+    writeFileSync(join(root, "manifest-draft.json"), JSON.stringify(makeManifest()));
+    const outputPath = join(process.cwd(), ".phase6-evidence-packager-test-output.json");
+    assert.equal(existsSync(outputPath), false);
+    const result = runPackager(root, outputPath);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /outside the Git working tree/);
+    assert.equal(existsSync(outputPath), false);
+  });
+});
+
+test("CLI refuses an existing output without changing its contents", () => {
+  withPrivateArtifact(({ root }) => {
+    writeFileSync(join(root, "manifest-draft.json"), JSON.stringify(makeManifest()));
+    const outputPath = join(root, "existing-output.json");
+    writeFileSync(outputPath, "keep-existing-evidence\n");
+    const result = runPackager(root, outputPath);
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /refusing to overwrite/);
+    assert.equal(readFileSync(outputPath, "utf8"), "keep-existing-evidence\n");
+  });
+});
+
