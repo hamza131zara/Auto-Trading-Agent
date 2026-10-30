@@ -138,3 +138,15 @@ The implementation is an explicit BLOCKED-by-default evidence control. It was me
 - [ ] Run the final critical gate on real provider-agreement evidence and a qualifying pool after discovery produces one; run #12 found none.
 
 The Pyth runner explicitly reports the final critical gate as `NOT_ASSESSED` because it does not contain the separate multi-provider pool-metrics agreement evidence. No data is synthesized to fill that gap. These wrappers cannot authorize trading. Phase 6.22 was merged through [PR #39](https://github.com/hamza131zara/Auto-Trading-Agent/pull/39) and verified by post-merge CI [run #263](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41012644552): 245/245 tests, zero dependency vulnerabilities, repository validation, typecheck/build and Gitleaks passed. Both CodeQL analyses and Dependency Review also passed on the PR.
+
+
+## Phase 6.23 — Provider disagreement, health, fallback and recovery integration
+
+- [x] Add an assessment boundary that consumes a completed read-only orchestrator collection and validates candidate/observation/health/attempt identity and cardinality.
+- [x] Preserve raw agreement diagnostics separately from the reviewed source-lineage result.
+- [x] Derive POOL_METRICS timestamp kind from actual sourceEventAt / observedAt fields; retrieval time cannot satisfy missing source time.
+- [x] Add deterministic integration scenarios for rate limits, multiple fallbacks, disagreement, stale/missing timestamps, circuit cooldown, recovery disagreement and non-retryable authentication failure.
+- [ ] Obtain owner-evidenced mutual upstream attestations and approve provider terms/rights before any source can pass the reviewed gate.
+- [ ] Design and verify shared health persistence and distributed recovery-probe leases before any multi-process production deployment.
+
+Current registry profiles remain unverified, so diagnostic agreement cannot advance the reviewed gate. No live provider or RPC request was made; no key, spend, adapter activation, order or transaction is introduced.
