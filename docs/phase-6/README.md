@@ -116,3 +116,8 @@ The separately approved [Phase 6.18 live run #4](https://github.com/hamza131zara
 ## Latest live Phase 6.14 discovery — run #12
 
 [Run #12](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41005895558) completed both allowlisted SOL/USDC and SOL/USDT Raydium API queries (31 and 14 terminal records), checked all 45 returned accounts via finalized RPC, decoded 24 CPMM candidates and cross-checked all 24 exact addresses against DEX Screener. The scan was complete with no un-cross-checked candidates and zero pools meeting the unchanged USD 100,000 liquidity and USD 10,000 24-hour-volume thresholds. The leading diagnostic pool reported about USD 569.56/569.77 liquidity and USD 415.92/440.32 24-hour volume in Raydium/DEX Screener respectively. Source freshness remained UNKNOWN; no pool was recommended. This is discovery evidence only, not trade approval.
+
+
+## Phase 6.21 — Reviewed provider lineage and source timestamps
+
+A fail-closed provider registry and combined lineage/agreement wrapper now define the upstream source family, allowed evidence roles, event/observation/slot/none timestamp semantics, diagnostic access and commercial-rights status for each reviewed provider. GeckoTerminal and CoinGecko share one upstream family. All profiles remain independence-unverified and production-unapproved; missing source timestamps remain UNKNOWN. Birdeye and GeckoTerminal remain disabled pending terms/rights review. See [Phase 6.21](21-provider-source-lineage-registry.md). CI and regression evidence will be linked after PR review; this work has made no live provider calls and spent $0.

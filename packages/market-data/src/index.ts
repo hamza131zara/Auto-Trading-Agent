@@ -1028,6 +1028,590 @@ export interface ProviderAgreementAssessment {
   readonly tradingAuthorized: false;
 }
 
+export type ProviderEvidenceRole =
+  | "POOL_METRICS"
+  | "INDEXED_PRICE"
+  | "USD_REFERENCE"
+  | "ON_CHAIN_STATE";
+
+export type ProviderSourceTimestampKind = "NONE" | "EVENT" | "OBSERVATION" | "SLOT";
+export type ProviderLineageDisclosure =
+  | "UNDISCLOSED"
+  | "VENDOR_FAMILY_DOCUMENTED"
+  | "MULTI_PUBLISHER_AGGREGATION_DOCUMENTED"
+  | "INDEXED_POOL_CATALOG"
+  | "NATIVE_FINALIZED_LEDGER";
+export type ProviderIndependenceReview = "UNVERIFIED" | "OWNER_ATTESTED";
+export type ProviderDiagnosticAccess =
+  | "ONE_OFF_MANUAL_ACK_REQUIRED"
+  | "DISABLED_PENDING_TERMS"
+  | "DISABLED_PENDING_WRITTEN_PERMISSION";
+export type ProviderCommercialRights =
+  | "UNREVIEWED"
+  | "TERMS_AND_QUOTA_REVIEW_REQUIRED"
+  | "API_SPECIFIC_TERMS_REVIEW_REQUIRED"
+  | "PLAN_SPECIFIC_RIGHTS_REVIEW_REQUIRED"
+  | "CUSTOM_LICENSE_REQUIRED_FOR_REDISTRIBUTION"
+  | "WRITTEN_PERMISSION_REQUIRED"
+  | "SHARED_ENDPOINT_NOT_APPROVED_FOR_PRODUCTION"
+  | "APPROVED_FOR_CUSTOMER_DISTRIBUTION";
+
+export interface ProviderSourceProfile {
+  readonly providerId: string;
+  /** Canonical upstream family; aliases and sibling products must share the same value. */
+  readonly independenceGroupId: string;
+  readonly upstreamOrganization: string;
+  readonly sourceProduct: string;
+  readonly lineageDisclosure: ProviderLineageDisclosure;
+  /** A distinct vendor name is not proof of independent underlying data. */
+  readonly independenceReview: ProviderIndependenceReview;
+  /** Symmetric, owner-reviewed pairwise attestations. Empty means no independent pair is approved. */
+  readonly independentlyVerifiedWithGroups: readonly string[];
+  readonly supportedRoles: readonly ProviderEvidenceRole[];
+  /** Exact timestamp semantics available for each role; NONE must never be upgraded from retrieval time. */
+  readonly timestampKindsByRole: Readonly<Partial<Record<ProviderEvidenceRole, ProviderSourceTimestampKind>>>;
+  readonly diagnosticAccess: ProviderDiagnosticAccess;
+  readonly commercialRights: ProviderCommercialRights;
+  readonly productionUseApproved: boolean;
+  /** URL to public documentation or terms reviewed for this profile; never contains credentials. */
+  readonly evidenceReferences: readonly string[];
+}
+
+function freezeProviderSourceProfile(profile: ProviderSourceProfile): ProviderSourceProfile {
+  return Object.freeze({
+    ...profile,
+    independentlyVerifiedWithGroups: Object.freeze([...profile.independentlyVerifiedWithGroups]),
+    supportedRoles: Object.freeze([...profile.supportedRoles]),
+    timestampKindsByRole: Object.freeze({ ...profile.timestampKindsByRole }),
+    evidenceReferences: Object.freeze([...profile.evidenceReferences])
+  });
+}
+
+const PROVIDER_SOURCE_PROFILES: readonly ProviderSourceProfile[] = Object.freeze([
+  freezeProviderSourceProfile({
+    providerId: "dex-screener",
+    independenceGroupId: "dex-screener-family",
+    upstreamOrganization: "DEX Screener",
+    sourceProduct: "Pair API",
+    lineageDisclosure: "UNDISCLOSED",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["POOL_METRICS", "INDEXED_PRICE"],
+    timestampKindsByRole: { POOL_METRICS: "NONE", INDEXED_PRICE: "NONE" },
+    diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
+    commercialRights: "TERMS_AND_QUOTA_REVIEW_REQUIRED",
+    productionUseApproved: false,
+    evidenceReferences: ["https://docs.dexscreener.com/api/reference"]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "geckoterminal",
+    independenceGroupId: "geckoterminal-coingecko-ecosystem",
+    upstreamOrganization: "Gecko Labs / CoinGecko ecosystem",
+    sourceProduct: "GeckoTerminal pool API and exact-pool OHLCV API",
+    lineageDisclosure: "VENDOR_FAMILY_DOCUMENTED",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["POOL_METRICS", "INDEXED_PRICE"],
+    timestampKindsByRole: { POOL_METRICS: "NONE", INDEXED_PRICE: "OBSERVATION" },
+    diagnosticAccess: "DISABLED_PENDING_TERMS",
+    commercialRights: "API_SPECIFIC_TERMS_REVIEW_REQUIRED",
+    productionUseApproved: false,
+    evidenceReferences: [
+      "https://api.geckoterminal.com/docs/index.html",
+      "https://www.geckoterminal.com/terms-conditions",
+      "https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses"
+    ]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "coingecko-api",
+    independenceGroupId: "geckoterminal-coingecko-ecosystem",
+    upstreamOrganization: "CoinGecko / Gecko Labs ecosystem",
+    sourceProduct: "CoinGecko API",
+    lineageDisclosure: "VENDOR_FAMILY_DOCUMENTED",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["INDEXED_PRICE"],
+    timestampKindsByRole: { INDEXED_PRICE: "OBSERVATION" },
+    diagnosticAccess: "DISABLED_PENDING_TERMS",
+    commercialRights: "CUSTOM_LICENSE_REQUIRED_FOR_REDISTRIBUTION",
+    productionUseApproved: false,
+    evidenceReferences: [
+      "https://www.coingecko.com/en/api_terms",
+      "https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses"
+    ]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "pyth-hermes",
+    independenceGroupId: "pyth-network",
+    upstreamOrganization: "Pyth Network",
+    sourceProduct: "Hermes SOL/USD and USDC/USD reference feeds",
+    lineageDisclosure: "MULTI_PUBLISHER_AGGREGATION_DOCUMENTED",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["USD_REFERENCE"],
+    timestampKindsByRole: { USD_REFERENCE: "EVENT" },
+    diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
+    commercialRights: "PLAN_SPECIFIC_RIGHTS_REVIEW_REQUIRED",
+    productionUseApproved: false,
+    evidenceReferences: [
+      "https://docs.pyth.network/api-reference/pyth-core/hermes/timestamp_price_updates",
+      "https://github.com/pyth-network/pyth-gitbook/blob/main/how-pyth-works/design-overview.md",
+      "https://www.pyth.network/legal",
+      "https://www.pyth.network/price-feeds"
+    ]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "raydium-api-v3",
+    independenceGroupId: "raydium-api-v3",
+    upstreamOrganization: "Raydium",
+    sourceProduct: "Pool-by-mint indexed API",
+    lineageDisclosure: "INDEXED_POOL_CATALOG",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["POOL_METRICS"],
+    timestampKindsByRole: { POOL_METRICS: "NONE" },
+    diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
+    commercialRights: "UNREVIEWED",
+    productionUseApproved: false,
+    evidenceReferences: ["https://docs.raydium.io/"]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "birdeye",
+    independenceGroupId: "birdeye-data-platform",
+    upstreamOrganization: "Birdeye / Wings Lab",
+    sourceProduct: "Price and OHLCV API candidate (not integrated)",
+    lineageDisclosure: "VENDOR_FAMILY_DOCUMENTED",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["INDEXED_PRICE"],
+    timestampKindsByRole: { INDEXED_PRICE: "OBSERVATION" },
+    diagnosticAccess: "DISABLED_PENDING_WRITTEN_PERMISSION",
+    commercialRights: "WRITTEN_PERMISSION_REQUIRED",
+    productionUseApproved: false,
+    evidenceReferences: [
+      "https://docs.birdeye.so/reference/get-defi-price",
+      "https://docs.birdeye.so/reference/get-defi-v3-ohlcv-pair",
+      "https://birdeye.so/data-api/terms-of-service"
+    ]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "solana-public-shared",
+    independenceGroupId: "solana-finalized-ledger",
+    upstreamOrganization: "Solana network",
+    sourceProduct: "Shared public Mainnet RPC",
+    lineageDisclosure: "NATIVE_FINALIZED_LEDGER",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["ON_CHAIN_STATE"],
+    timestampKindsByRole: { ON_CHAIN_STATE: "SLOT" },
+    diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
+    commercialRights: "SHARED_ENDPOINT_NOT_APPROVED_FOR_PRODUCTION",
+    productionUseApproved: false,
+    evidenceReferences: ["https://solana.com/docs/rpc"]
+  })
+]);
+
+const PROVIDER_SOURCE_PROFILE_BY_ID = new Map(
+  PROVIDER_SOURCE_PROFILES.map((profile) => [profile.providerId, profile])
+);
+
+export function getProviderSourceProfile(providerId: string): ProviderSourceProfile | null {
+  return PROVIDER_SOURCE_PROFILE_BY_ID.get(providerId) ?? null;
+}
+
+export function listProviderSourceProfiles(): readonly ProviderSourceProfile[] {
+  return PROVIDER_SOURCE_PROFILES;
+}
+
+export interface ProviderLineageCandidate {
+  readonly providerId: string;
+  readonly independenceGroupId: string;
+  readonly role: ProviderEvidenceRole;
+  readonly timestampKind: ProviderSourceTimestampKind;
+}
+
+export interface ProviderLineageReadinessPolicy {
+  readonly purpose: "DIAGNOSTIC" | "PRODUCTION";
+  readonly minimumIndependentGroups: number;
+  readonly requireSourceTimestamp: boolean;
+  /** Must be true only after the operator reviews the specific one-off provider usage and public-log exposure. */
+  readonly oneOffDiagnosticAcknowledged: boolean;
+}
+
+export interface RejectedProviderLineageCandidate {
+  readonly providerId: string;
+  readonly reasonCodes: readonly string[];
+}
+
+export interface ProviderLineageReadinessAssessment {
+  readonly status: "READY_FOR_EVIDENCE_COMPARISON" | "BLOCKED" | "INVALID_INPUT";
+  readonly candidateProviderIds: readonly string[];
+  readonly eligibleProviderIds: readonly string[];
+  readonly distinctIndependenceGroupCount: number;
+  readonly rejectedProviders: readonly RejectedProviderLineageCandidate[];
+  readonly reasonCodes: readonly string[];
+  readonly canProceedToProviderAgreement: boolean;
+  readonly productionUseApproved: boolean;
+  readonly tradingAuthorized: false;
+}
+
+/**
+ * Resolve provider IDs and source-family claims against the reviewed in-repository registry.
+ * This deliberately fails closed: vendor-name diversity is not treated as proof of independent
+ * underlying data, and source timestamps are checked by role rather than inferred from retrieval.
+ */
+export function assessProviderLineageReadiness(
+  candidates: readonly ProviderLineageCandidate[],
+  policy: ProviderLineageReadinessPolicy
+): ProviderLineageReadinessAssessment {
+  const result = (
+    status: ProviderLineageReadinessAssessment["status"],
+    candidateProviderIds: readonly string[] = [],
+    eligibleProviderIds: readonly string[] = [],
+    distinctIndependenceGroupCount = 0,
+    rejectedProviders: readonly RejectedProviderLineageCandidate[] = [],
+    reasonCodes: readonly string[] = [],
+    canProceedToProviderAgreement = false,
+    productionUseApproved = false
+  ): ProviderLineageReadinessAssessment => ({
+    status,
+    candidateProviderIds: [...candidateProviderIds],
+    eligibleProviderIds: [...eligibleProviderIds],
+    distinctIndependenceGroupCount,
+    rejectedProviders: [...rejectedProviders],
+    reasonCodes: [...new Set(reasonCodes)],
+    canProceedToProviderAgreement,
+    productionUseApproved,
+    tradingAuthorized: false
+  });
+
+  const roles = new Set<ProviderEvidenceRole>([
+    "POOL_METRICS", "INDEXED_PRICE", "USD_REFERENCE", "ON_CHAIN_STATE"
+  ]);
+  const timestampKinds = new Set<ProviderSourceTimestampKind>([
+    "NONE", "EVENT", "OBSERVATION", "SLOT"
+  ]);
+  if (!Array.isArray(candidates) || candidates.length === 0 ||
+      !policy || (policy.purpose !== "DIAGNOSTIC" && policy.purpose !== "PRODUCTION") ||
+      !Number.isSafeInteger(policy.minimumIndependentGroups) ||
+      policy.minimumIndependentGroups < 2 ||
+      typeof policy.requireSourceTimestamp !== "boolean" ||
+      typeof policy.oneOffDiagnosticAcknowledged !== "boolean") {
+    return result("INVALID_INPUT", [], [], 0, [], ["PROVIDER_LINEAGE_POLICY_OR_CANDIDATES_INVALID"]);
+  }
+
+  const providerIds = new Set<string>();
+  const groupIds = new Set<string>();
+  const rejected: RejectedProviderLineageCandidate[] = [];
+  const matchedProfiles: ProviderSourceProfile[] = [];
+  const acceptedProfiles: ProviderSourceProfile[] = [];
+  const globalReasons: string[] = [];
+
+  for (const value of candidates as readonly unknown[]) {
+    if (!isRecord(value) ||
+        !isSafeSlug(value.providerId) ||
+        !isSafeSlug(value.independenceGroupId) ||
+        typeof value.role !== "string" || !roles.has(value.role as ProviderEvidenceRole) ||
+        typeof value.timestampKind !== "string" || !timestampKinds.has(value.timestampKind as ProviderSourceTimestampKind)) {
+      return result("INVALID_INPUT", [], [], 0, [], ["PROVIDER_LINEAGE_CANDIDATE_INVALID"]);
+    }
+    const candidate = value as unknown as ProviderLineageCandidate;
+    if (providerIds.has(candidate.providerId)) {
+      return result("INVALID_INPUT", [...providerIds], [], groupIds.size, [], ["DUPLICATE_PROVIDER_ID"]);
+    }
+    providerIds.add(candidate.providerId);
+    const profile = getProviderSourceProfile(candidate.providerId);
+    const reasons: string[] = [];
+    if (profile === null) {
+      reasons.push("UNKNOWN_PROVIDER_SOURCE_PROFILE");
+    } else {
+      matchedProfiles.push(profile);
+      if (candidate.independenceGroupId !== profile.independenceGroupId) {
+        reasons.push("PROVIDER_INDEPENDENCE_GROUP_MISMATCH");
+      }
+      if (!profile.supportedRoles.includes(candidate.role)) {
+        reasons.push("PROVIDER_ROLE_NOT_SUPPORTED");
+      } else {
+        const expectedTimestampKind = profile.timestampKindsByRole[candidate.role];
+        if (expectedTimestampKind !== candidate.timestampKind) {
+          reasons.push("SOURCE_TIMESTAMP_KIND_PROFILE_MISMATCH");
+        }
+        if (policy.requireSourceTimestamp && expectedTimestampKind === "NONE") {
+          reasons.push("SOURCE_TIMESTAMP_NOT_AVAILABLE_FOR_ROLE");
+        }
+      }
+      if (profile.independenceReview !== "OWNER_ATTESTED") {
+        reasons.push("UPSTREAM_LINEAGE_INDEPENDENCE_NOT_ATTESTED");
+      }
+      if (policy.purpose === "DIAGNOSTIC") {
+        if (!policy.oneOffDiagnosticAcknowledged) {
+          reasons.push("ONE_OFF_DIAGNOSTIC_ACK_REQUIRED");
+        }
+        if (profile.diagnosticAccess !== "ONE_OFF_MANUAL_ACK_REQUIRED") {
+          reasons.push("PROVIDER_DIAGNOSTIC_USE_DISABLED");
+        }
+      } else {
+        if (!profile.productionUseApproved) reasons.push("PRODUCTION_PROVIDER_NOT_APPROVED");
+        if (profile.commercialRights !== "APPROVED_FOR_CUSTOMER_DISTRIBUTION") {
+          reasons.push("CUSTOMER_DATA_RIGHTS_NOT_CLEARED");
+        }
+      }
+      if (profile !== null && candidate.independenceGroupId === profile.independenceGroupId) {
+        if (groupIds.has(profile.independenceGroupId)) {
+          reasons.push("DUPLICATE_UPSTREAM_SOURCE_FAMILY");
+        } else {
+          groupIds.add(profile.independenceGroupId);
+        }
+      }
+      if (reasons.length === 0) acceptedProfiles.push(profile);
+    }
+    if (reasons.length > 0) {
+      rejected.push({ providerId: candidate.providerId, reasonCodes: [...new Set(reasons)] });
+      globalReasons.push(...reasons);
+    }
+  }
+
+  if (groupIds.size < policy.minimumIndependentGroups) {
+    globalReasons.push("INSUFFICIENT_DISTINCT_UPSTREAM_GROUPS");
+  }
+
+  // Independence is a pairwise attestation, not a count of distinct vendor labels.
+  for (let left = 0; left < matchedProfiles.length; left += 1) {
+    for (let right = left + 1; right < matchedProfiles.length; right += 1) {
+      const a = matchedProfiles[left]!;
+      const b = matchedProfiles[right]!;
+      if (a.independenceGroupId === b.independenceGroupId) continue;
+      const aAttests = a.independenceReview === "OWNER_ATTESTED" &&
+        a.independentlyVerifiedWithGroups.includes(b.independenceGroupId);
+      const bAttests = b.independenceReview === "OWNER_ATTESTED" &&
+        b.independentlyVerifiedWithGroups.includes(a.independenceGroupId);
+      if (!aAttests || !bAttests) globalReasons.push("UPSTREAM_LINEAGE_PAIR_NOT_MUTUALLY_ATTESTED");
+    }
+  }
+
+  const uniqueReasons = [...new Set(globalReasons)];
+  const accepted = uniqueReasons.length === 0 &&
+    rejected.length === 0 &&
+    acceptedProfiles.length === candidates.length &&
+    groupIds.size >= policy.minimumIndependentGroups;
+  const productionUseApproved = accepted &&
+    policy.purpose === "PRODUCTION" &&
+    acceptedProfiles.every((profile) => profile.productionUseApproved);
+  return result(
+    accepted ? "READY_FOR_EVIDENCE_COMPARISON" : "BLOCKED",
+    candidates.map((candidate) => candidate.providerId),
+    accepted ? acceptedProfiles.map((profile) => profile.providerId) : [],
+    groupIds.size,
+    rejected,
+    uniqueReasons,
+    accepted,
+    productionUseApproved
+  );
+}
+
+
+export interface ReviewedProviderAgreementInput {
+  readonly candidates: readonly ProviderEvidenceCandidate[];
+  readonly lineageCandidates: readonly ProviderLineageCandidate[];
+  readonly lineagePolicy: ProviderLineageReadinessPolicy;
+  readonly agreementPolicy: ProviderAgreementPolicy;
+}
+
+export interface ReviewedProviderAgreementAssessment {
+  readonly status: ProviderAgreementStatus;
+  readonly lineage: ProviderLineageReadinessAssessment;
+  readonly providerAgreement: ProviderAgreementAssessment;
+  readonly canProceedToOnChainValidation: boolean;
+  readonly productionUseApproved: boolean;
+  readonly reasonCodes: readonly string[];
+  readonly tradingAuthorized: false;
+}
+
+/**
+ * Mandatory composition for callers that need to use provider agreement as evidence.
+ * It binds every source-family/role/timestamp claim to the exact evidence candidate
+ * before running the existing agreement comparator. A caller cannot provide a
+ * different registry candidate list than the observations being compared.
+ */
+export function assessProviderAgreementWithReviewedLineage(
+  input: ReviewedProviderAgreementInput
+): ReviewedProviderAgreementAssessment {
+  const makeBlockedAgreement = (
+    status: ProviderAgreementStatus,
+    reasons: readonly string[],
+    rejected: readonly RejectedProviderEvidence[] = []
+  ): ProviderAgreementAssessment => ({
+    status,
+    eligibleProviderIds: [],
+    rejectedProviders: [...rejected],
+    disagreementFields: [],
+    reasonCodes: [...new Set(reasons)],
+    fallbackUsed: false,
+    canProceedToOnChainValidation: false,
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !Array.isArray(input.candidates) ||
+      !Array.isArray(input.lineageCandidates) ||
+      input.candidates.length !== input.lineageCandidates.length ||
+      input.candidates.length === 0) {
+    const invalidLineage = assessProviderLineageReadiness([], input?.lineagePolicy as ProviderLineageReadinessPolicy);
+    const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_AGREEMENT_INPUT_INVALID"]);
+    return {
+      status: "INVALID_INPUT",
+      lineage: invalidLineage,
+      providerAgreement: invalidAgreement,
+      canProceedToOnChainValidation: false,
+      productionUseApproved: false,
+      reasonCodes: ["REVIEWED_PROVIDER_AGREEMENT_INPUT_INVALID"],
+      tradingAuthorized: false
+    };
+  }
+
+  const evidenceByProvider = new Map<string, ProviderEvidenceCandidate>();
+  for (const candidate of input.candidates) {
+    if (!isRecord(candidate) ||
+        !isSafeSlug(candidate.providerId) ||
+        !isSafeSlug(candidate.independenceGroupId) ||
+        !Number.isSafeInteger(candidate.priority) ||
+        (candidate.priority as number) < 0 ||
+        typeof candidate.snapshot === "undefined" ||
+        !isValidProviderHealthEvidence(candidate.health, candidate.providerId) ||
+        evidenceByProvider.has(candidate.providerId)) {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_AGREEMENT_CANDIDATE_INVALID"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["REVIEWED_PROVIDER_AGREEMENT_CANDIDATE_INVALID"],
+        tradingAuthorized: false
+      };
+    }
+    evidenceByProvider.set(candidate.providerId, candidate as unknown as ProviderEvidenceCandidate);
+  }
+
+  const boundLineageCandidates: ProviderLineageCandidate[] = [];
+  for (const claim of input.lineageCandidates) {
+    if (!isRecord(claim) || !isSafeSlug(claim.providerId)) {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_LINEAGE_CLAIM_INVALID"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["REVIEWED_PROVIDER_LINEAGE_CLAIM_INVALID"],
+        tradingAuthorized: false
+      };
+    }
+    const evidence = evidenceByProvider.get(claim.providerId);
+    if (evidence === undefined || evidence.independenceGroupId !== claim.independenceGroupId) {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_LINEAGE_EVIDENCE_BINDING_MISMATCH"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["REVIEWED_PROVIDER_LINEAGE_EVIDENCE_BINDING_MISMATCH"],
+        tradingAuthorized: false
+      };
+    }
+
+    let actualTimestampKind: ProviderSourceTimestampKind = "NONE";
+    if (evidence.snapshot !== null && isRecord(evidence.snapshot)) {
+      if (evidence.snapshot.sourceEventAt !== null && evidence.snapshot.sourceEventAt !== undefined) {
+        actualTimestampKind = "EVENT";
+      } else if (evidence.snapshot.observedAt !== null && evidence.snapshot.observedAt !== undefined) {
+        actualTimestampKind = "OBSERVATION";
+      }
+    }
+    if (claim.role !== "POOL_METRICS" && claim.role !== "INDEXED_PRICE") {
+      const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+      const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["PROVIDER_AGREEMENT_ROLE_UNSUPPORTED"]);
+      return {
+        status: "INVALID_INPUT",
+        lineage: invalidLineage,
+        providerAgreement: invalidAgreement,
+        canProceedToOnChainValidation: false,
+        productionUseApproved: false,
+        reasonCodes: ["PROVIDER_AGREEMENT_ROLE_UNSUPPORTED"],
+        tradingAuthorized: false
+      };
+    }
+    boundLineageCandidates.push({
+      providerId: claim.providerId,
+      independenceGroupId: claim.independenceGroupId,
+      role: claim.role,
+      timestampKind: actualTimestampKind
+    });
+  }
+
+  if (new Set(boundLineageCandidates.map((item) => item.providerId)).size !== input.candidates.length ||
+      input.candidates.some((candidate) => !boundLineageCandidates.some((claim) => claim.providerId === candidate.providerId))) {
+    const invalidLineage = assessProviderLineageReadiness([], input.lineagePolicy);
+    const invalidAgreement = makeBlockedAgreement("INVALID_INPUT", ["REVIEWED_PROVIDER_LINEAGE_CANDIDATE_SET_MISMATCH"]);
+    return {
+      status: "INVALID_INPUT",
+      lineage: invalidLineage,
+      providerAgreement: invalidAgreement,
+      canProceedToOnChainValidation: false,
+      productionUseApproved: false,
+      reasonCodes: ["REVIEWED_PROVIDER_LINEAGE_CANDIDATE_SET_MISMATCH"],
+      tradingAuthorized: false
+    };
+  }
+
+  const lineage = assessProviderLineageReadiness(boundLineageCandidates, input.lineagePolicy);
+  if (lineage.status !== "READY_FOR_EVIDENCE_COMPARISON" || !lineage.canProceedToProviderAgreement) {
+    const rejected = lineage.rejectedProviders.map((item) => ({
+      providerId: item.providerId,
+      reasonCodes: item.reasonCodes
+    }));
+    const providerAgreement = makeBlockedAgreement(
+      "NO_ACCEPTABLE_PROVIDER",
+      ["REVIEWED_PROVIDER_LINEAGE_GATE_BLOCKED", ...lineage.reasonCodes],
+      rejected
+    );
+    return {
+      status: providerAgreement.status,
+      lineage,
+      providerAgreement,
+      canProceedToOnChainValidation: false,
+      productionUseApproved: false,
+      reasonCodes: providerAgreement.reasonCodes,
+      tradingAuthorized: false
+    };
+  }
+
+  const providerAgreement = assessProviderAgreement(input.candidates, input.agreementPolicy);
+  const canProceed = providerAgreement.canProceedToOnChainValidation &&
+    lineage.canProceedToProviderAgreement &&
+    (input.lineagePolicy.purpose !== "PRODUCTION" || lineage.productionUseApproved);
+  const reasonCodes = canProceed
+    ? providerAgreement.reasonCodes
+    : [...providerAgreement.reasonCodes, "REVIEWED_PROVIDER_LINEAGE_GATE_NOT_READY"];
+  return {
+    status: providerAgreement.status,
+    lineage,
+    providerAgreement: {
+      ...providerAgreement,
+      canProceedToOnChainValidation: canProceed,
+      tradingAuthorized: false
+    },
+    canProceedToOnChainValidation: canProceed,
+    productionUseApproved: lineage.productionUseApproved,
+    reasonCodes: [...new Set(reasonCodes)],
+    tradingAuthorized: false
+  };
+}
+
 interface EvaluatedProviderEvidence {
   readonly providerId: string;
   readonly priority: number;
