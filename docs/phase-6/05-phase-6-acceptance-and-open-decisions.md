@@ -334,3 +334,19 @@ The feature is a measurement/evaluation primitive, not a hosted monitoring servi
 - [ ] Obtain explicit owner/database-operator approval of a real capacity plan.
 
 The evaluator is offline and driver-neutral. It does not open a database connection, select/configure a pool, create credentials or modify runtime state. A passing arithmetic report is not production evidence or approval. Phase 6 remains ACTIVE. See [Phase 6.35](35-postgres-aggregate-connection-budget-preflight.md).
+
+
+## Phase 6.36 — PostgreSQL backup, PITR and recovery-policy preflight
+
+- [x] Add an offline deterministic evaluator for explicit backup cadence/retention, PITR/WAL lag, owner-supplied RPO/RTO and integrity/restore evidence ages.
+- [x] Calculate the declared worst-case data-loss interval from maximum permitted backup age and WAL archive lag; block an RPO miss.
+- [x] Detect a stale last successful backup and reject maximum-age thresholds inconsistent with backup cadence or retention.
+- [x] Compare the last restore-drill duration with RTO and block a miss.
+- [x] Validate PITR retention consistency and explicit disabled-state declarations.
+- [x] Require declared verification for application-level restore-drill validation, encryption at rest/in transit, restricted off-site destination, remote digest verification and PITR WAL monitoring.
+- [x] Reject malformed, missing, unknown and credential-shaped inputs; return immutable, non-authorizing reports.
+- [ ] Independently verify actual backup service/storage/KMS configuration, retention/lifecycle, WAL archiving, integrity monitoring and evidence authenticity.
+- [ ] Approve workload-specific RPO/RTO, PITR retention and restore-drill cadence.
+- [ ] Complete a separately authorized production-like restore drill with application-level validation.
+
+The preflight evaluates declarations only. It does not create or restore backups, connect to PostgreSQL or external storage, verify encryption/digests, contact providers/RPC, incur spend or authorize production recovery. Phase 6 remains ACTIVE. See [Phase 6.36](36-postgres-backup-pitr-policy-preflight.md).

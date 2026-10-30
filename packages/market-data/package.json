@@ -35,6 +35,10 @@
     "./postgres-connection-budget": {
       "types": "./dist/postgres-connection-budget.d.ts",
       "import": "./dist/postgres-connection-budget.js"
+    },
+    "./postgres-backup-recovery-policy": {
+      "types": "./dist/postgres-backup-recovery-policy.d.ts",
+      "import": "./dist/postgres-backup-recovery-policy.js"
     }
   },
   "scripts": {
