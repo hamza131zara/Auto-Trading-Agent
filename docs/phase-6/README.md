@@ -39,6 +39,7 @@
 19. [Pinned Raydium source build and reference hash evidence](19-raydium-reference-build-evidence.md)
 20. [Local review of pinned Raydium reference-build evidence](20-reference-build-evidence-review.md)
 21. [Real PostgreSQL integration and distributed recovery verification](25-real-postgres-integration.md)
+22. [Pyth Pro freshness evidence and provider-rights review](26-pyth-pro-freshness-and-provider-rights-review.md)
 
 ## Initial implementation boundary
 
@@ -152,3 +153,12 @@ Merged through [PR #43](https://github.com/hamza131zara/Auto-Trading-Agent/pull/
 ## Real PostgreSQL shared-health verification
 
 Phase 6.25 is merged through [PR #45](https://github.com/hamza131zara/Auto-Trading-Agent/pull/45), commit `8ea700041c77ae661b12beee0c0bdacc305026ed`. PR PostgreSQL run [#4](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033711991) and main PostgreSQL run [#5](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033906105) both passed 4/4 real-engine integration tests on PostgreSQL 18.6. Main CI [#281](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033905950), PR Dependency Review [#116](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033711853), and PR CodeQL/Gitleaks [#257](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033707564) also passed. The actual schema, independent worker connections, lease claim arbitration, DB-clock renewal/expiry, fencing, persistence and rollback are now verified against PostgreSQL; production DB deployment and trading remain unauthorized. See [the Phase 6.25 runbook](25-real-postgres-integration.md).
+
+
+## Phase 6.26 — Pyth Pro feed freshness and provider rights
+
+A separate, disabled Pyth Pro latest-price adapter now validates feed-generation time, publisher count, market session, session-specific quorum metadata, feed ID/mint binding and the minimum supported channel. Carried-forward prices and under-quorum updates fail closed. Synthetic tests use illustrative numeric feed IDs only; production Pyth Lazer IDs and min-publisher values require owner-reviewed symbology metadata.
+
+Pyth Pro and its Hermes-compatible endpoint share the same pyth-network family. Five routers are redundant aggregation/signature paths over the common publisher-update stream; they do not count as five independent publisher data sources. Pyth publisherCount is not a source independence attestation.
+
+The public terms review keeps all providers unapproved: DEX Screener customer-facing access/redistribution needs clarification; CoinGecko standard paid commercial use supports attributed display but not raw/API redistribution; Birdeye remains excluded absent written permission; Raydium use rights remain unreviewed; and Pyth Pro plan/customer data rights remain owner decisions. No provider API/RPC calls, keys, activation or spend were used. See [Phase 6.26](26-pyth-pro-freshness-and-provider-rights-review.md).

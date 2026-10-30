@@ -68,3 +68,10 @@ The registry and wrapper are pure functions. They make no network requests, read
 ## Review and approval
 
 Any owner attestation must be based on evidence identifying the actual upstream dataset/publisher path—not vendor branding, endpoint names or SDK differences. Update both profiles symmetrically only after documenting the upstream sources, aggregation path, timestamp meaning and relevant terms. Any new commercial-rights approval must identify the exact product delivery model, customer visibility/export, attribution, retention and redistribution rights. Never turn these fields to approved based only on an API doc or a successful test.
+
+
+## Pyth Pro architecture clarification — 2026-10-30
+
+The newer Pyth Pro architecture documentation clarifies that five router instances independently aggregate/sign the same ordered publisher-update stream; the Core contract accepts three of five router signatures. These routers are redundant data-delivery/aggregation/signing paths, not five independent publisher populations. Publisher entities are the source contributors. The registry therefore continues to treat Pyth Pro and the Hermes-compatible Pyth endpoint as the same upstream group, pyth-network, and their profiles remain independence-unverified. A count of publishers is not a substitute for identifying the contributing publishers and reviewing their source/venue lineage.
+
+Phase 6.26 adds provider ID pyth-pro as another profile in the existing pyth-network family. It does not create a separate independence group or make Pyth and an indexed pool-metrics vendor mutually attested. See [Phase 6.26](26-pyth-pro-freshness-and-provider-rights-review.md) and the official [Pyth Pro architecture](https://docs.pyth.network/pro/how-lazer-works).

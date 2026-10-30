@@ -20,6 +20,10 @@
       "types": "./dist/providers/pyth-hermes.d.ts",
       "import": "./dist/providers/pyth-hermes.js"
     },
+    "./providers/pyth-pro": {
+      "types": "./dist/providers/pyth-pro.d.ts",
+      "import": "./dist/providers/pyth-pro.js"
+    },
     "./providers/geckoterminal": {
       "types": "./dist/providers/geckoterminal.d.ts",
       "import": "./dist/providers/geckoterminal.js"
