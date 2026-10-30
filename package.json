@@ -19,7 +19,8 @@
     "test": "npm run build && node --test",
     "test:postgres": "npm run build && node --test test/provider-health-store.postgres.integration.test.mjs",
     "check": "npm run validate:repo && npm run typecheck && npm test",
-    "validate:phase6-live-source": "npm run build && node scripts/validate-raydium-live-source.mjs"
+    "validate:phase6-live-source": "npm run build && node scripts/validate-raydium-live-source.mjs",
+    "test:postgres:recovery": "npm run build && node --test test/phase6-postgres-recovery.integration.test.mjs"
   },
   "devDependencies": {
     "typescript": "7.0.2"

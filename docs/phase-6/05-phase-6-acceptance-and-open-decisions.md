@@ -278,3 +278,19 @@ The packager is offline and emits only metadata/digests; it does not copy eviden
 - [ ] Configure and test database monitoring, alerts and incident runbooks; obtain owner operational approval.
 
 The preflight is diagnostic only. It contacts no provider or Solana RPC endpoint, creates no production credentials, performs no migration/write, incurs no spend and cannot authorize provider activation or trading. Phase 6 remains ACTIVE.
+
+
+## Phase 6.32 — PostgreSQL backup, restore and migration recovery
+
+- [x] Add a loopback/test-role/database-allowlisted PostgreSQL custom-format backup drill, with a pinned PostgreSQL 18.6 client image.
+- [x] Inspect the archive table of contents and calculate a SHA-256 digest.
+- [x] Restore into a newly created isolated database using a single transaction and no-owner/no-privilege semantics.
+- [x] Verify representative provider-health and recovery-lease rows, hash metadata, fencing token and restored ownership.
+- [x] Simulate a migration worker disconnect after DDL but before COMMIT; verify PostgreSQL rolls back all uncommitted schema changes.
+- [x] Apply the existing migration transactionally after interruption and re-apply it to verify idempotency.
+- [x] Restrict cleanup to databases created by this test; remove the temporary archive and never upload a dump artifact.
+- [ ] Approve production backup encryption, off-site destination, retention, checksum monitoring and access controls.
+- [ ] Define RPO/RTO and PITR requirements and conduct a separately authorized production-like restore drill.
+- [ ] Approve production migration owner separation, operational windows, rollback/forward-fix procedures, monitoring and incident response.
+
+The automated drill operates only on the disposable local PostgreSQL 18.6 CI service and strict allowlisted test databases. It does not verify production storage, encryption, durability, retention or service-level recovery objectives. Phase 6 remains ACTIVE; no provider/RPC access, credentials, spend, wallet, signer, order, transaction or trading authorization is introduced. See [Phase 6.32](32-postgres-backup-restore-and-migration-recovery.md).
