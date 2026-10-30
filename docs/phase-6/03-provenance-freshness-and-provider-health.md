@@ -32,3 +32,8 @@ Freshness timestamps are now paired with a reviewed provider source profile. A v
 ## Phase 6.22 — independent Pyth lineage
 
 The Pyth USD reference pair is one `USD_REFERENCE` source family with publication time typed `EVENT`. The indexed source is separately typed as `EVENT`, `OBSERVATION`, or `NONE` from its actual source fields. The reviewed comparison wrapper retains arithmetic diagnostics but blocks evidence promotion until upstream families are owner-attested and timestamps/rights pass. Retrieval time is never substituted. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).
+
+
+## Phase 6.24 — Shared provider health and recovery-probe coordination
+
+The optional `PostgresProviderHealthStore` persists sanitized provider health/version state and coordinates recovery probes with a single-winner PostgreSQL lease. Lease expiry, claim and renewal use the database clock; every reclaim increments a fencing token; recovery health update and lease release are transactional. The orchestrator can inject the store and must win a shared lease after circuit cooldown before sending a recovery probe. Raw one-time tokens are never stored; only SHA-256 digests are persisted. No driver is bundled and no database migration has been applied. Real PostgreSQL multi-connection integration remains required before multi-process deployment. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).

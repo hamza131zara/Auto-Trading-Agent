@@ -136,3 +136,8 @@ The read-only collection now has a composed assessment that validates attempt/he
 ## Phase 6.23 — Provider resilience integration
 
 A composed assessment now validates orchestration candidates, normalized observations, provider health and attempts; reports raw agreement separately from reviewed source lineage; and only permits progression through the reviewed gate. Deterministic tests cover rate limits, fallback disagreement, stale/missing timestamps, circuit cooldown, recovery disagreement and auth lockout. Shared health persistence and distributed recovery-probe leasing remain open before multi-process production. See [Phase 6.23](23-provider-resilience-integration.md). Merged through [PR #41](https://github.com/hamza131zara/Auto-Trading-Agent/pull/41); post-merge CI [#269](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41022186170) passed 251/251 tests and all repository checks. Both CodeQL analyses and Dependency Review passed on the PR.
+
+
+## Phase 6.24 — Shared health and recovery-probe leases
+
+An optional driver-neutral PostgreSQL store now persists provider health and coordinates circuit-recovery probes using database-clock atomic leases, expiry/reclaim and monotonically increasing fencing tokens. The orchestrator loads shared health and requires the distributed lease for recovery; stale workers cannot publish results. Only token digests are stored. The SQL migration is committed but unapplied, no driver is bundled, and real PostgreSQL multi-connection integration remains an explicit deployment gate. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).

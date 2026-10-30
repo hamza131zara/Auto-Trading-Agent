@@ -161,3 +161,18 @@ Current registry profiles remain unverified, so diagnostic agreement cannot adva
 - [ ] Design shared health persistence and a distributed recovery-probe lease before multi-process production deployment.
 
 Merged in [PR #41](https://github.com/hamza131zara/Auto-Trading-Agent/pull/41). Post-merge CI [#269](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41022186170) passed 251/251 tests, zero dependency vulnerabilities, typecheck/build, repository validation and Gitleaks; both CodeQL analyses and Dependency Review passed on the PR. No live provider/RPC calls or spend; trading remains unauthorized.
+
+
+## Phase 6.24 — Shared provider health and distributed recovery leases
+
+- [x] Add a driver-neutral `ProviderHealthStore` contract and PostgreSQL implementation with transactional, versioned provider-health updates.
+- [x] Add an idempotent PostgreSQL schema migration for health rows and retained recovery-lease fencing counters.
+- [x] Implement database-clock atomic claim/renew/release, expiry/reclaim and monotonically increasing fencing tokens.
+- [x] Require the current unexpired lease to update circuit-open health; combine recovery result and lease release in one transaction.
+- [x] Wire optional shared health loading and lease acquisition into the read-only orchestrator; discard results from expired recovery workers.
+- [x] Add deterministic fake-pool tests for store concurrency/expiry/fencing and two orchestrator instances contending for one lease.
+- [ ] Select and review a PostgreSQL driver/adapter; no driver or DB credentials are included in this step.
+- [ ] Apply the migration to an ephemeral PostgreSQL instance and run real two-connection concurrent claim, expiry/reclaim, rollback and fencing integration tests.
+- [ ] Only then approve shared-store configuration for a multi-process deployment.
+
+This step remains offline. The migration is not applied; no provider/RPC call or spending occurs; provider and trading approvals remain false.
