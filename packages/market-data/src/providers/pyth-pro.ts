@@ -12,7 +12,7 @@ export const PYTH_PRO_USDC_MAINNET_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZ
 export const PYTH_PRO_LATEST_PRICE_URL = "https://pyth-lazer.dourolabs.app/v1/latest_price";
 
 const MAX_RESPONSE_BYTES = 256 * 1024;
-const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\\.[0-9]{1,3})?Z$/;
+const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/;
 const INTEGER_PATTERN = /^-?(?:0|[1-9][0-9]*)$/;
 const UNSIGNED_INTEGER_PATTERN = /^(?:0|[1-9][0-9]*)$/;
 const CHANNEL_RANK: Readonly<Record<PythProChannel, number>> = {
