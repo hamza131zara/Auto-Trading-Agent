@@ -15,7 +15,8 @@ The integration test is `test/provider-health-store.postgres.integration.test.mj
 - Proves workers are connected to distinct PostgreSQL backend PIDs before racing lease claims.
 - Starts two real concurrent recovery claims against one elapsed-cooldown circuit. Exactly one claim must succeed.
 - Confirms that only a SHA-256 token digest is stored in the lease table; the bearer token returned to the worker is not persisted.
-- Lets the first lease expire, reclaims it from the other worker, and checks that the fencing token increases.
+- Renews an active lease and checks its expiry against PostgreSQL's own `clock_timestamp()`; an expired/replaced worker cannot renew.
+- Lets the renewed lease expire, reclaims it from the other worker, and checks that the fencing token increases.
 - Rejects the stale worker's release and health write, while verifying that the shared health row and version remain unchanged.
 - Publishes the new worker's recovery success and confirms that health persistence and lease release commit together.
 - Forces an out-of-order recovery result to fail inside the transaction, then checks that both the prior health version and active lease survive rollback.
