@@ -1,4 +1,6 @@
-**Status:** ACTIVE — Phase 6.30 offline owner-evidence packaging and Phase 6.31 read-only PostgreSQL runtime-role/transport preflight implemented. The preflight is diagnostic only and cannot verify client certificate/hostname validation, pool configuration, backups/restore, migration controls, monitoring or operational approval. Provider rights/lineage, indexed-source freshness, independent market-data agreement and a threshold-qualified pool remain unresolved; production-provider approval and trading authorization remain false.
+# Phase 6 — Market-Data Ingestion and Canonical Data Layer
+
+**Status:** ACTIVE — Phase 6.30 offline evidence packaging, Phase 6.31 PostgreSQL runtime-role/transport preflight and Phase 6.32 disposable PostgreSQL backup/restore plus interrupted-migration recovery drill implemented. Production backup policy, retention/PITR, client TLS verification, database operations and owner approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
 
 **Status:** ACTIVE — Phase 6.19/6.20 reproducible reference build and local evidence review completed; Phase 6.18 live Mainnet ProgramData comparison returned exact ELF hash MATCH at finalized slot `463153970`, with upgrade authority still present. Latest live Phase 6.14 candidate-discovery run [#12](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41005895558) completed both SOL/USDC and SOL/USDT pagination, checked 45 returned accounts, decoded 24 CPMM candidates and cross-checked all 24; zero candidates met unchanged USD 100,000 liquidity / USD 10,000 24-hour volume thresholds. Indexed source freshness remains UNKNOWN; independent price agreement, provider selection/terms/fallback, upgrade-authority policy and Phase 7 token safety remain open. Phase 6 stays active; production-provider approval and trading authorization are false.
 **Started:** 29 October 2026.
@@ -41,6 +43,7 @@
 21. [Real PostgreSQL integration and distributed recovery verification](25-real-postgres-integration.md)
 22. [Pyth Pro freshness evidence and provider-rights review](26-pyth-pro-freshness-and-provider-rights-review.md)
 23. [PostgreSQL runtime-role and transport preflight](31-postgres-runtime-role-and-transport-preflight.md)
+24. [PostgreSQL backup, restore and migration recovery](32-postgres-backup-restore-and-migration-recovery.md)
 
 ## Initial implementation boundary
 
