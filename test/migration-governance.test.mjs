@@ -146,17 +146,23 @@ test("duplicate identifiers and missing manifest entries are blocked", async () 
   });
 });
 
-test("unsafe manifest paths and non-transactional execution declarations are blocked", async () => {
+test("unsafe manifest paths are blocked", async () => {
   await withFixture(async (directory) => {
     const entry = await addMigration(directory, "20261030_initial.sql", "SELECT 1;\n");
-    await writeManifest(directory, [{
-      ...entry,
-      file: "../20261030_initial.sql",
-      executionMode: "manual"
-    }]);
+    await writeManifest(directory, [{ ...entry, file: "../20261030_initial.sql" }]);
     const result = inspectMigrationSet({ migrationDirectory: directory });
     assert.equal(result.ok, false);
     assert.ok(result.errors.some((error) => error.includes("direct-child filename")));
+  });
+});
+
+test("unsupported non-transactional execution declarations are blocked", async () => {
+  await withFixture(async (directory) => {
+    const entry = await addMigration(directory, "20261030_initial.sql", "SELECT 1;\n");
+    await writeManifest(directory, [{ ...entry, executionMode: "manual-nontransactional" }]);
+    const result = inspectMigrationSet({ migrationDirectory: directory });
+    assert.equal(result.ok, false);
+    assert.ok(result.errors.some((error) => error.includes("executionMode must be transactional")));
   });
 });
 
@@ -207,6 +213,16 @@ test("release packet rejects migration-set mismatch and missing backup evidence"
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((error) => error.includes("does not match")));
   assert.ok(result.errors.some((error) => error.includes("backup.reference")));
+});
+
+test("release packet rejects impossible calendar timestamps", () => {
+  const packet = validReleasePacket(repositoryInventory.migrationSetSha256);
+  packet.maintenanceWindow.startsAt = "2030-02-31T01:00:00Z";
+  const result = evaluateMigrationReleasePacket(packet, {
+    migrationSetSha256: repositoryInventory.migrationSetSha256
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((error) => error.includes("real calendar timestamp")));
 });
 
 test("release packet requires independent owner and database-operator approvers", () => {

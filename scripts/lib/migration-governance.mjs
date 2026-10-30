@@ -55,7 +55,7 @@ export function inspectMigrationSet(options = {}) {
       return blocked(["Migration directory must be a real, non-symlink directory."]);
     }
     directoryEntries = readdirSync(migrationDirectory, { withFileTypes: true })
-      .sort((left, right) => left.name.localeCompare(right.name, "en"));
+      .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
   } catch {
     return blocked(["Migration directory is missing or cannot be inspected."]);
   }
@@ -183,7 +183,7 @@ export function inspectMigrationSet(options = {}) {
 
   const actualFiles = sqlFiles.map((item) => item.file);
   const manifestFiles = normalized.map((item) => item.file);
-  if (manifestFiles.join("\n") !== [...manifestFiles].sort((a, b) => a.localeCompare(b, "en")).join("\n")) {
+  if (manifestFiles.join("\n") !== [...manifestFiles].sort((a, b) => a < b ? -1 : a > b ? 1 : 0).join("\n")) {
     errors.push("Manifest migrations must be ordered lexicographically by dated filename.");
   }
   if (manifestFiles.join("\n") !== actualFiles.join("\n")) {
@@ -233,10 +233,31 @@ function requireString(value, path, errors) {
 }
 
 function requireTimestamp(value, path, errors) {
-  if (typeof value !== "string" ||
-      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value) ||
-      !Number.isFinite(Date.parse(value))) {
+  const match = typeof value === "string"
+    ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,3})?(Z|([+-])(\d{2}):(\d{2}))$/.exec(value)
+    : null;
+  if (!match) {
     errors.push(path + " must be an ISO-8601 timestamp with an explicit timezone.");
+    return false;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const zoneHour = match[8] ? Number(match[8]) : 0;
+  const zoneMinute = match[9] ? Number(match[9]) : 0;
+  const calendar = new Date(Date.UTC(year, month - 1, day));
+  const validCalendar = calendar.getUTCFullYear() === year &&
+    calendar.getUTCMonth() === month - 1 &&
+    calendar.getUTCDate() === day;
+  const validClock = hour <= 23 && minute <= 59 && second <= 59;
+  const validZone = zoneHour <= 14 && zoneMinute <= 59 &&
+    !(zoneHour === 14 && zoneMinute !== 0);
+  if (!validCalendar || !validClock || !validZone || !Number.isFinite(Date.parse(value))) {
+    errors.push(path + " must be a real calendar timestamp with a valid explicit timezone.");
     return false;
   }
   return true;

@@ -1,5 +1,5 @@
 import { lstatSync, readFileSync } from "node:fs";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { relative, resolve, sep } from "node:path";
 import {
   evaluateMigrationReleasePacket,
   inspectMigrationSet
@@ -35,7 +35,7 @@ if (args.length > 0 && args[0] !== "--plan") {
   } else {
     const planPath = resolve(args[1]);
     const rel = relative(root, planPath);
-    const insideRepository = rel === "" || (rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel));
+    const insideRepository = rel === "" || (rel !== ".." && !rel.startsWith(".." + sep));
     try {
       if (insideRepository) throw new Error("Release plans must be stored outside the Git working tree.");
       const stat = lstatSync(planPath);
@@ -54,7 +54,7 @@ if (args.length > 0 && args[0] !== "--plan") {
         process.exitCode = 1;
       }
     } catch (error) {
-      console.error("Release preflight blocked: " + (error instanceof Error ? error.message : "unreadable plan"));
+      console.error("Release preflight blocked: plan is missing, unsafe or unreadable.");
       process.exitCode = 1;
     }
   }
