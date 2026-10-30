@@ -226,3 +226,15 @@ Implementation and fixtures make no provider/RPC request, create no API key, inc
 - [ ] Record a separate owner decision before proposing any manual read-only provider diagnostic.
 
 See [Phase 6.27 — Evidence intake](27-provider-lineage-and-commercial-rights-evidence-intake.md). This is a documentation/control-preparation step only: it makes no provider/API/RPC request, changes no runtime registry approvals, adds no key or spend, and leaves the 10-bps tolerance, historical 63-bps disagreement, existing liquidity/volume thresholds and trading prohibition unchanged.
+
+
+## Phase 6.28 — Provider evidence manifest validation
+
+- [x] Add an offline, versioned JSON evidence-manifest validator with deterministic reason codes.
+- [x] Validate Pyth SOL/USD and USDC/USD metadata completeness, publisher disclosure, pairwise two-sided attestations, provider rights scope, owner-decision references and review-state consistency.
+- [x] Verify local artifact SHA-256 inside a bounded artifact root; reject traversal, symlink escapes and credential-bearing fields.
+- [x] Add deterministic positive/negative tests for malformed, expired, contradictory, missing and unsafe evidence records.
+- [ ] Receive actual owner evidence and complete human review; structural validity is not authenticity, independence, legal clearance or production approval.
+- [ ] Keep diagnostic and production owner decisions separate; no provider may be activated from a validator PASS alone.
+
+See [Phase 6.28 — Evidence manifest validator](28-provider-evidence-manifest-validator.md). This step is offline only and leaves all provider profiles unverified/unapproved, spend at USD $0, existing thresholds and 10-bps tolerance unchanged, historical 63-bps disagreement unresolved, and trading unauthorized.
