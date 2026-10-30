@@ -12,3 +12,5 @@ node_modules/
 .next/
 .turbo/
 artifacts/
+/private-evidence/
+/provider-evidence-manifest*.json

@@ -252,3 +252,12 @@ See [Phase 6.28 — Evidence manifest validator](28-provider-evidence-manifest-v
 - [ ] Receive real owner evidence and complete first-party/human verification; structural validation is not authenticity, independence or legal approval.
 
 See [Phase 6.29 — Canonical evidence binding](29-canonical-evidence-binding-and-lineage-consistency.md). No provider/API/RPC calls, credentials, spend or production activation are introduced. Existing thresholds and the 10-bps diagnostic tolerance remain unchanged; the historical 63-bps disagreement remains open.
+
+## Phase 6.30 — Offline evidence-manifest packaging
+
+- [x] Add a local-only builder for v2 manifest drafts that computes LOCAL_FILE artifact digests and re-runs the canonical structural validator.
+- [x] Reject credential-bearing manifest field names, artifact traversal/symlinks, digest mismatch, existing-output overwrite, and private input/artifact/output paths inside the Git working tree.
+- [x] Bound local artifact hashing to 50 MiB per file and 200 MiB combined; write the manifest with owner-only permissions where supported.
+- [ ] Receive and human-review the actual owner-supplied Pyth feed metadata, publisher lineage, bilateral independence evidence, and provider-rights documents.
+
+The packager is offline and emits only metadata/digests; it does not copy evidence bytes, contact providers/RPC, enable providers, or mutate approvals. A successful result is STRUCTURALLY_VALID_NOT_AN_APPROVAL only. No real owner evidence has been supplied. Provider profiles remain UNVERIFIED/UNAPPROVED, spend remains USD $0, existing thresholds and diagnostic tolerance are unchanged, and trading remains unauthorized. Phase 6 remains ACTIVE. See [Phase 6.30](30-offline-provider-evidence-packaging.md).
