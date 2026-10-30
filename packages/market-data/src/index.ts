@@ -1144,7 +1144,7 @@ const PROVIDER_SOURCE_PROFILES: readonly ProviderSourceProfile[] = Object.freeze
     providerId: "pyth-hermes",
     independenceGroupId: "pyth-network",
     upstreamOrganization: "Pyth Network",
-    sourceProduct: "Hermes SOL/USD and USDC/USD reference feeds",
+    sourceProduct: "Pyth Pro SOL/USD and USDC/USD feeds through the Hermes-compatible API",
     lineageDisclosure: "MULTI_PUBLISHER_AGGREGATION_DOCUMENTED",
     independenceReview: "UNVERIFIED",
     independentlyVerifiedWithGroups: [],
@@ -1158,6 +1158,27 @@ const PROVIDER_SOURCE_PROFILES: readonly ProviderSourceProfile[] = Object.freeze
       "https://github.com/pyth-network/pyth-gitbook/blob/main/how-pyth-works/design-overview.md",
       "https://www.pyth.network/legal",
       "https://www.pyth.network/price-feeds"
+    ]
+  }),
+  freezeProviderSourceProfile({
+    providerId: "pyth-pro",
+    independenceGroupId: "pyth-network",
+    upstreamOrganization: "Pyth Network",
+    sourceProduct: "Pyth Pro latest-price REST API with publisher-count and feed-generation timestamp",
+    lineageDisclosure: "MULTI_PUBLISHER_AGGREGATION_DOCUMENTED",
+    independenceReview: "UNVERIFIED",
+    independentlyVerifiedWithGroups: [],
+    supportedRoles: ["USD_REFERENCE"],
+    timestampKindsByRole: { USD_REFERENCE: "EVENT" },
+    diagnosticAccess: "ONE_OFF_MANUAL_ACK_REQUIRED",
+    commercialRights: "PLAN_SPECIFIC_RIGHTS_REVIEW_REQUIRED",
+    productionUseApproved: false,
+    evidenceReferences: [
+      "https://docs.pyth.network/pro/api/rest",
+      "https://docs.pyth.network/pro/payload-reference",
+      "https://docs.pyth.network/pro/understanding-price-data",
+      "https://docs.pyth.network/pro/how-lazer-works",
+      "https://www.pyth.network/legal"
     ]
   }),
   freezeProviderSourceProfile({
