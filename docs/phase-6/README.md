@@ -121,3 +121,8 @@ The separately approved [Phase 6.18 live run #4](https://github.com/hamza131zara
 ## Phase 6.21 — Reviewed provider lineage and source timestamps
 
 A fail-closed provider registry and combined lineage/agreement wrapper now define the upstream source family, allowed evidence roles, event/observation/slot/none timestamp semantics, diagnostic access and commercial-rights status for each reviewed provider. GeckoTerminal and CoinGecko share one upstream family. All profiles remain independence-unverified and production-unapproved; missing source timestamps remain UNKNOWN. Birdeye and GeckoTerminal remain disabled pending terms/rights review. See [Phase 6.21](21-provider-source-lineage-registry.md). Merged through [PR #36](https://github.com/hamza131zara/Auto-Trading-Agent/pull/36). Post-merge CI [#249](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011278975) passed 239/239 tests, zero dependency vulnerabilities, repository validation, typecheck/build and Gitleaks. Both CodeQL analyses and Dependency Review passed on the PR. No live provider calls were made; spend remains $0.
+
+
+## Phase 6.22 — Pyth and critical market-data lineage
+
+The Pyth reserve-price path now uses the Phase 6.21 provider registry. Base/USD and quote/USD feed identity/publication times are checked against the Pyth profile; indexed price timestamps are classified from the actual event/observation fields. A composed final gate recomputes both provider-agreement and independent-price lineage before any on-chain evidence progression. Current providers remain unverified and blocked; the manual Pyth report marks the final critical gate not assessed when multi-provider agreement evidence is absent. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).
