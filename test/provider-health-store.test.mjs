@@ -220,7 +220,7 @@ test("recovery probe cannot be claimed before circuit cooldown expires", async (
   const claim = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_A,
-    leaseTokenHash: TOKEN_A,
+    leaseToken: TOKEN_A,
     leaseDurationMs: 5_000
   });
   assert.equal(claim, null);
@@ -232,13 +232,13 @@ test("concurrent workers have one atomic recovery lease winner", async () => {
     store.claimRecoveryProbe({
       providerId: PROVIDER,
       ownerId: OWNER_A,
-      leaseTokenHash: TOKEN_A,
+      leaseToken: TOKEN_A,
       leaseDurationMs: 5_000
     }),
     store.claimRecoveryProbe({
       providerId: PROVIDER,
       ownerId: OWNER_B,
-      leaseTokenHash: TOKEN_B,
+      leaseToken: TOKEN_B,
       leaseDurationMs: 5_000
     })
   ]);
@@ -251,7 +251,7 @@ test("expired leases can be reclaimed with a strictly higher fencing token", asy
   const first = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_A,
-    leaseTokenHash: TOKEN_A,
+    leaseToken: TOKEN_A,
     leaseDurationMs: 1_000
   });
   assert.ok(first);
@@ -261,7 +261,7 @@ test("expired leases can be reclaimed with a strictly higher fencing token", asy
   const second = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_B,
-    leaseTokenHash: TOKEN_B,
+    leaseToken: TOKEN_B,
     leaseDurationMs: 5_000
   });
   assert.ok(second);
@@ -270,14 +270,14 @@ test("expired leases can be reclaimed with a strictly higher fencing token", asy
   assert.equal(await store.renewRecoveryProbeLease({
     providerId: first.providerId,
     ownerId: first.ownerId,
-    leaseTokenHash: first.leaseTokenHash,
+    leaseToken: first.leaseToken,
     fencingToken: first.fencingToken,
     leaseDurationMs: 5_000
   }), null);
   assert.equal(await store.releaseRecoveryProbeLease({
     providerId: first.providerId,
     ownerId: first.ownerId,
-    leaseTokenHash: first.leaseTokenHash,
+    leaseToken: first.leaseToken,
     fencingToken: first.fencingToken
   }), false);
 });
@@ -287,7 +287,7 @@ test("active lease can renew and only its exact owner/token/fence can release", 
   const lease = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_A,
-    leaseTokenHash: TOKEN_A,
+    leaseToken: TOKEN_A,
     leaseDurationMs: 1_000
   });
   assert.ok(lease);
@@ -296,7 +296,7 @@ test("active lease can renew and only its exact owner/token/fence can release", 
   const renewed = await store.renewRecoveryProbeLease({
     providerId: lease.providerId,
     ownerId: lease.ownerId,
-    leaseTokenHash: lease.leaseTokenHash,
+    leaseToken: lease.leaseToken,
     fencingToken: lease.fencingToken,
     leaseDurationMs: 5_000
   });
@@ -307,13 +307,13 @@ test("active lease can renew and only its exact owner/token/fence can release", 
   assert.equal(await store.releaseRecoveryProbeLease({
     providerId: lease.providerId,
     ownerId: OWNER_B,
-    leaseTokenHash: TOKEN_B,
+    leaseToken: TOKEN_B,
     fencingToken: lease.fencingToken
   }), false);
   assert.equal(await store.releaseRecoveryProbeLease({
     providerId: lease.providerId,
     ownerId: lease.ownerId,
-    leaseTokenHash: lease.leaseTokenHash,
+    leaseToken: lease.leaseToken,
     fencingToken: lease.fencingToken
   }), true);
 });
@@ -323,7 +323,7 @@ test("recovery health result and lease release commit atomically under the fenci
   const lease = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_A,
-    leaseTokenHash: TOKEN_A,
+    leaseToken: TOKEN_A,
     leaseDurationMs: 5_000
   });
   assert.ok(lease);
@@ -340,7 +340,7 @@ test("recovery health result and lease release commit atomically under the fenci
     recoveryLease: {
       providerId: lease.providerId,
       ownerId: lease.ownerId,
-      leaseTokenHash: lease.leaseTokenHash,
+      leaseToken: lease.leaseToken,
       fencingToken: lease.fencingToken
     }
   });
@@ -372,7 +372,7 @@ test("expired or superseded recovery lease cannot write health state", async () 
   const oldLease = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_A,
-    leaseTokenHash: TOKEN_A,
+    leaseToken: TOKEN_A,
     leaseDurationMs: 1_000
   });
   assert.ok(oldLease);
@@ -380,7 +380,7 @@ test("expired or superseded recovery lease cannot write health state", async () 
   const newLease = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_B,
-    leaseTokenHash: TOKEN_B,
+    leaseToken: TOKEN_B,
     leaseDurationMs: 5_000
   });
   assert.ok(newLease);
@@ -394,7 +394,7 @@ test("expired or superseded recovery lease cannot write health state", async () 
       recoveryLease: {
         providerId: oldLease.providerId,
         ownerId: oldLease.ownerId,
-        leaseTokenHash: oldLease.leaseTokenHash,
+        leaseToken: oldLease.leaseToken,
         fencingToken: oldLease.fencingToken
       }
     }),
@@ -408,7 +408,7 @@ test("database row versions are monotonic and old health timestamps cannot overw
   const lease = await store.claimRecoveryProbe({
     providerId: PROVIDER,
     ownerId: OWNER_A,
-    leaseTokenHash: TOKEN_A,
+    leaseToken: TOKEN_A,
     leaseDurationMs: 5_000
   });
   assert.ok(lease);
@@ -419,7 +419,7 @@ test("database row versions are monotonic and old health timestamps cannot overw
     recoveryLease: {
       providerId: lease.providerId,
       ownerId: lease.ownerId,
-      leaseTokenHash: lease.leaseTokenHash,
+      leaseToken: lease.leaseToken,
       fencingToken: lease.fencingToken
     }
   });
