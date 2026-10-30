@@ -155,6 +155,14 @@ test("malformed metrics fail closed and do not produce a partial healthy report"
   );
 });
 
+test("missing sample timestamp fails closed", async () => {
+  const { client } = clientWith({ sampled_at: null });
+  await assert.rejects(
+    () => assessPostgresProviderHealthOperationalMonitoring(client, POLICY),
+    (error) => error instanceof ProviderHealthStoreError && error.code === "DATABASE_OPERATION_FAILED"
+  );
+});
+
 test("driver errors are sanitized and do not leak connection details", async () => {
   const { client } = clientWith({}, {
     error: new Error("password=do-not-leak host=private-db.internal")

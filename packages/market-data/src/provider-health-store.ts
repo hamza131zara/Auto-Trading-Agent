@@ -971,7 +971,11 @@ export async function assessPostgresProviderHealthOperationalMonitoring(
     }
 
     const statsResetAt = requireMonitoringTimestamp(row.stats_reset_at, true);
-    const sampledAt = requireMonitoringTimestamp(row.sampled_at);
+    const sampledAtValue = requireMonitoringTimestamp(row.sampled_at);
+    if (sampledAtValue === null) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+    const sampledAt = sampledAtValue;
     const databaseWideVisibility = roleIsSuperuser || hasReadAllStats;
     const connectionUtilizationPercent =
       Math.round((currentDatabaseConnections / maxConnections) * 10_000) / 100;
