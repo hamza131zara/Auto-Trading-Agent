@@ -2,7 +2,7 @@
 
 ## Status
 
-Merged into `main` through [PR #36](https://github.com/hamza131zara/Auto-Trading-Agent/pull/36), commit `d5ea1dbdd1a485bba559c94791ba2d5989ab9cde`. Post-merge CI [run #?](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011278975) passed 239/239 tests, repository validation, typecheck/build, dependency audit (zero vulnerabilities) and Gitleaks. PR CodeQL [run #36](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011147219) passed both Actions and JavaScript/TypeScript analyses. Dependency Review passed [run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011152466). This is a provider-neutral evidence gate only. No provider is enabled, no API credentials are created, no external market-data request is made, spend remains USD $0, and trading authorization remains false.
+Merged into `main` through [PR #36](https://github.com/hamza131zara/Auto-Trading-Agent/pull/36), commit `d5ea1dbdd1a485bba559c94791ba2d5989ab9cde`. Post-merge CI [run #257](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011278975) passed 239/239 tests, repository validation, typecheck/build, dependency audit (zero vulnerabilities) and Gitleaks. PR CodeQL [run #36](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011147219) passed both Actions and JavaScript/TypeScript analyses. Dependency Review passed [run](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41011152466). This is a provider-neutral evidence gate only. No provider is enabled, no API credentials are created, no external market-data request is made, spend remains USD $0, and trading authorization remains false.
 
 ## Why this gate exists
 
