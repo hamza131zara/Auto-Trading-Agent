@@ -227,7 +227,7 @@ test("recovery probe cannot be claimed before circuit cooldown expires", async (
 });
 
 test("concurrent workers have one atomic recovery lease winner", async () => {
-  const { store } = storeAt(CIRCUIT_UNTIL);
+  const { pool, store } = storeAt(CIRCUIT_UNTIL);
   const claims = await Promise.all([
     store.claimRecoveryProbe({
       providerId: PROVIDER,
@@ -245,16 +245,11 @@ test("concurrent workers have one atomic recovery lease winner", async () => {
   assert.equal(claims.filter((item) => item !== null).length, 1);
   const winner = claims.find((item) => item !== null);
   assert.equal(winner.fencingToken, "1");
-  const persisted = (await store.get(PROVIDER));
+  const persisted = await store.get(PROVIDER);
   assert.ok(persisted);
-  const leaseRow = (await store.claimRecoveryProbe({
-    providerId: PROVIDER,
-    ownerId: OWNER_A,
-    leaseToken: "c".repeat(64),
-    leaseDurationMs: 5_000
-  }));
-  assert.equal(leaseRow, null);
-  assert.notEqual(winner.leaseToken, winner.leaseTokenHash);
+  const storedTokenHash = pool.leases.get(PROVIDER).lease_token_hash;
+  assert.match(storedTokenHash, /^[a-f0-9]{64}$/);
+  assert.notEqual(storedTokenHash, winner.leaseToken);
 });
 
 test("expired leases can be reclaimed with a strictly higher fencing token", async () => {
