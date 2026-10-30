@@ -281,14 +281,17 @@ export function assessReadOnlyMarketDataCollection(
 
   const observedByProvider = new Map<string, CanonicalMarketSnapshot>();
   for (const snapshot of collection.observations as readonly unknown[]) {
-    if (!isRecord(snapshot) ||
-        typeof snapshot.provenance?.providerId !== "string" ||
-        !SAFE_SLUG.test(snapshot.provenance.providerId) ||
-        observedByProvider.has(snapshot.provenance.providerId) ||
+    if (!isRecord(snapshot) || !isRecord(snapshot.provenance)) {
+      return invalid(["READ_ONLY_COLLECTION_OBSERVATION_INVALID"]);
+    }
+    const providerId = snapshot.provenance.providerId;
+    if (typeof providerId !== "string" ||
+        !SAFE_SLUG.test(providerId) ||
+        observedByProvider.has(providerId) ||
         !validateCanonicalMarketSnapshot(snapshot).valid) {
       return invalid(["READ_ONLY_COLLECTION_OBSERVATION_INVALID"]);
     }
-    observedByProvider.set(snapshot.provenance.providerId, snapshot as unknown as CanonicalMarketSnapshot);
+    observedByProvider.set(providerId, snapshot as unknown as CanonicalMarketSnapshot);
   }
   for (const candidate of collection.candidates) {
     const observed = observedByProvider.get(candidate.providerId);
