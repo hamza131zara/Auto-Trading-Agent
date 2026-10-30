@@ -224,10 +224,12 @@ test("missing event and observation timestamps do not become fresh through a new
   const result = assess(collection, state.now);
 
   assert.equal(collection.observations.length, 2);
-  assert.equal(result.diagnosticAgreement.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.diagnosticAgreement.status, "NO_ACCEPTABLE_PROVIDER");
+  assert.ok(result.diagnosticAgreement.rejectedProviders.length === 2);
   assert.ok(result.diagnosticAgreement.rejectedProviders.every((item) =>
     item.reasonCodes.includes("SOURCE_TIMESTAMP_MISSING")
   ));
+  assert.equal(result.status, "INSUFFICIENT_EVIDENCE");
   assert.equal(result.canProceedToOnChainValidation, false);
 });
 
