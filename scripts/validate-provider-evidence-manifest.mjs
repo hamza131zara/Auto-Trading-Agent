@@ -90,7 +90,8 @@ function nonEmpty(value) {
 function uniqueStrings(value, pattern = null) {
   return Array.isArray(value) &&
     value.length > 0 &&
-    value.every((item) => nonEmpty(item) && (pattern === null || pattern.test(item))) &&
+    value.every((item) => nonEmpty(item) &&
+      (pattern === null || (typeof pattern === "function" ? pattern(item) : pattern.test(item)))) &&
     new Set(value).size === value.length;
 }
 
@@ -296,7 +297,7 @@ function validatePublisherLineage(record, label, reasons) {
     }
   }
   if (publisher.upstreamDisclosure === "NOT_DISCLOSED" &&
-      record.review.state === "LINEAGE_REVIEWED_NOT_INDEPENDENT") {
+      record.review?.state === "LINEAGE_REVIEWED_NOT_INDEPENDENT") {
     reasons.push(label + "_UNDISCLOSED_PUBLISHER_CANNOT_BE_MARKED_LINEAGE_REVIEWED");
   }
 }
@@ -371,7 +372,8 @@ function validateRights(record, label, reasons, generatedAt) {
   }
   if ((record.review.state === "RIGHTS_CLEARED_FOR_DIAGNOSTIC" ||
        record.review.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE") &&
-      !["EXECUTED_OR_SIGNED", "FIRST_PARTY_ACCOUNT"].includes(record.quality)) {
+      (!["EXECUTED_OR_SIGNED", "FIRST_PARTY_ACCOUNT"].includes(record.quality) ||
+       rights.permittedActions.length === 0)) {
     reasons.push(label + "_RIGHTS_CLEARED_STATE_REQUIRES_EXECUTED_OR_ACCOUNT_EVIDENCE");
   }
   if (record.review.state === "RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE" &&
@@ -393,8 +395,9 @@ function validateOwnerDecision(record, label, reasons) {
     reasons.push(label + "_OWNER_DECISION_INVALID");
     return;
   }
-  if (record.quality !== "EXECUTED_OR_SIGNED") {
-    reasons.push(label + "_OWNER_DECISION_REQUIRES_SIGNED_EVIDENCE");
+  if (record.quality !== "EXECUTED_OR_SIGNED" ||
+      record.review?.state !== "OWNER_DECISION_RECORDED") {
+    reasons.push(label + "_OWNER_DECISION_REQUIRES_SIGNED_REVIEWED_RECORD");
   }
 }
 
@@ -441,7 +444,7 @@ export function validateProviderEvidenceManifest(input, options = {}) {
     if (!Array.isArray(record.providerIds) ||
         record.providerIds.length < 1 ||
         record.providerIds.length > 2 ||
-        !record.providerIds.every((id) => SLUG_PATTERN.test(id)) ||
+        !record.providerIds.every((id) => typeof id === "string" && SLUG_PATTERN.test(id)) ||
         new Set(record.providerIds).size !== record.providerIds.length) {
       reasons.push(label + "_PROVIDER_IDS_INVALID");
     }
@@ -453,10 +456,25 @@ export function validateProviderEvidenceManifest(input, options = {}) {
         !nonEmpty(record.scope.summary) ||
         !uniqueStrings(record.scope.deliveryModels, (value) => DELIVERY_MODELS.has(value)) ||
         !Array.isArray(record.scope.coveredActions) ||
-        !record.scope.coveredActions.every((value) => RIGHTS_ACTIONS.has(value))) {
+        !record.scope.coveredActions.every((value) => RIGHTS_ACTIONS.has(value)) ||
+        new Set(record.scope.coveredActions).size !== record.scope.coveredActions.length) {
       reasons.push(label + "_SCOPE_INVALID");
     }
     validateReview(record.review, record.quality, label, reasons);
+    const reviewState = record.review?.state;
+    const reviewStateType = {
+      TECHNICAL_METADATA_VERIFIED: "FEED_SYMBOLOGY",
+      LINEAGE_REVIEWED_NOT_INDEPENDENT: "PUBLISHER_LINEAGE",
+      PAIRWISE_INDEPENDENCE_VERIFIED: "PAIRWISE_ATTESTATION",
+      RIGHTS_CLEARED_FOR_DIAGNOSTIC: ["SERVICE_TERMS", "ORDER_FORM", "WRITTEN_PERMISSION"],
+      RIGHTS_CLEARED_FOR_PRODUCTION_SCOPE: ["SERVICE_TERMS", "ORDER_FORM", "WRITTEN_PERMISSION"],
+      OWNER_DECISION_RECORDED: "OWNER_DECISION"
+    }[reviewState];
+    if (typeof reviewStateType === "string" && record.evidenceType !== reviewStateType) {
+      reasons.push(label + "_REVIEW_STATE_DOES_NOT_MATCH_EVIDENCE_TYPE");
+    } else if (Array.isArray(reviewStateType) && !reviewStateType.includes(record.evidenceType)) {
+      reasons.push(label + "_REVIEW_STATE_DOES_NOT_MATCH_EVIDENCE_TYPE");
+    }
     const artifactResult = validateArtifact(record.artifact, options, label, reasons);
     integrity.push({ evidenceId: record.evidenceId ?? null, status: artifactResult.integrity });
 
