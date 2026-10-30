@@ -39,10 +39,14 @@ export interface PythProFeedBinding {
   readonly assetId: string;
   /** Feed-level min_publishers from the reviewed Pyth symbology response. */
   readonly minPublisherCount: number;
+  /** Feed lifecycle state from the reviewed Pyth symbology response. */
+  readonly feedState: "stable" | "coming_soon" | "inactive";
   /** Feed-level min_channel from the reviewed Pyth symbology response. */
   readonly minChannel: PythProChannel;
   /** Session-specific overrides from the reviewed feed metadata, when present. */
   readonly minPublisherCountBySession?: Readonly<Partial<Record<PythProMarketSession, number>>>;
+  /** Session lifecycle states from market_sessions, when Pyth publishes them. */
+  readonly sessionStateBySession?: Readonly<Partial<Record<PythProMarketSession, "stable" | "coming_soon" | "inactive">>>;
 }
 
 export interface PythProUsdPriceObservation extends IndependentUsdPriceObservation {
@@ -84,6 +88,7 @@ export type PythProFailureCode =
   | "FEED_TIMESTAMP_AHEAD_OF_UPDATE"
   | "PUBLISHER_COUNT_INVALID"
   | "PUBLISHER_QUORUM_UNMET"
+  | "SESSION_NOT_ACTIVE"
   | "UNKNOWN";
 
 export class PythProAdapterError extends Error {
@@ -163,12 +168,18 @@ function validateFeedBindings(value: unknown): value is readonly PythProFeedBind
       typeof binding.minPublisherCount === "number" &&
       Number.isSafeInteger(binding.minPublisherCount) &&
       binding.minPublisherCount >= 1 &&
+      binding.feedState === "stable" &&
       isChannel(binding.minChannel) &&
       (binding.minPublisherCountBySession === undefined ||
         (isRecord(binding.minPublisherCountBySession) &&
           Object.entries(binding.minPublisherCountBySession).every(([session, count]) =>
             ["regular", "preMarket", "postMarket", "overNight", "closed"].includes(session) &&
-            typeof count === "number" && Number.isSafeInteger(count) && count >= 1)));
+            typeof count === "number" && Number.isSafeInteger(count) && count >= 1))) &&
+      (binding.sessionStateBySession === undefined ||
+        (isRecord(binding.sessionStateBySession) &&
+          Object.entries(binding.sessionStateBySession).every(([session, state]) =>
+            ["regular", "preMarket", "postMarket", "overNight", "closed"].includes(session) &&
+            ["stable", "coming_soon", "inactive"].includes(String(state)))));
   };
 
   return bindings.length === 2 &&
@@ -481,6 +492,11 @@ export class PythProUsdPriceAdapter {
         continue;
       }
       const session = marketSession as PythProMarketSession;
+      const sessionState = binding.sessionStateBySession?.[session];
+      if (sessionState !== undefined && sessionState !== "stable") {
+        errors.push("SESSION_NOT_ACTIVE");
+        continue;
+      }
       const sessionMinimum = binding.minPublisherCountBySession?.[session] ?? binding.minPublisherCount;
       const publisherCount = item.publisherCount;
       if (typeof publisherCount !== "number" || !Number.isSafeInteger(publisherCount) || publisherCount < 0) {
