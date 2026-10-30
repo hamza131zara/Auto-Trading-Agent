@@ -310,13 +310,13 @@ function validatePairwiseAttestation(record, label, reasons) {
   const pair = record.pairwise;
   if (!isRecord(pair) ||
       !Array.isArray(pair.attestations) ||
-      pair.attestations.length !== 2 ||
       !["NO_KNOWN_OVERLAP", "OVERLAP_IDENTIFIED", "INCOMPLETE", "UNKNOWN"].includes(pair.overlapAssessment) ||
       !["INDEPENDENT", "DEPENDENT", "UNKNOWN"].includes(pair.independenceConclusion) ||
       !nonEmpty(pair.overlapAnalysis)) {
     reasons.push(label + "_PAIRWISE_EVIDENCE_INVALID");
     return;
   }
+  if (pair.attestations.length !== 2) reasons.push(label + "_PAIRWISE_ATTESTATION_COUNT_INVALID");
   const attested = new Set();
   for (const attestation of pair.attestations) {
     if (!isRecord(attestation) ||
