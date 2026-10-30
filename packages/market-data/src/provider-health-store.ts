@@ -533,3 +533,212 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
     }
   }
 }
+
+
+/**
+ * Read-only production preflight for the shared provider-health PostgreSQL store.
+ *
+ * This checks the database-observable portion of the runtime role/transport
+ * contract. It deliberately never returns READY: client-side certificate and
+ * hostname verification, pool limits, backup/restore, migration controls,
+ * monitoring and owner approval require separate evidence.
+ */
+export type PostgresProviderHealthReadinessStatus =
+  | "BLOCKED"
+  | "TECHNICAL_CHECKS_PASSED_REVIEW_REQUIRED";
+
+export interface PostgresProviderHealthDatabaseReadiness {
+  readonly status: PostgresProviderHealthReadinessStatus;
+  readonly runtimeRole: string;
+  readonly checks: Readonly<{
+    schemaPresent: boolean;
+    runtimeRoleNotSuperuser: boolean;
+    runtimeRoleHasNoTableOwnerMembership: boolean;
+    publicSchemaUsage: boolean;
+    requiredTablePrivileges: boolean;
+    noExcessPrivileges: boolean;
+    transportEncrypted: boolean;
+  }>;
+  readonly reasonCodes: readonly string[];
+  readonly humanReviewRequired: readonly string[];
+  readonly providerHealthStoreDeploymentApproved: false;
+  readonly tradingAuthorized: false;
+}
+
+interface PostgresProviderHealthReadinessRow extends Record<string, unknown> {
+  runtime_role: unknown;
+  runtime_is_superuser: unknown;
+  runtime_has_owner_membership: unknown;
+  schema_present: unknown;
+  public_schema_usage: unknown;
+  health_can_select: unknown;
+  health_can_insert: unknown;
+  health_can_update: unknown;
+  lease_can_select: unknown;
+  lease_can_insert: unknown;
+  lease_can_update: unknown;
+  runtime_has_excess_privileges: unknown;
+  transport_encrypted: unknown;
+}
+
+const POSTGRES_PROVIDER_HEALTH_READINESS_SQL = `
+  WITH app_relations AS (
+    SELECT
+      to_regclass('public.provider_health') AS health_table,
+      to_regclass('public.provider_recovery_probe_leases') AS lease_table
+  )
+  SELECT
+    current_user::text AS runtime_role,
+    EXISTS (
+      SELECT 1 FROM pg_roles
+       WHERE rolname = current_user AND rolsuper
+    ) AS runtime_is_superuser,
+    EXISTS (
+      SELECT 1
+        FROM pg_class AS relation
+       WHERE relation.oid IN (health_table::oid, lease_table::oid)
+         AND relation.relkind = 'r'
+         AND pg_has_role(current_user, relation.relowner, 'MEMBER')
+    ) AS runtime_has_owner_membership,
+    (
+      SELECT count(*) = 2
+        FROM pg_class AS relation
+       WHERE relation.oid IN (health_table::oid, lease_table::oid)
+         AND relation.relkind = 'r'
+    ) AS schema_present,
+    has_schema_privilege(current_user, 'public', 'USAGE') AS public_schema_usage,
+    CASE WHEN health_table IS NULL THEN false
+      ELSE has_table_privilege(current_user, health_table, 'SELECT') END AS health_can_select,
+    CASE WHEN health_table IS NULL THEN false
+      ELSE has_table_privilege(current_user, health_table, 'INSERT') END AS health_can_insert,
+    CASE WHEN health_table IS NULL THEN false
+      ELSE has_table_privilege(current_user, health_table, 'UPDATE') END AS health_can_update,
+    CASE WHEN lease_table IS NULL THEN false
+      ELSE has_table_privilege(current_user, lease_table, 'SELECT') END AS lease_can_select,
+    CASE WHEN lease_table IS NULL THEN false
+      ELSE has_table_privilege(current_user, lease_table, 'INSERT') END AS lease_can_insert,
+    CASE WHEN lease_table IS NULL THEN false
+      ELSE has_table_privilege(current_user, lease_table, 'UPDATE') END AS lease_can_update,
+    (
+      CASE WHEN health_table IS NULL THEN false ELSE
+        has_table_privilege(current_user, health_table, 'DELETE')
+        OR has_table_privilege(current_user, health_table, 'TRUNCATE')
+        OR has_table_privilege(current_user, health_table, 'REFERENCES')
+        OR has_table_privilege(current_user, health_table, 'TRIGGER')
+      END
+      OR CASE WHEN lease_table IS NULL THEN false ELSE
+        has_table_privilege(current_user, lease_table, 'DELETE')
+        OR has_table_privilege(current_user, lease_table, 'TRUNCATE')
+        OR has_table_privilege(current_user, lease_table, 'REFERENCES')
+        OR has_table_privilege(current_user, lease_table, 'TRIGGER')
+      END
+      OR has_schema_privilege(current_user, 'public', 'CREATE')
+      OR has_database_privilege(current_user, current_database(), 'CREATE')
+    ) AS runtime_has_excess_privileges,
+    COALESCE((
+      SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()
+    ), false) AS transport_encrypted
+  FROM app_relations
+`;
+
+const POSTGRES_PROVIDER_HEALTH_HUMAN_REVIEW_ITEMS = Object.freeze([
+  "CLIENT_TLS_CERTIFICATE_CHAIN_AND_HOSTNAME_VERIFICATION",
+  "CONNECTION_POOL_CAPACITY_AND_TIMEOUTS",
+  "ENCRYPTED_BACKUP_RETENTION_AND_POINT_IN_TIME_RECOVERY",
+  "SUCCESSFUL_RESTORE_DRILL_EVIDENCE",
+  "SEPARATE_MIGRATION_ROLE_AND_REVIEWED_ROLLBACK_PLAN",
+  "DATABASE_MONITORING_ALERTS_AND_INCIDENT_RUNBOOK",
+  "OWNER_OPERATIONAL_APPROVAL"
+] as const);
+
+function parsePostgresBoolean(value: unknown): boolean | null {
+  if (value === true || value === "t" || value === "true") return true;
+  if (value === false || value === "f" || value === "false") return false;
+  return null;
+}
+
+/**
+ * Inspect the database-observable runtime-role and connection properties with
+ * one SELECT statement. The supplied client must already be connected using
+ * the runtime role being assessed; no connection or setting is changed here.
+ */
+export async function assessPostgresProviderHealthDatabaseReadiness(
+  client: Pick<PostgresQueryClient, "query">
+): Promise<PostgresProviderHealthDatabaseReadiness> {
+  if (!isRecord(client) || typeof client.query !== "function") {
+    throw new ProviderHealthStoreError("INVALID_INPUT");
+  }
+
+  try {
+    const result = await client.query<PostgresProviderHealthReadinessRow>(
+      POSTGRES_PROVIDER_HEALTH_READINESS_SQL
+    );
+    if (!Array.isArray(result.rows) || result.rows.length !== 1) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+
+    const row = result.rows[0]!;
+    if (typeof row.runtime_role !== "string" ||
+        row.runtime_role.trim().length === 0 ||
+        row.runtime_role.length > 128) {
+      throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+    }
+
+    const requireBoolean = (value: unknown): boolean => {
+      const parsed = parsePostgresBoolean(value);
+      if (parsed === null) throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+      return parsed;
+    };
+
+    const runtimeIsSuperuser = requireBoolean(row.runtime_is_superuser);
+    const runtimeHasOwnerMembership = requireBoolean(row.runtime_has_owner_membership);
+    const schemaPresent = requireBoolean(row.schema_present);
+    const publicSchemaUsage = requireBoolean(row.public_schema_usage);
+    const requiredTablePrivileges =
+      requireBoolean(row.health_can_select) &&
+      requireBoolean(row.health_can_insert) &&
+      requireBoolean(row.health_can_update) &&
+      requireBoolean(row.lease_can_select) &&
+      requireBoolean(row.lease_can_insert) &&
+      requireBoolean(row.lease_can_update);
+    const hasExcessPrivileges = requireBoolean(row.runtime_has_excess_privileges);
+    const transportEncrypted = requireBoolean(row.transport_encrypted);
+
+    const checks = Object.freeze({
+      schemaPresent,
+      runtimeRoleNotSuperuser: !runtimeIsSuperuser,
+      runtimeRoleHasNoTableOwnerMembership: !runtimeHasOwnerMembership,
+      publicSchemaUsage,
+      requiredTablePrivileges,
+      noExcessPrivileges: !hasExcessPrivileges,
+      transportEncrypted
+    });
+
+    const reasonCodes: string[] = [];
+    if (!checks.schemaPresent) reasonCodes.push("REQUIRED_TABLES_MISSING_OR_INVALID");
+    if (!checks.runtimeRoleNotSuperuser) reasonCodes.push("RUNTIME_ROLE_IS_SUPERUSER");
+    if (!checks.runtimeRoleHasNoTableOwnerMembership) {
+      reasonCodes.push("RUNTIME_ROLE_HAS_TABLE_OWNER_MEMBERSHIP");
+    }
+    if (!checks.publicSchemaUsage) reasonCodes.push("PUBLIC_SCHEMA_USAGE_MISSING");
+    if (!checks.requiredTablePrivileges) reasonCodes.push("REQUIRED_TABLE_PRIVILEGES_MISSING");
+    if (!checks.noExcessPrivileges) reasonCodes.push("RUNTIME_ROLE_HAS_EXCESS_PRIVILEGES");
+    if (!checks.transportEncrypted) reasonCodes.push("DATABASE_CONNECTION_NOT_ENCRYPTED");
+
+    return Object.freeze({
+      status: reasonCodes.length === 0
+        ? "TECHNICAL_CHECKS_PASSED_REVIEW_REQUIRED"
+        : "BLOCKED",
+      runtimeRole: row.runtime_role,
+      checks,
+      reasonCodes: Object.freeze(reasonCodes),
+      humanReviewRequired: POSTGRES_PROVIDER_HEALTH_HUMAN_REVIEW_ITEMS,
+      providerHealthStoreDeploymentApproved: false as const,
+      tradingAuthorized: false as const
+    });
+  } catch (error) {
+    if (error instanceof ProviderHealthStoreError) throw error;
+    // Do not expose hostnames, database names, query details or driver messages.
+    throw new ProviderHealthStoreError("DATABASE_OPERATION_FAILED");
+  }
+}

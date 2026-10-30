@@ -124,6 +124,45 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
   const storeB = new PostgresProviderHealthStore(workerBPool);
   const restartedStore = new PostgresProviderHealthStore(restartPool);
 
+  await t.test("read-only preflight accepts a least-privilege role but blocks the local plaintext transport", async () => {
+    const runtimeRole = "ata_phase6_runtime_" + randomBytes(4).toString("hex");
+    await adminPool.query(`CREATE ROLE ${runtimeRole} NOLOGIN`);
+    let roleClient;
+    try {
+      await adminPool.query(`GRANT USAGE ON SCHEMA public TO ${runtimeRole}`);
+      await adminPool.query(
+        `GRANT SELECT, INSERT, UPDATE ON TABLE public.provider_health, public.provider_recovery_probe_leases TO ${runtimeRole}`
+      );
+      roleClient = await adminPool.connect();
+      await roleClient.query(`SET ROLE ${runtimeRole}`);
+
+      const {
+        assessPostgresProviderHealthDatabaseReadiness
+      } = await import("../packages/market-data/dist/provider-health-store.js");
+      const report = await assessPostgresProviderHealthDatabaseReadiness(roleClient);
+
+      assert.equal(report.runtimeRole, runtimeRole);
+      assert.equal(report.checks.schemaPresent, true);
+      assert.equal(report.checks.runtimeRoleNotSuperuser, true);
+      assert.equal(report.checks.runtimeRoleHasNoTableOwnerMembership, true);
+      assert.equal(report.checks.publicSchemaUsage, true);
+      assert.equal(report.checks.requiredTablePrivileges, true);
+      assert.equal(report.checks.noExcessPrivileges, true);
+      assert.equal(report.checks.transportEncrypted, false);
+      assert.deepEqual(report.reasonCodes, ["DATABASE_CONNECTION_NOT_ENCRYPTED"]);
+      assert.equal(report.status, "BLOCKED");
+      assert.equal(report.providerHealthStoreDeploymentApproved, false);
+      assert.equal(report.tradingAuthorized, false);
+    } finally {
+      if (roleClient) {
+        try { await roleClient.query("RESET ROLE"); } finally { roleClient.release(); }
+      }
+      await adminPool.query(`DROP OWNED BY ${runtimeRole}`);
+      await adminPool.query(`DROP ROLE ${runtimeRole}`);
+    }
+  });
+
+
   await t.test("migration is idempotent and provider health survives store recreation", async () => {
     const providerId = makeProviderId();
     providerIds.push(providerId);
