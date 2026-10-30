@@ -30,7 +30,7 @@ import type {
 
 const SAFE_SLUG = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_WORKER_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
-const SHA256_HEX = /^[a-f0-9]{64}$/;
+const LEASE_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43,128}$/;
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/;
 const ERROR_CLASSES = new Set<ProviderErrorClass>([
   "TIMEOUT", "RATE_LIMIT", "NETWORK", "HTTP", "PARSE", "AUTH", "UNKNOWN"
@@ -63,7 +63,7 @@ export interface ReadOnlyMarketDataOrchestratorOptions {
   readonly recoveryProbeLease?: {
     readonly ownerId: string;
     readonly leaseDurationMs: number;
-    readonly createLeaseTokenHash: (providerId: string, requestedAt: string) => string;
+    readonly createLeaseToken: (providerId: string, requestedAt: string) => string;
   };
 }
 
@@ -458,7 +458,7 @@ export class ReadOnlyMarketDataOrchestrator {
            !Number.isSafeInteger(options.recoveryProbeLease.leaseDurationMs) ||
            options.recoveryProbeLease.leaseDurationMs < options.requestTimeoutMs + 1_000 ||
            options.recoveryProbeLease.leaseDurationMs > 300_000 ||
-           typeof options.recoveryProbeLease.createLeaseTokenHash !== "function"))) {
+           typeof options.recoveryProbeLease.createLeaseToken !== "function"))) {
       throw new RangeError("Invalid provider orchestration policy.");
     }
 
@@ -603,8 +603,8 @@ export class ReadOnlyMarketDataOrchestrator {
       if (permission.requiresExclusiveProbe && this.options.providerHealthStore !== undefined) {
         try {
           const leaseConfig = this.options.recoveryProbeLease!;
-          const leaseTokenHash = leaseConfig.createLeaseTokenHash(providerId, startedAt);
-          if (!SHA256_HEX.test(leaseTokenHash)) {
+          const leaseToken = leaseConfig.createLeaseToken(providerId, startedAt);
+          if (!LEASE_TOKEN_PATTERN.test(leaseToken)) {
             attempts.push({
               providerId,
               independenceGroupId: registration.independenceGroupId,
@@ -619,7 +619,7 @@ export class ReadOnlyMarketDataOrchestrator {
           const lease = await this.options.providerHealthStore.claimRecoveryProbe({
             providerId,
             ownerId: leaseConfig.ownerId,
-            leaseTokenHash,
+            leaseToken,
             leaseDurationMs: leaseConfig.leaseDurationMs
           });
           if (lease === null) {
@@ -637,7 +637,7 @@ export class ReadOnlyMarketDataOrchestrator {
           recoveryLease = {
             providerId: lease.providerId,
             ownerId: lease.ownerId,
-            leaseTokenHash: lease.leaseTokenHash,
+            leaseToken: lease.leaseToken,
             fencingToken: lease.fencingToken
           };
         } catch {
