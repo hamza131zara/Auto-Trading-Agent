@@ -10,7 +10,7 @@ The validator is not an evidence-authenticity engine, legal reviewer, source-ind
 
 ## Manifest contract
 
-The schema version is `ata.provider-evidence-manifest.v1`. A manifest has a UTC `generatedAt` and a non-empty `records` array. Each evidence record contains:
+The schema version is `ata.provider-evidence-manifest.v2`. A manifest has a UTC `generatedAt` and a non-empty `records` array. Each evidence record contains:
 
 - Stable unique `evidenceId`, canonical `providerIds`, `evidenceType`, `quality`, issuer and issue timestamp.
 - An artifact locator, filename, media type and SHA-256 digest.
@@ -81,3 +81,8 @@ The CLI exits 0 only for a structurally valid manifest, 1 for validation failure
 - [ ] Obtain separate owner decisions before any manual diagnostic or production-use proposal.
 
 No provider, Pyth symbols, or Solana RPC request is made. No key, account, subscription, budget or spend is introduced. Provider profiles remain unverified/unapproved; thresholds and the 10-bps tolerance are unchanged; the historical 63-bps disagreement remains unresolved. No adapter activation, wallet, signer, transaction, order or trading permission is added. Phase 6 remains ACTIVE.
+
+
+## Version 2 hardening
+
+Phase 6.29 advances this manifest schema to v2. The validator binds Pyth SOL/USD and USDC/USD values to the canonical feed IDs and mainnet mints pinned in the Pyth Pro adapter, rejects the illustrative numeric fixture IDs 101/202, and validates the adapter's channel/session enum values. Pairwise source claims are resolved against the current provider-family registry; publisher, bilateral attestation and overlap evidence must reference records present in the same manifest. Rights scope and owner decisions must be supported by linked technical, rights and independence records. See [Phase 6.29](29-canonical-evidence-binding-and-lineage-consistency.md).

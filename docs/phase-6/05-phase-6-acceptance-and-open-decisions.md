@@ -238,3 +238,17 @@ See [Phase 6.27 — Evidence intake](27-provider-lineage-and-commercial-rights-e
 - [ ] Keep diagnostic and production owner decisions separate; no provider may be activated from a validator PASS alone.
 
 See [Phase 6.28 — Evidence manifest validator](28-provider-evidence-manifest-validator.md). This step is offline only and leaves all provider profiles unverified/unapproved, spend at USD $0, existing thresholds and 10-bps tolerance unchanged, historical 63-bps disagreement unresolved, and trading unauthorized.
+
+
+## Phase 6.29 — Canonical evidence binding and lineage consistency
+
+- [x] Upgrade the offline evidence-manifest contract to v2; earlier v1 manifests require manual review and upgrade.
+- [x] Bind SOL/USD and USDC/USD to the canonical feed IDs and mainnet mints pinned in the Pyth Pro adapter.
+- [x] Reject illustrative synthetic Lazer IDs, duplicate IDs, unsupported channels and invalid Pyth session/state names.
+- [x] Resolve pairwise provider IDs against the canonical source-family registry; block same-family and unknown-provider independence claims.
+- [x] Require resolvable publisher upstream, provider attestation and overlap-evidence references.
+- [x] Ensure rights evidence covers the delivery models and data actions claimed.
+- [x] Require diagnostic and production owner decisions to link the appropriate technical, rights and independence evidence.
+- [ ] Receive real owner evidence and complete first-party/human verification; structural validation is not authenticity, independence or legal approval.
+
+See [Phase 6.29 — Canonical evidence binding](29-canonical-evidence-binding-and-lineage-consistency.md). No provider/API/RPC calls, credentials, spend or production activation are introduced. Existing thresholds and the 10-bps diagnostic tolerance remain unchanged; the historical 63-bps disagreement remains open.
