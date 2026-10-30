@@ -270,6 +270,26 @@ test("two provider aliases in the same upstream family cannot be marked independ
   assert.ok(report.reasonCodes.includes("RECORD_1_PAIRWISE_VERIFIED_STATE_NOT_SUPPORTED_BY_RECORD"));
 });
 
+test("inherited JavaScript object keys cannot masquerade as provider-family registry entries", () => {
+  const record = baseRecord({
+    evidenceId: "P6E-PAIR-PROTO-KEY-001",
+    providerIds: ["pyth-pro", "constructor"],
+    evidenceType: "PAIRWISE_ATTESTATION",
+    pairwise: {
+      attestations: [
+        { providerId: "pyth-pro", issuer: "Pyth", issuedAt: "2026-10-29T12:00:00Z", attestationReference: "attestation-A", evidenceIds: ["P6E-PYTH-SYMBOLS-001"] },
+        { providerId: "constructor", issuer: "Unknown", issuedAt: "2026-10-29T12:00:00Z", attestationReference: "attestation-B", evidenceIds: ["P6E-PYTH-SYMBOLS-001"] }
+      ],
+      overlapAssessment: "UNKNOWN",
+      overlapAnalysis: "Provider does not exist in the canonical registry.",
+      overlapEvidenceIds: ["P6E-PYTH-SYMBOLS-001"],
+      independenceConclusion: "UNKNOWN"
+    }
+  });
+  const report = validateProviderEvidenceManifest(makeManifest([baseRecord(), record]));
+  assert.ok(report.reasonCodes.includes("RECORD_1_PAIRWISE_UNKNOWN_PROVIDER"));
+});
+
 test("pairwise records reject unknown providers and missing evidence links", () => {
   const record = baseRecord({
     evidenceId: "P6E-PAIR-UNKNOWN-001",

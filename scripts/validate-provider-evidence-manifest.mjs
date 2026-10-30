@@ -355,7 +355,10 @@ function validatePairwiseAttestation(record, label, reasons, referenceLinks, gen
     reasons.push(label + "_PAIRWISE_REQUIRES_EXACTLY_TWO_PROVIDERS");
     return;
   }
-  const groups = record.providerIds.map((providerId) => PROVIDER_INDEPENDENCE_GROUPS[providerId] ?? null);
+  const groups = record.providerIds.map((providerId) =>
+    Object.hasOwn(PROVIDER_INDEPENDENCE_GROUPS, providerId)
+      ? PROVIDER_INDEPENDENCE_GROUPS[providerId]
+      : null);
   if (groups.some((group) => group === null)) reasons.push(label + "_PAIRWISE_UNKNOWN_PROVIDER");
   if (groups[0] !== null && groups[1] !== null &&
       groups[0] === groups[1] && record.pairwise?.independenceConclusion === "INDEPENDENT") {
