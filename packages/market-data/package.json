@@ -31,6 +31,10 @@
     "./provider-health-store": {
       "types": "./dist/provider-health-store.d.ts",
       "import": "./dist/provider-health-store.js"
+    },
+    "./postgres-connection-budget": {
+      "types": "./dist/postgres-connection-budget.d.ts",
+      "import": "./dist/postgres-connection-budget.js"
     }
   },
   "scripts": {
