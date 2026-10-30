@@ -307,3 +307,16 @@ The automated drill operates only on the disposable local PostgreSQL 18.6 CI ser
 - [ ] Approve the real migration identity, target, maintenance window, monitoring and a separately authorized deployment/recovery exercise.
 
 The manifest protects against accidental or unreviewed SQL-file drift only when its changes receive independent review; it is not a cryptographic signature. Packet references are not authenticated. Phase 6 remains ACTIVE; production database deployment, provider activation and trading remain unauthorized. See [Phase 6.33](33-migration-governance-and-deployment-preflight.md).
+
+
+## Phase 6.34 — PostgreSQL observability, monitoring and incident controls
+
+- [x] Add a one-query aggregate monitoring snapshot for database connections, active queries, open/idle transactions, lock waits, deadlocks and database size.
+- [x] Require caller-supplied, range-checked thresholds; do not invent production thresholds or defaults.
+- [x] Return stable threshold-breach codes and mark partial database activity visibility or disabled activity tracking as limited monitoring.
+- [x] Keep monitoring read-only, sanitized and separate from runtime and migration roles; no automatic notification, restart or remediation.
+- [x] Verify deterministic alerts and malformed-input/error paths in unit tests and query actual PostgreSQL 18.6 metrics in the disposable integration workflow.
+- [ ] Approve the production monitoring role and pg_read_all_stats visibility scope.
+- [ ] Approve operational thresholds, sampling cadence, monitoring retention, alert receiver, on-call acknowledgement/escalation and incident exercises.
+
+The feature is a measurement/evaluation primitive, not a hosted monitoring service. It makes no production connection and does not enable database deployment, provider activation or trading. Phase 6 remains ACTIVE. See [Phase 6.34](34-postgres-observability-monitoring-and-incident-controls.md).

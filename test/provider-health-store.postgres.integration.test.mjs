@@ -107,6 +107,7 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
     "integration target must be PostgreSQL 18.6 or newer within the 18.x major line");
   assert.ok(serverVersion < 190000, "integration target must remain on the PostgreSQL 18 major line");
 
+
   const [{ rows: workerAIdentity }, { rows: workerBIdentity }] = await Promise.all([
     workerAPool.query("SELECT pg_backend_pid() AS pid"),
     workerBPool.query("SELECT pg_backend_pid() AS pid")
@@ -118,8 +119,37 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
   );
 
   const {
-    PostgresProviderHealthStore
+    PostgresProviderHealthStore,
+    assessPostgresProviderHealthOperationalMonitoring
   } = await import("../packages/market-data/dist/provider-health-store.js");
+
+  await t.test("read-only PostgreSQL operational monitoring reports real database metrics", async () => {
+    const report = await assessPostgresProviderHealthOperationalMonitoring(adminPool, {
+      maxConnectionUtilizationPercent: 99,
+      maxOldestOpenTransactionSeconds: 900,
+      maxLongestActiveQuerySeconds: 300,
+      maxIdleInTransactionCount: 5,
+      maxOldestIdleInTransactionSeconds: 900,
+      maxLockWaitCount: 5,
+      maxDeadlocksSinceStatsReset: 100,
+      maxDatabaseSizeBytes: "10000000000"
+    });
+
+    assert.equal(report.monitoringRole, "ata_test");
+    assert.equal(report.activityVisibility, "DATABASE_WIDE");
+    assert.equal(report.activityTrackingEnabled, true);
+    assert.ok(report.metrics.maxConnections > 0);
+    assert.ok(report.metrics.currentDatabaseConnections >= 1);
+    assert.ok(report.metrics.connectionUtilizationPercent > 0);
+    assert.ok(report.metrics.databaseSizeBytes.length > 0);
+    assert.ok(report.metrics.sampledAt.length > 0);
+    assert.deepEqual(report.thresholdBreaches, []);
+    assert.equal(report.status, "TECHNICAL_MONITORING_CHECKS_PASSED_REVIEW_REQUIRED");
+    assert.equal(report.providerHealthMonitoringApproved, false);
+    assert.equal(report.providerActivationAuthorized, false);
+    assert.equal(report.tradingAuthorized, false);
+  });
+
   const storeA = new PostgresProviderHealthStore(workerAPool);
   const storeB = new PostgresProviderHealthStore(workerBPool);
   const restartedStore = new PostgresProviderHealthStore(restartPool);

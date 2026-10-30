@@ -46,6 +46,7 @@ The production PostgreSQL driver and provider-health-store deployment are still 
 - [x] Ensure even a technically passing report remains REVIEW_REQUIRED and always keeps provider-health deployment approval and trading authorization false.
 - [x] Cover the least-privilege role on real disposable PostgreSQL in CI.
 - [ ] Obtain owner-selected production driver/client TLS configuration and first-party verification of certificate-chain and hostname validation.
-- [ ] Approve deployment-specific pool sizing/timeouts, backups/retention/PITR, a successful restore drill, migration-owner separation/rollback, monitoring and operational sign-off.
+- [x] Add a read-only, policy-driven PostgreSQL activity/connection/lock/deadlock/size snapshot and deterministic alert evaluation (Phase 6.34).
+- [ ] Approve deployment-specific pool sizing/timeouts, backups/retention/PITR, a successful restore drill, migration-owner separation/rollback, production monitoring identity/thresholds/alert route and operational sign-off.
 
 Phase 6 remains ACTIVE. This is a technical preflight only; it does not satisfy provider lineage, commercial rights, freshness, independent market-data agreement, qualifying-pool, production-provider or roadmap exit requirements.
