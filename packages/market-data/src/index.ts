@@ -2091,6 +2091,152 @@ export function assessProviderAgreement(
 }
 
 
+export type ReviewedIndependentPriceComparisonGateStatus =
+  | "READY_FOR_CRITICAL_EVIDENCE_GATE"
+  | "BLOCKED"
+  | "INVALID_INPUT";
+
+export interface ReviewedIndependentReservePriceComparisonInput {
+  readonly comparisonInput: IndependentReservePriceComparisonInput;
+  readonly lineagePolicy: ProviderLineageReadinessPolicy;
+}
+
+export interface ReviewedIndependentReservePriceComparisonAssessment {
+  readonly status: ReviewedIndependentPriceComparisonGateStatus;
+  readonly lineage: ProviderLineageReadinessAssessment;
+  /** Arithmetic/freshness result is retained for diagnostics even when lineage blocks promotion. */
+  readonly comparison: IndependentReservePriceComparisonResult;
+  readonly canProceedToCriticalEvidenceGate: boolean;
+  readonly reasonCodes: readonly string[];
+  readonly tradingAuthorized: false;
+}
+
+/**
+ * Phase 6.22: bind the Pyth base/USD + quote/USD observations and the indexed
+ * price observation to reviewed source profiles before allowing the arithmetic
+ * comparison to become critical market-data evidence.
+ *
+ * The two Pyth feeds must be from the exact approved Pyth provider/family.
+ * The indexed observation's timestamp kind is derived from the input's actual
+ * sourceEventAt/sourceObservedAt values. Retrieval time is never promoted to
+ * a source timestamp. The existing arithmetic comparator is retained as a
+ * diagnostic result, but cannot pass this wrapper while lineage is unresolved.
+ */
+export function assessIndependentReservePriceAgreementWithReviewedLineage(
+  input: ReviewedIndependentReservePriceComparisonInput
+): ReviewedIndependentReservePriceComparisonAssessment {
+  const invalidComparison = assessIndependentReservePriceAgreement(
+    {} as IndependentReservePriceComparisonInput
+  );
+  const invalidLineage = assessProviderLineageReadiness(
+    [],
+    input?.lineagePolicy as ProviderLineageReadinessPolicy
+  );
+  const invalid = (
+    reasonCodes: readonly string[],
+    comparison: IndependentReservePriceComparisonResult = invalidComparison,
+    lineage: ProviderLineageReadinessAssessment = invalidLineage
+  ): ReviewedIndependentReservePriceComparisonAssessment => ({
+    status: "INVALID_INPUT",
+    lineage,
+    comparison,
+    canProceedToCriticalEvidenceGate: false,
+    reasonCodes: [...new Set(reasonCodes)],
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !isRecord(input.comparisonInput) ||
+      !isRecord(input.lineagePolicy)) {
+    return invalid(["REVIEWED_INDEPENDENT_COMPARISON_INPUT_INVALID"]);
+  }
+
+  const comparisonInput = input.comparisonInput as unknown as IndependentReservePriceComparisonInput;
+  const policy = comparisonInput.policy;
+  const comparison = assessIndependentReservePriceAgreement(comparisonInput);
+
+  if (!isRecord(policy) ||
+      !isRecord(comparisonInput.baseUsd) ||
+      !isRecord(comparisonInput.quoteUsd) ||
+      typeof policy.approvedProviderId !== "string" ||
+      typeof policy.approvedIndependenceGroupId !== "string" ||
+      !isSafeSlug(policy.approvedProviderId) ||
+      !isSafeSlug(policy.approvedIndependenceGroupId)) {
+    return invalid(
+      ["REFERENCE_PROVIDER_LINEAGE_IDENTITY_INVALID", ...comparison.reasonCodes],
+      comparison
+    );
+  }
+
+  const baseReference = comparisonInput.baseUsd as IndependentUsdPriceObservation;
+  const quoteReference = comparisonInput.quoteUsd as IndependentUsdPriceObservation;
+  const sameApprovedReferenceFamily =
+    baseReference.providerId === policy.approvedProviderId &&
+    quoteReference.providerId === policy.approvedProviderId &&
+    baseReference.independenceGroupId === policy.approvedIndependenceGroupId &&
+    quoteReference.independenceGroupId === policy.approvedIndependenceGroupId &&
+    baseReference.providerId === quoteReference.providerId &&
+    baseReference.independenceGroupId === quoteReference.independenceGroupId &&
+    isUtcTimestamp(baseReference.publishedAt) &&
+    isUtcTimestamp(quoteReference.publishedAt);
+
+  if (!sameApprovedReferenceFamily) {
+    return invalid(
+      ["REFERENCE_FEED_PROVIDER_OR_LINEAGE_MISMATCH", ...comparison.reasonCodes],
+      comparison
+    );
+  }
+
+  const indexedTimestampKind: ProviderSourceTimestampKind =
+    comparisonInput.indexedSourceEventAt !== null
+      ? "EVENT"
+      : comparisonInput.indexedSourceObservedAt !== undefined &&
+          comparisonInput.indexedSourceObservedAt !== null
+        ? "OBSERVATION"
+        : "NONE";
+
+  const lineage = assessProviderLineageReadiness([
+    {
+      providerId: comparisonInput.indexedProviderId,
+      independenceGroupId: comparisonInput.indexedIndependenceGroupId,
+      role: "INDEXED_PRICE",
+      timestampKind: indexedTimestampKind
+    },
+    {
+      providerId: policy.approvedProviderId,
+      independenceGroupId: policy.approvedIndependenceGroupId,
+      role: "USD_REFERENCE",
+      timestampKind: "EVENT"
+    }
+  ], input.lineagePolicy as ProviderLineageReadinessPolicy);
+
+  if (lineage.status === "INVALID_INPUT") {
+    return invalid(
+      ["REVIEWED_INDEPENDENT_COMPARISON_LINEAGE_POLICY_INVALID", ...lineage.reasonCodes, ...comparison.reasonCodes],
+      comparison,
+      lineage
+    );
+  }
+
+  const canProceed = lineage.status === "READY_FOR_EVIDENCE_COMPARISON" &&
+    lineage.canProceedToProviderAgreement &&
+    comparison.status === "AGREED" &&
+    comparison.comparisonEvidenceComplete &&
+    comparison.tradingAuthorized === false;
+  return {
+    status: canProceed ? "READY_FOR_CRITICAL_EVIDENCE_GATE" : "BLOCKED",
+    lineage,
+    comparison,
+    canProceedToCriticalEvidenceGate: canProceed,
+    reasonCodes: [...new Set([
+      ...lineage.reasonCodes,
+      ...comparison.reasonCodes,
+      ...(canProceed ? [] : ["REVIEWED_INDEPENDENT_PRICE_LINEAGE_GATE_NOT_READY"])
+    ])],
+    tradingAuthorized: false
+  };
+}
+
 export type CriticalMarketDataEvidenceGateStatus =
   | "READY_FOR_ON_CHAIN_VALIDATION"
   | "BLOCKED"
@@ -2279,6 +2425,96 @@ export function assessCriticalMarketDataEvidenceGate(input: {
   return blocked("READY_FOR_ON_CHAIN_VALIDATION", [], providerStatus, comparisonStatus);
 }
 
+
+export interface CriticalMarketDataEvidenceLineageGateInput {
+  readonly providerAgreementInput: ReviewedProviderAgreementInput;
+  readonly independentComparisonInput: ReviewedIndependentReservePriceComparisonInput;
+}
+
+export interface CriticalMarketDataEvidenceLineageGateAssessment
+  extends CriticalMarketDataEvidenceGateAssessment {
+  readonly providerLineageStatus: ProviderLineageReadinessAssessment["status"];
+  readonly independentPriceLineageStatus: ProviderLineageReadinessAssessment["status"];
+}
+
+/**
+ * Phase 6.22 final composition. Both evidence streams are assessed through
+ * their reviewed-lineage wrappers inside this function; callers cannot pass
+ * pre-labelled "ready" assessments to bypass registry checks.
+ *
+ * READY_FOR_ON_CHAIN_VALIDATION remains only permission to begin the separate
+ * on-chain evidence stage. It is never trading authorization.
+ */
+export function assessCriticalMarketDataEvidenceGateWithReviewedLineage(
+  input: CriticalMarketDataEvidenceLineageGateInput
+): CriticalMarketDataEvidenceLineageGateAssessment {
+  const blocked = (
+    status: CriticalMarketDataEvidenceGateStatus,
+    reasonCodes: readonly string[],
+    providerLineageStatus: ProviderLineageReadinessAssessment["status"] = "INVALID_INPUT",
+    independentPriceLineageStatus: ProviderLineageReadinessAssessment["status"] = "INVALID_INPUT",
+    providerAgreementStatus: ProviderAgreementStatus | null = null,
+    independentComparisonStatus: IndependentPriceComparisonStatus | null = null
+  ): CriticalMarketDataEvidenceLineageGateAssessment => ({
+    status,
+    reasonCodes: [...new Set(reasonCodes)],
+    providerAgreementStatus,
+    independentComparisonStatus,
+    canProceedToOnChainValidation: status === "READY_FOR_ON_CHAIN_VALIDATION",
+    providerLineageStatus,
+    independentPriceLineageStatus,
+    tradingAuthorized: false
+  });
+
+  if (!isRecord(input) ||
+      !isRecord(input.providerAgreementInput) ||
+      !isRecord(input.independentComparisonInput)) {
+    return blocked("INVALID_INPUT", ["CRITICAL_REVIEWED_LINEAGE_INPUT_INVALID"]);
+  }
+
+  const provider = assessProviderAgreementWithReviewedLineage(input.providerAgreementInput);
+  const independent = assessIndependentReservePriceAgreementWithReviewedLineage(
+    input.independentComparisonInput
+  );
+
+  const lineageReady =
+    provider.lineage.status === "READY_FOR_EVIDENCE_COMPARISON" &&
+    provider.lineage.canProceedToProviderAgreement &&
+    provider.canProceedToOnChainValidation &&
+    independent.lineage.status === "READY_FOR_EVIDENCE_COMPARISON" &&
+    independent.lineage.canProceedToProviderAgreement &&
+    independent.canProceedToCriticalEvidenceGate;
+
+  if (!lineageReady) {
+    const invalidInput = provider.status === "INVALID_INPUT" ||
+      independent.status === "INVALID_INPUT" ||
+      provider.lineage.status === "INVALID_INPUT" ||
+      independent.lineage.status === "INVALID_INPUT";
+    return blocked(
+      invalidInput ? "INVALID_INPUT" : "BLOCKED",
+      [
+        "CRITICAL_REVIEWED_LINEAGE_GATE_NOT_READY",
+        ...provider.reasonCodes,
+        ...independent.reasonCodes
+      ],
+      provider.lineage.status,
+      independent.lineage.status,
+      provider.providerAgreement.status,
+      independent.comparison.status
+    );
+  }
+
+  const gate = assessCriticalMarketDataEvidenceGate({
+    providerAgreement: provider.providerAgreement,
+    independentComparison: independent.comparison
+  });
+  return {
+    ...gate,
+    providerLineageStatus: provider.lineage.status,
+    independentPriceLineageStatus: independent.lineage.status,
+    tradingAuthorized: false
+  };
+}
 
 /**
  * Untrusted RPC account metadata. The reader must collect these records from one
