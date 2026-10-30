@@ -8,6 +8,10 @@ import {
   validateCanonicalMarketSnapshot
 } from "./index.js";
 import type {
+  ProviderHealthStore,
+  RecoveryProbeLeaseIdentity
+} from "./provider-health-store.js";
+import type {
   CanonicalMarketSnapshot,
   MarketDataAdapter,
   MarketDataRequest,
@@ -25,6 +29,8 @@ import type {
 } from "./index.js";
 
 const SAFE_SLUG = /^[a-z0-9][a-z0-9._-]{0,62}$/;
+const SAFE_WORKER_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
+const SHA256_HEX = /^[a-f0-9]{64}$/;
 const UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/;
 const ERROR_CLASSES = new Set<ProviderErrorClass>([
   "TIMEOUT", "RATE_LIMIT", "NETWORK", "HTTP", "PARSE", "AUTH", "UNKNOWN"
@@ -51,6 +57,14 @@ export interface ReadOnlyMarketDataOrchestratorOptions {
   readonly maxHealthAgeMs: number;
   readonly requestTimeoutMs: number;
   readonly requestId?: (providerId: string, requestedAt: string) => string | null;
+  /** Optional shared store; inject the same PostgreSQL-backed implementation in every worker. */
+  readonly providerHealthStore?: ProviderHealthStore;
+  /** Required with providerHealthStore. The hash callback must use a CSPRNG-derived one-time token. */
+  readonly recoveryProbeLease?: {
+    readonly ownerId: string;
+    readonly leaseDurationMs: number;
+    readonly createLeaseTokenHash: (providerId: string, requestedAt: string) => string;
+  };
 }
 
 export type ProviderOrchestrationAttemptOutcome =
@@ -436,7 +450,15 @@ export class ReadOnlyMarketDataOrchestrator {
         !Number.isSafeInteger(options.healthPolicy?.failureThreshold) ||
         options.healthPolicy.failureThreshold < 1 ||
         !Number.isSafeInteger(options.healthPolicy?.cooldownMs) ||
-        options.healthPolicy.cooldownMs < 1) {
+        options.healthPolicy.cooldownMs < 1 ||
+        ((options.providerHealthStore === undefined) !== (options.recoveryProbeLease === undefined)) ||
+        (options.providerHealthStore !== undefined &&
+          (typeof options.recoveryProbeLease?.ownerId !== "string" ||
+           !SAFE_WORKER_ID.test(options.recoveryProbeLease.ownerId) ||
+           !Number.isSafeInteger(options.recoveryProbeLease.leaseDurationMs) ||
+           options.recoveryProbeLease.leaseDurationMs < 1_000 ||
+           options.recoveryProbeLease.leaseDurationMs > 300_000 ||
+           typeof options.recoveryProbeLease.createLeaseTokenHash !== "function"))) {
       throw new RangeError("Invalid provider orchestration policy.");
     }
 
@@ -512,7 +534,25 @@ export class ReadOnlyMarketDataOrchestrator {
       const providerId = registration.adapter.providerId;
       const startedAt = this.options.now();
       if (!validUtcTimestamp(startedAt)) throw new TypeError("Injected clock returned an invalid UTC timestamp.");
-      const health = this.health.get(providerId)!;
+      let health = this.health.get(providerId)!;
+      if (this.options.providerHealthStore !== undefined) {
+        try {
+          const persisted = await this.options.providerHealthStore.get(providerId);
+          health = persisted?.health ?? initialProviderHealth(providerId);
+          this.health.set(providerId, health);
+        } catch {
+          attempts.push({
+            providerId,
+            independenceGroupId: registration.independenceGroupId,
+            priority: registration.priority,
+            permissionStatus: "INVALID_INPUT",
+            outcome: "BLOCKED",
+            reasonCodes: ["SHARED_PROVIDER_HEALTH_READ_FAILED"],
+            latencyMs: null
+          });
+          continue;
+        }
+      }
 
       if (health.lastRequestAt !== null && Date.parse(startedAt) < Date.parse(health.lastRequestAt)) {
         attempts.push({
@@ -559,6 +599,61 @@ export class ReadOnlyMarketDataOrchestrator {
         continue;
       }
 
+      let recoveryLease: RecoveryProbeLeaseIdentity | undefined;
+      if (permission.requiresExclusiveProbe && this.options.providerHealthStore !== undefined) {
+        try {
+          const leaseConfig = this.options.recoveryProbeLease!;
+          const leaseTokenHash = leaseConfig.createLeaseTokenHash(providerId, startedAt);
+          if (!SHA256_HEX.test(leaseTokenHash)) {
+            attempts.push({
+              providerId,
+              independenceGroupId: registration.independenceGroupId,
+              priority: registration.priority,
+              permissionStatus: "INVALID_INPUT",
+              outcome: "BLOCKED",
+              reasonCodes: ["RECOVERY_PROBE_TOKEN_HASH_INVALID"],
+              latencyMs: null
+            });
+            continue;
+          }
+          const lease = await this.options.providerHealthStore.claimRecoveryProbe({
+            providerId,
+            ownerId: leaseConfig.ownerId,
+            leaseTokenHash,
+            leaseDurationMs: leaseConfig.leaseDurationMs
+          });
+          if (lease === null) {
+            attempts.push({
+              providerId,
+              independenceGroupId: registration.independenceGroupId,
+              priority: registration.priority,
+              permissionStatus: "BLOCK_RECOVERY_PROBE_IN_FLIGHT",
+              outcome: "BLOCKED",
+              reasonCodes: ["SHARED_RECOVERY_PROBE_LEASE_NOT_AVAILABLE"],
+              latencyMs: null
+            });
+            continue;
+          }
+          recoveryLease = {
+            providerId: lease.providerId,
+            ownerId: lease.ownerId,
+            leaseTokenHash: lease.leaseTokenHash,
+            fencingToken: lease.fencingToken
+          };
+        } catch {
+          attempts.push({
+            providerId,
+            independenceGroupId: registration.independenceGroupId,
+            priority: registration.priority,
+            permissionStatus: "INVALID_INPUT",
+            outcome: "BLOCKED",
+            reasonCodes: ["SHARED_RECOVERY_PROBE_LEASE_CLAIM_FAILED"],
+            latencyMs: null
+          });
+          continue;
+        }
+      }
+
       this.inFlight.add(providerId);
       const requestedAt = startedAt;
       const request: MarketDataRequest = { ...target, requestedAt };
@@ -574,22 +669,22 @@ export class ReadOnlyMarketDataOrchestrator {
           const failureAt = this.options.now();
           if (!validUtcTimestamp(failureAt)) throw new TypeError("Injected clock returned an invalid UTC timestamp.");
           const failure = classifyFailure(error, timeoutSignal.aborted);
-          const updated = this.updateHealth(providerId, {
+          const updated = await this.updateHealth(providerId, {
             kind: "FAILURE",
             at: failureAt,
             errorClass: failure.errorClass,
             retryable: failure.retryable,
             latencyMs: Math.max(0, Date.now() - startedMs)
-          });
+          }, recoveryLease);
           attempts.push({
             providerId,
             independenceGroupId: registration.independenceGroupId,
             priority: registration.priority,
             permissionStatus: permission.status,
-            outcome: updated ? "REQUEST_FAILED" : "BLOCKED",
-            reasonCodes: updated ? [failure.reasonCode] : ["ORCHESTRATOR_CLOCK_MOVED_BACKWARDS"],
+            outcome: updated.updated ? "REQUEST_FAILED" : "BLOCKED",
+            reasonCodes: updated.updated ? [failure.reasonCode] : [updated.reasonCode],
             latencyMs: Math.max(0, Date.now() - startedMs)
-          });
+          }, recoveryLease);
           continue;
         }
 
@@ -623,16 +718,16 @@ export class ReadOnlyMarketDataOrchestrator {
             errorClass: "PARSE",
             retryable: false,
             latencyMs: Math.max(0, Date.now() - startedMs)
-          });
+          }, recoveryLease);
           attempts.push({
             providerId,
             independenceGroupId: registration.independenceGroupId,
             priority: registration.priority,
             permissionStatus: permission.status,
-            outcome: updated ? "NORMALIZATION_FAILED" : "BLOCKED",
-            reasonCodes: updated ? [...new Set(codes)] : ["ORCHESTRATOR_CLOCK_MOVED_BACKWARDS"],
+            outcome: updated.updated ? "NORMALIZATION_FAILED" : "BLOCKED",
+            reasonCodes: updated.updated ? [...new Set(codes)] : [updated.reasonCode],
             latencyMs: Math.max(0, Date.now() - startedMs)
-          });
+          }, recoveryLease);
           continue;
         }
 
@@ -652,9 +747,9 @@ export class ReadOnlyMarketDataOrchestrator {
             providerId,
             independenceGroupId: registration.independenceGroupId,
             priority: registration.priority,
-            outcome: updated ? "INVALID_OBSERVATION" : "BLOCKED",
+            outcome: updated.updated ? "INVALID_OBSERVATION" : "BLOCKED",
             permissionStatus: permission.status,
-            reasonCodes: updated ? ["CANONICAL_OBSERVATION_INVALID"] : ["ORCHESTRATOR_CLOCK_MOVED_BACKWARDS"],
+            reasonCodes: updated.updated ? ["CANONICAL_OBSERVATION_INVALID"] : [updated.reasonCode],
             latencyMs: Math.max(0, Date.now() - startedMs)
           });
           continue;
@@ -685,8 +780,8 @@ export class ReadOnlyMarketDataOrchestrator {
             independenceGroupId: registration.independenceGroupId,
             priority: registration.priority,
             permissionStatus: permission.status,
-            outcome: updated ? "INVALID_OBSERVATION" : "BLOCKED",
-            reasonCodes: updated ? ["CANONICAL_OBSERVATION_IDENTITY_MISMATCH"] : ["ORCHESTRATOR_CLOCK_MOVED_BACKWARDS"],
+            outcome: updated.updated ? "INVALID_OBSERVATION" : "BLOCKED",
+            reasonCodes: updated.updated ? ["CANONICAL_OBSERVATION_IDENTITY_MISMATCH"] : [updated.reasonCode],
             latencyMs: Math.max(0, Date.now() - startedMs)
           });
           continue;
@@ -694,14 +789,14 @@ export class ReadOnlyMarketDataOrchestrator {
 
         const latencyMs = Math.max(0, Date.now() - startedMs);
         const updated = this.updateHealth(providerId, { kind: "SUCCESS", at: retrievedAt, latencyMs });
-        if (!updated) {
+        if (!updated.updated) {
           attempts.push({
             providerId,
             independenceGroupId: registration.independenceGroupId,
             priority: registration.priority,
             permissionStatus: permission.status,
             outcome: "BLOCKED",
-            reasonCodes: ["ORCHESTRATOR_CLOCK_MOVED_BACKWARDS"],
+            reasonCodes: [updated.reasonCode],
             latencyMs
           });
           continue;
@@ -740,11 +835,46 @@ export class ReadOnlyMarketDataOrchestrator {
     };
   }
 
-  private updateHealth(providerId: string, result: ProviderResult): boolean {
+  private async updateHealth(
+    providerId: string,
+    result: ProviderResult,
+    recoveryLease?: RecoveryProbeLeaseIdentity
+  ): Promise<{ readonly updated: boolean; readonly reasonCode: string }> {
     const previous = this.health.get(providerId);
-    if (previous === undefined) return false;
-    if (previous.lastRequestAt !== null && Date.parse(result.at) < Date.parse(previous.lastRequestAt)) return false;
-    this.health.set(providerId, recordProviderResult(previous, result, this.options.healthPolicy));
-    return true;
+    if (previous === undefined) {
+      return { updated: false, reasonCode: "PROVIDER_HEALTH_STATE_MISSING" };
+    }
+    if (previous.lastRequestAt !== null && Date.parse(result.at) < Date.parse(previous.lastRequestAt)) {
+      return { updated: false, reasonCode: "ORCHESTRATOR_CLOCK_MOVED_BACKWARDS" };
+    }
+
+    if (this.options.providerHealthStore !== undefined) {
+      try {
+        const persisted = await this.options.providerHealthStore.recordResult({
+          providerId,
+          result,
+          policy: this.options.healthPolicy,
+          ...(recoveryLease === undefined ? {} : { recoveryLease })
+        });
+        this.health.set(providerId, persisted.health);
+        return { updated: true, reasonCode: "" };
+      } catch (error) {
+        const code = isRecord(error) && typeof error.code === "string" ? error.code : "DATABASE_OPERATION_FAILED";
+        if (code === "RECOVERY_LEASE_NOT_OWNED") {
+          return { updated: false, reasonCode: "SHARED_RECOVERY_PROBE_LEASE_LOST" };
+        }
+        if (code === "PROVIDER_RESULT_OUT_OF_ORDER") {
+          return { updated: false, reasonCode: "PROVIDER_HEALTH_RESULT_OUT_OF_ORDER" };
+        }
+        return { updated: false, reasonCode: "SHARED_PROVIDER_HEALTH_WRITE_FAILED" };
+      }
+    }
+
+    try {
+      this.health.set(providerId, recordProviderResult(previous, result, this.options.healthPolicy));
+      return { updated: true, reasonCode: "" };
+    } catch {
+      return { updated: false, reasonCode: "PROVIDER_HEALTH_RESULT_INVALID" };
+    }
   }
 }
