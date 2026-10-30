@@ -27,3 +27,8 @@ When selected and approved, the runner requests the exact pool's one-minute OHLC
 Resolver tests verify DEX Screener default behavior, fail-closed gating before adapter construction, candle-start preservation as observation time, exact pool/mint propagation, and unknown-source rejection. Existing adapter/comparator tests cover candle selection, identity, freshness, explicit source approval and synthetic-evidence rejection.
 
 Phase 6 remains active. Do not activate GeckoTerminal until current API rights, attribution, quota, storage and budget are approved. Do not relax thresholds or tolerance. `phase6Complete`, production-provider approval and `tradingAuthorized` remain false.
+
+
+## Phase 6.22 — reviewed lineage integration
+
+The runner now wraps its exact-pool price comparison with the Phase 6.21 reviewed source registry. The Pyth SOL/USD and USDC/USD feeds must belong to the exact approved Pyth profile and have valid publish times. The indexed source's timestamp kind is derived from its actual `sourceEventAt` / `sourceObservedAt`; retrieval time cannot fill a missing source timestamp. The arithmetic comparison remains visible for diagnostics, while `reviewedLineageGate` blocks promotion until mutual upstream attestations and source rights/freshness are approved. The report marks the final critical market-data gate `NOT_ASSESSED` because this runner does not include provider-agreement evidence. See [Phase 6.22](22-pyth-independent-lineage-and-critical-gate.md).
