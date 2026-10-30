@@ -122,3 +122,8 @@ The deterministic integration suite covers rate-limit and timeout fallback, fall
 ## Phase 6.23 — Resilience integration and fallback disagreement
 
 The read-only orchestrator's completed collection now enters `assessReadOnlyMarketDataCollection`, which validates candidate/observation/health/attempt consistency and keeps raw agreement diagnostics distinct from registry-backed source-lineage readiness. A raw agreement result cannot advance the evidence path unless the reviewed wrapper also passes. Deterministic integration tests exercise rate-limit fallback, fallback disagreement, stale/missing source time, circuit cooldown, recovery-probe disagreement and authentication lockout. Health and the recovery-probe lock remain process-local; shared persistence and a distributed lease are required for multi-process production deployment. See [Phase 6.23](23-provider-resilience-integration.md).
+
+
+## Phase 6.24 — Shared health and distributed recovery coordination
+
+For multi-process deployments, inject `PostgresProviderHealthStore` through the orchestrator's `providerHealthStore` option and provide a unique worker ID plus a CSPRNG-derived one-time lease-token callback and a lease duration greater than the request timeout. The store persists health in versioned rows and allows a recovery probe only through an atomic database-clock lease. The raw token stays in memory; the database stores only its digest. Recovery result persistence and lease release commit together and require an unexpired fencing token. No database driver is bundled and no migration has been applied; an actual PostgreSQL two-connection integration suite is required before deployment. See [Phase 6.24](24-shared-provider-health-and-recovery-leases.md).
