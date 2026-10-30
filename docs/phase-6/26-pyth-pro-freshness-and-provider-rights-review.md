@@ -29,15 +29,15 @@ Implementation:
 The adapter:
 - Uses the authenticated Pyth Pro POST /v1/latest_price endpoint.
 - Requires a reviewed configuration binding each numeric pyth_lazer_id to the existing canonical Hermes/Core feed ID and the exact SOL/USD or USDC/USD mint.
-- Requires the selected channel to be at least as fast as the feed's reviewed min_channel.
+- Requires the reviewed feed lifecycle state to be stable and the selected channel to be at least as fast as the feed's reviewed min_channel.
 - Requests price, exponent, confidence, publisherCount, feedUpdateTimestamp, and marketSession.
-- Checks that the feed's publisher count meets the reviewed feed minimum. Optional session-specific overrides must be copied from the corresponding market_sessions.*.min_pub metadata; the response marketSession selects the applicable threshold.
+- Checks that the feed's publisher count meets the reviewed feed minimum. Optional session-specific overrides and states must be copied from the corresponding market_sessions metadata; the response marketSession selects the applicable threshold and state.
 - Requires feedUpdateTimestamp to equal the Pyth response timestampUs. An earlier value is explicitly rejected as a carried-forward price; a later value is invalid.
 - Converts the feed-generation time from exact Unix microseconds and stores it as the observation publication time. HTTP retrieval time is retained separately and is never substituted.
 - Retains publisher count, minimum count, market session, feed/update microsecond timestamps, confidence, channel and raw-payload digest.
 - Keeps bearer credentials out of logs/errors and marks injected test fetches synthetic.
 
-The numeric Pyth Lazer feed IDs and minimum values in tests (101/202 and their quorum values) are test fixtures only. They are not the real SOL/USD or USDC/USD Pyth Pro mappings. Before a diagnostic can be configured, the owner must obtain and review the actual rows from Pyth's /v1/symbols metadata for those exact feeds, including pyth_lazer_id, min_publishers, min_channel, market_sessions and feed state. This change does not fetch that endpoint.
+The numeric Pyth Lazer feed IDs and minimum values in tests (101/202 and their quorum values) are test fixtures only. They are not the real SOL/USD or USDC/USD Pyth Pro mappings. Before a diagnostic can be configured, the owner must obtain and review the actual rows from Pyth's /v1/symbols metadata for those exact feeds, including pyth_lazer_id, min_publishers, min_channel, market_sessions, each applicable min_pub/session state, and feed lifecycle state. The adapter requires feed state stable and checks any configured market-session state before accepting a response. This change does not fetch that endpoint.
 
 The new pyth-pro registry profile shares independenceGroupId pyth-network with pyth-hermes. They are two interfaces to the same Pyth data family and can never count as two independent sources.
 
