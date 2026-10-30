@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation is on branch `phase6-25-real-postgres-integration` and awaits its dedicated PostgreSQL CI run and the normal repository checks. The workflow provisions an isolated PostgreSQL 18.6 service container and uses two independent Node.js connection pools. It does not use a hosted database, project secrets, provider endpoints, Solana RPC, or a live trading environment.
+Merged through [PR #45](https://github.com/hamza131zara/Auto-Trading-Agent/pull/45), merge commit `8ea700041c77ae661b12beee0c0bdacc305026ed`. The dedicated PR PostgreSQL run [#4](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033711991) and post-merge main PostgreSQL run [#5](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033906105) both passed 4/4 integration tests on PostgreSQL 18.6. Post-merge main CI [#281](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033905950) passed; PR checks also passed Dependency Review [#116](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033711853), CodeQL/Gitleaks [PR run #257](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41033707564). The workflow provisions an isolated PostgreSQL 18.6 service container and uses independent Node.js connection pools. It does not use a hosted database, project secrets, provider endpoints, Solana RPC, or a live trading environment.
 
 The PostgreSQL driver `pg@8.23.1` is installed as a pinned, transient test dependency by the dedicated workflow. It is not added to the runtime application, workspace manifests, or committed lockfile. This verifies that the existing structural `PostgresPoolLike` boundary works with node-postgres without choosing a production database adapter.
 
