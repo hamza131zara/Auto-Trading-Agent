@@ -51,6 +51,7 @@ jobs:
       - name: Run real PostgreSQL integration tests
         env:
           PG_INTEGRATION_URL: postgres://ata_test:ata_local_test_only@127.0.0.1:5432/ata_phase6_test
+          REQUIRE_PG_INTEGRATION: "true"
         run: npm run test:postgres
 
       - name: Audit locked repository dependencies
