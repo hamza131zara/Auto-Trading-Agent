@@ -41,7 +41,7 @@ export interface RecoveryProbeLeaseClaim {
 export interface RecoveryProbeLeaseIdentity {
   readonly providerId: string;
   readonly ownerId: string;
-  readonly leaseTokenHash: string;
+  readonly leaseToken: string;
   readonly fencingToken: string;
 }
 
@@ -444,8 +444,8 @@ export class PostgresProviderHealthStore implements ProviderHealthStore {
         !isSafeProviderId(input.providerId) ||
         typeof input.ownerId !== "string" ||
         !SAFE_OWNER_ID.test(input.ownerId) ||
-        typeof input.leaseTokenHash !== "string" ||
-        !SHA256_HEX.test(input.leaseTokenHash) ||
+        typeof input.leaseToken !== "string" ||
+        !LEASE_TOKEN_PATTERN.test(input.leaseToken) ||
         !validateLeaseDuration(input.leaseDurationMs)) {
       throw new ProviderHealthStoreError("INVALID_INPUT");
     }
