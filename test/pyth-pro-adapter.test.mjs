@@ -18,7 +18,8 @@ const FEEDS = [
     feedName: "SOL/USD",
     assetId: PYTH_PRO_WRAPPED_SOL_MINT,
     minPublisherCount: 3,
-    minChannel: "fixed_rate@1000ms"
+    minChannel: "fixed_rate@1000ms",
+    minPublisherCountBySession: { regular: 4, preMarket: 5 }
   },
   {
     pythLazerId: 202,
@@ -41,7 +42,8 @@ function payload(overrides = {}) {
           exponent: -8,
           confidence: "1234000",
           publisherCount: 4,
-          feedUpdateTimestamp: UPDATE_TIME_US
+          feedUpdateTimestamp: UPDATE_TIME_US,
+          marketSession: "regular"
         },
         {
           priceFeedId: 202,
@@ -49,7 +51,8 @@ function payload(overrides = {}) {
           exponent: -8,
           confidence: "10000",
           publisherCount: 3,
-          feedUpdateTimestamp: UPDATE_TIME_US
+          feedUpdateTimestamp: UPDATE_TIME_US,
+          marketSession: "regular"
         }
       ],
       ...overrides
@@ -100,7 +103,8 @@ test("Pyth Pro request asks for pinned feed IDs and the freshness/quorum propert
     "exponent",
     "confidence",
     "publisherCount",
-    "feedUpdateTimestamp"
+    "feedUpdateTimestamp",
+    "marketSession"
   ]);
 
   assert.deepEqual(result.errors, []);
@@ -116,7 +120,8 @@ test("Pyth Pro request asks for pinned feed IDs and the freshness/quorum propert
   assert.equal(sol.priceUsd, "99.98");
   assert.equal(sol.confidenceUsd, "0.01234");
   assert.equal(sol.publisherCount, 4);
-  assert.equal(sol.minPublisherCount, 3);
+  assert.equal(sol.minPublisherCount, 4);
+  assert.equal(sol.marketSession, "regular");
   assert.equal(sol.feedUpdateTimestampUnixMicros, UPDATE_TIME_US);
   assert.equal(sol.updateTimestampUnixMicros, UPDATE_TIME_US);
   assert.equal(sol.publishedAt, "2026-10-30T08:00:00.000Z");
@@ -163,6 +168,29 @@ test("Pyth Pro rejects feeds below their configured minimum publisher count", ()
     retrievedAt: "2026-10-30T08:00:01.000Z",
     rawPayloadSha256: "b".repeat(64),
     payload: payload({ priceFeeds: [lowQuorum, payload().parsed.priceFeeds[1]] }),
+    synthetic: false
+  });
+
+  assert.deepEqual(result.observations, []);
+  assert.deepEqual(result.errors, ["PUBLISHER_QUORUM_UNMET"]);
+});
+
+test("Pyth Pro applies session-specific minimum publisher counts", () => {
+  const adapter = makeAdapter(async () => new Response("{}"));
+  const preMarketFeeds = payload().parsed.priceFeeds.map((item) => ({
+    ...item,
+    marketSession: "preMarket",
+    publisherCount: 4
+  }));
+  const result = adapter.normalize({
+    providerId: "pyth-pro",
+    adapterVersion: "1.0.0",
+    channel: CHANNEL,
+    requestedFeeds: FEEDS,
+    requestedAt: "2026-10-30T07:59:59.000Z",
+    retrievedAt: "2026-10-30T08:00:01.000Z",
+    rawPayloadSha256: "f".repeat(64),
+    payload: payload({ priceFeeds: preMarketFeeds }),
     synthetic: false
   });
 
