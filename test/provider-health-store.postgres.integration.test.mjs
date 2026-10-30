@@ -157,6 +157,7 @@ test("Phase 6.25 PostgreSQL persistence and distributed recovery behavior", {
       if (roleClient) {
         try { await roleClient.query("RESET ROLE"); } finally { roleClient.release(); }
       }
+      await adminPool.query(`DROP OWNED BY ${runtimeRole}`);
       await adminPool.query(`DROP ROLE ${runtimeRole}`);
     }
   });
