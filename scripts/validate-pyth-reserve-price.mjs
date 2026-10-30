@@ -196,28 +196,34 @@ async function main() {
     .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
   const reviewedComparison = assessIndependentReservePriceAgreementWithReviewedLineage({
     comparisonInput: {
-    baseMint: target.baseMint, quoteMint: target.quoteMint,
-    reserveRatioQuotePerBase: identityReport.onChainReserves.reserveRatioQuotePerBase,
-    indexedPriceUsdPerBase: indexedPriceEvidence.priceUsdPerBase,
-    indexedProviderId: indexedPriceEvidence.providerId,
-    indexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId,
-    indexedSourceEventAt: indexedPriceEvidence.sourceEventAt,
-    indexedSourceObservedAt: indexedPriceEvidence.sourceObservedAt,
-    indexedRetrievedAt: indexedPriceEvidence.retrievedAt,
-    indexedSynthetic: indexedPriceEvidence.synthetic,
-    baseUsd, quoteUsd,
-    policy: {
-      nowAt, maxSourceAgeMs: target.maxReferenceSourceAgeMs,
-      maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
-      maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
-      maxFutureSkewMs: target.maxFutureSkewMs, maxDeviationBps: target.maxDeviationBps,
-      approvedProviderId: "pyth-hermes", approvedIndependenceGroupId: "pyth-network",
-      expectedBaseFeedId: PYTH_SOL_USD_FEED_ID, expectedQuoteFeedId: PYTH_USDC_USD_FEED_ID,
-      ...(indexedPriceEvidence.providerId === "geckoterminal" ? {
-        approvedIndexedProviderId: indexedPriceEvidence.providerId,
-        approvedIndexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId
-      } : {})
-    }
+      baseMint: target.baseMint,
+      quoteMint: target.quoteMint,
+      reserveRatioQuotePerBase: identityReport.onChainReserves.reserveRatioQuotePerBase,
+      indexedPriceUsdPerBase: indexedPriceEvidence.priceUsdPerBase,
+      indexedProviderId: indexedPriceEvidence.providerId,
+      indexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId,
+      indexedSourceEventAt: indexedPriceEvidence.sourceEventAt,
+      indexedSourceObservedAt: indexedPriceEvidence.sourceObservedAt,
+      indexedRetrievedAt: indexedPriceEvidence.retrievedAt,
+      indexedSynthetic: indexedPriceEvidence.synthetic,
+      baseUsd,
+      quoteUsd,
+      policy: {
+        nowAt,
+        maxSourceAgeMs: target.maxReferenceSourceAgeMs,
+        maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
+        maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
+        maxFutureSkewMs: target.maxFutureSkewMs,
+        maxDeviationBps: target.maxDeviationBps,
+        approvedProviderId: "pyth-hermes",
+        approvedIndependenceGroupId: "pyth-network",
+        expectedBaseFeedId: PYTH_SOL_USD_FEED_ID,
+        expectedQuoteFeedId: PYTH_USDC_USD_FEED_ID,
+        ...(indexedPriceEvidence.providerId === "geckoterminal" ? {
+          approvedIndexedProviderId: indexedPriceEvidence.providerId,
+          approvedIndexedIndependenceGroupId: indexedPriceEvidence.independenceGroupId
+        } : {})
+      }
     },
     lineagePolicy: {
       purpose: "DIAGNOSTIC",
