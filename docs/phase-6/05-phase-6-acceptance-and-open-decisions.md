@@ -294,3 +294,16 @@ The preflight is diagnostic only. It contacts no provider or Solana RPC endpoint
 - [ ] Approve production migration owner separation, operational windows, rollback/forward-fix procedures, monitoring and incident response.
 
 The automated drill operates only on the disposable local PostgreSQL 18.6 CI service and strict allowlisted test databases. It does not verify production storage, encryption, durability, retention or service-level recovery objectives. Phase 6 remains ACTIVE; no provider/RPC access, credentials, spend, wallet, signer, order, transaction or trading authorization is introduced. See [Phase 6.32](32-postgres-backup-restore-and-migration-recovery.md).
+
+
+## Phase 6.33 — Migration governance and deployment preflight
+
+- [x] Add a SHA-256 manifest binding the exact ordered set of committed migration files.
+- [x] Add an offline verifier that rejects checksum drift, missing/untracked files, duplicate IDs, malformed dates, unsorted entries, traversal, symlinks, unknown files and unsupported execution-mode declarations.
+- [x] Add an offline change-packet checker pinned to the verified migration-set digest, with separate change-owner/database-operator references, backup and restore evidence references, role/TLS checks, writer coordination, maintenance window and forward-recovery safeguards.
+- [x] Keep the strongest preflight status at TECHNICAL_PRECHECK_PASSED_REVIEW_REQUIRED; no migration runner, database connection, schema mutation or authorization is introduced.
+- [x] Run migration inventory verification in normal CI and add regression tests for integrity and release-packet failure paths.
+- [ ] Independently verify actual approver identities/signatures and the contents of backup, restore, TLS, role and recovery evidence.
+- [ ] Approve the real migration identity, target, maintenance window, monitoring and a separately authorized deployment/recovery exercise.
+
+The manifest protects against accidental or unreviewed SQL-file drift only when its changes receive independent review; it is not a cryptographic signature. Packet references are not authenticated. Phase 6 remains ACTIVE; production database deployment, provider activation and trading remain unauthorized. See [Phase 6.33](33-migration-governance-and-deployment-preflight.md).
