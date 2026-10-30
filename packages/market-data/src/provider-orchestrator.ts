@@ -59,7 +59,7 @@ export interface ReadOnlyMarketDataOrchestratorOptions {
   readonly requestId?: (providerId: string, requestedAt: string) => string | null;
   /** Optional shared store; inject the same PostgreSQL-backed implementation in every worker. */
   readonly providerHealthStore?: ProviderHealthStore;
-  /** Required with providerHealthStore. The hash callback must use a CSPRNG-derived one-time token. */
+  /** Required with providerHealthStore. The token callback must return a fresh CSPRNG-derived one-time bearer token; only its SHA-256 digest is persisted. */
   readonly recoveryProbeLease?: {
     readonly ownerId: string;
     readonly leaseDurationMs: number;
