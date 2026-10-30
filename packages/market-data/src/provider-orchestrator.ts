@@ -235,6 +235,7 @@ export function assessReadOnlyMarketDataCollection(
   }
 
   const candidateIds = new Set<string>();
+  const candidatesByProvider = new Map<string, ProviderEvidenceCandidate>();
   for (const candidate of collection.candidates as readonly unknown[]) {
     if (!isRecord(candidate) ||
         typeof candidate.providerId !== "string" ||
@@ -248,6 +249,34 @@ export function assessReadOnlyMarketDataCollection(
       return invalid(["READ_ONLY_COLLECTION_CANDIDATE_INVALID"]);
     }
     candidateIds.add(candidate.providerId);
+    candidatesByProvider.set(candidate.providerId, candidate as unknown as ProviderEvidenceCandidate);
+  }
+
+  if (collection.providerHealth.length !== candidateIds.size ||
+      collection.attempts.length !== candidateIds.size) {
+    return invalid(["READ_ONLY_COLLECTION_CARDINALITY_MISMATCH"]);
+  }
+
+  const healthByProvider = new Map<string, ProviderHealthSnapshot>();
+  for (const health of collection.providerHealth as readonly unknown[]) {
+    if (!isRecord(health) ||
+        typeof health.providerId !== "string" ||
+        !candidateIds.has(health.providerId) ||
+        healthByProvider.has(health.providerId)) {
+      return invalid(["READ_ONLY_COLLECTION_HEALTH_SET_INVALID"]);
+    }
+    const candidate = candidatesByProvider.get(health.providerId)!;
+    if (!isRecord(candidate.health) ||
+        candidate.health.providerId !== health.providerId ||
+        candidate.health.state !== health.state ||
+        candidate.health.lastRequestAt !== health.lastRequestAt ||
+        candidate.health.consecutiveFailures !== health.consecutiveFailures) {
+      return invalid(["READ_ONLY_COLLECTION_HEALTH_SET_MISMATCH"]);
+    }
+    healthByProvider.set(health.providerId, health as unknown as ProviderHealthSnapshot);
+  }
+  if (healthByProvider.size !== candidateIds.size) {
+    return invalid(["READ_ONLY_COLLECTION_HEALTH_SET_MISMATCH"]);
   }
 
   const observedByProvider = new Map<string, CanonicalMarketSnapshot>();
@@ -279,22 +308,38 @@ export function assessReadOnlyMarketDataCollection(
   const failedProviderIds: string[] = [];
   const blockedProviderIds: string[] = [];
   const attemptReasons: string[] = [];
+  const attemptedProviderIds = new Set<string>();
   for (const attempt of collection.attempts as readonly unknown[]) {
     if (!isRecord(attempt) ||
         typeof attempt.providerId !== "string" ||
         !candidateIds.has(attempt.providerId) ||
+        attemptedProviderIds.has(attempt.providerId) ||
+        typeof attempt.independenceGroupId !== "string" ||
+        typeof attempt.priority !== "number" ||
+        !Number.isSafeInteger(attempt.priority) ||
+        typeof attempt.permissionStatus !== "string" ||
         typeof attempt.outcome !== "string" ||
         !["OBSERVATION_NORMALIZED", "REQUEST_FAILED", "NORMALIZATION_FAILED", "INVALID_OBSERVATION", "BLOCKED"].includes(attempt.outcome) ||
         !Array.isArray(attempt.reasonCodes) ||
         !attempt.reasonCodes.every((code) => typeof code === "string" && /^[A-Z0-9_]{1,64}$/.test(code))) {
       return invalid(["READ_ONLY_COLLECTION_ATTEMPT_INVALID"]);
     }
+    const candidate = candidatesByProvider.get(attempt.providerId)!;
+    if (candidate.independenceGroupId !== attempt.independenceGroupId ||
+        candidate.priority !== attempt.priority) {
+      return invalid(["READ_ONLY_COLLECTION_ATTEMPT_IDENTITY_MISMATCH"]);
+    }
+    attemptedProviderIds.add(attempt.providerId);
     if (attempt.outcome === "OBSERVATION_NORMALIZED") successfulProviderIds.push(attempt.providerId);
     if (attempt.outcome === "REQUEST_FAILED" ||
         attempt.outcome === "NORMALIZATION_FAILED" ||
         attempt.outcome === "INVALID_OBSERVATION") failedProviderIds.push(attempt.providerId);
     if (attempt.outcome === "BLOCKED") blockedProviderIds.push(attempt.providerId);
     attemptReasons.push(...attempt.reasonCodes);
+  }
+
+  if (attemptedProviderIds.size !== candidateIds.size) {
+    return invalid(["READ_ONLY_COLLECTION_ATTEMPT_SET_MISMATCH"]);
   }
 
   const diagnosticAgreement = assessProviderAgreement(
