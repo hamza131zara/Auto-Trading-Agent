@@ -2,7 +2,7 @@
 
 ## Status
 
-Implemented on branch phase6-provider-resilience-integration; awaiting CI and review. The work is an offline orchestration/assessment composition with deterministic adapter stubs. No live provider or RPC calls were made, no credentials were created, no adapter was activated, spend remains USD $0, and trading remains unauthorized.
+Merged through [PR #41](https://github.com/hamza131zara/Auto-Trading-Agent/pull/41), commit `d5f494dc12bde12f4155cc0f4606558302b8e90f`. Post-merge CI [run #269](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41022186170) passed 251/251 tests, repository validation, typecheck/build, dependency audit (zero vulnerabilities), and Gitleaks. PR #41 also passed Dependency Review and both CodeQL analyses. The work is an offline orchestration/assessment composition with deterministic adapter stubs. No live provider or RPC calls were made, no credentials were created, no adapter was activated, spend remains USD $0, and trading remains unauthorized.
 
 ## Purpose
 
