@@ -12,6 +12,7 @@ import {
   RAYDIUM_CPMM_PROGRAM_ID,
   inspectUpgradeableProgramAccount,
   assessUpgradeableProgramDeployment,
+  assessProgramUpgradeAuthorityReview,
   SPL_TOKEN_PROGRAM_ID,
   SPL_TOKEN_2022_PROGRAM_ID,
   decodeSplTokenAccount,
@@ -708,6 +709,7 @@ function buildReport({ target, bundle, assessment, config, generatedAt, slotBloc
     marketData: buildMarketDataReportSection(target),
     onChainReserves: buildOnChainReserveEvidence(target, bundle, pool, slotBlockTimeEvidence),
     programDeploymentVerification: deploymentVerification,
+    programUpgradeAuthorityReview: assessProgramUpgradeAuthorityReview(deploymentVerification),
     rpcEvidence: {
       providerId: bundle.source.providerId,
       commitment: bundle.source.commitment,
