@@ -326,6 +326,11 @@ export function verifySignedProviderUseDecision(input: {
  * a provider/purpose pair; ambiguity, bad JSON snapshots and all verification
  * failures return undefined, preserving the orchestrator's default-deny gate.
  */
+/**
+ * Static resolver for short-lived or externally supervised contexts. A
+ * long-running runtime should prefer createReloadableSignedProviderUseDecisionResolver
+ * so owner key revocations are observed without restarting the process.
+ */
 export function createSignedProviderUseDecisionResolver(input: {
   readonly envelopes: readonly unknown[];
   readonly trustedKeys: readonly TrustedProviderDecisionSigningKey[];
@@ -352,6 +357,79 @@ export function createSignedProviderUseDecisionResolver(input: {
     const result = verifySignedProviderUseDecision({
       envelope: matching[0],
       trustedKeys,
+      providerId,
+      purpose,
+      at
+    });
+    return result.authorized ? result.decision ?? undefined : undefined;
+  };
+}
+
+
+export interface TrustedProviderDecisionKeySnapshot {
+  /** Time at which the complete key/revocation registry snapshot was read. */
+  readonly loadedAt: string;
+  readonly keys: readonly TrustedProviderDecisionSigningKey[];
+}
+
+/**
+ * Build a resolver that reloads the trusted-key registry for every provider
+ * attempt. This is intended for long-running processes where key revocation
+ * must take effect without restarting the process.
+ *
+ * The owner-controlled loader must return the current authoritative registry,
+ * not a process-local cached copy. A snapshot older than maxSnapshotAgeMs,
+ * dated in the future, malformed, or unavailable denies the provider attempt.
+ */
+export function createReloadableSignedProviderUseDecisionResolver(input: {
+  readonly envelopes: readonly unknown[];
+  readonly loadTrustedKeySnapshot: () => unknown;
+  /** Explicit freshness bound for the revocation registry, limited to five minutes. */
+  readonly maxSnapshotAgeMs: number;
+}): ProviderUseDecisionResolver {
+  let envelopes: unknown[];
+  try {
+    envelopes = JSON.parse(JSON.stringify(input.envelopes)) as unknown[];
+    if (!Array.isArray(envelopes) ||
+        !Number.isSafeInteger(input.maxSnapshotAgeMs) ||
+        input.maxSnapshotAgeMs < 1 ||
+        input.maxSnapshotAgeMs > 300_000 ||
+        typeof input.loadTrustedKeySnapshot !== "function") {
+      return () => undefined;
+    }
+  } catch {
+    return () => undefined;
+  }
+
+  return (providerId, purpose, at) => {
+    const matching = envelopes.filter((candidate) =>
+      isRecord(candidate) &&
+      isRecord(candidate.decision) &&
+      candidate.decision.providerId === providerId &&
+      candidate.decision.purpose === purpose
+    );
+    if (matching.length !== 1) return undefined;
+
+    let snapshot: unknown;
+    try {
+      snapshot = JSON.parse(JSON.stringify(input.loadTrustedKeySnapshot())) as unknown;
+    } catch {
+      return undefined;
+    }
+    if (!isRecord(snapshot) ||
+        !hasExactKeys(snapshot, ["loadedAt", "keys"]) ||
+        !validUtc(snapshot.loadedAt) ||
+        !Array.isArray(snapshot.keys) ||
+        !validUtc(at)) {
+      return undefined;
+    }
+
+    const ageMs = Date.parse(at) - Date.parse(snapshot.loadedAt);
+    if (ageMs < 0 || ageMs > input.maxSnapshotAgeMs) return undefined;
+
+    const result = verifySignedProviderUseDecision({
+      envelope: matching[0],
+      trustedKeys: snapshot.keys as TrustedProviderDecisionSigningKey[],
       providerId,
       purpose,
       at

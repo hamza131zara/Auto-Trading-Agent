@@ -3185,3 +3185,10 @@ export type {
   SignedProviderUseDecisionEnvelope,
   TrustedProviderDecisionSigningKey
 } from "./provider-use-decision-verifier.js";
+
+export {
+  createReloadableSignedProviderUseDecisionResolver
+} from "./provider-use-decision-verifier.js";
+export type {
+  TrustedProviderDecisionKeySnapshot
+} from "./provider-use-decision-verifier.js";
