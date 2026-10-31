@@ -32,6 +32,7 @@ const SNAPSHOT_PAYLOAD_KEYS = [
   "keys"
 ] as const;
 const SNAPSHOT_ENVELOPE_KEYS = [...SNAPSHOT_PAYLOAD_KEYS, "signature"] as const;
+const SNAPSHOT_ENVELOPE_KEYS = [...SNAPSHOT_PAYLOAD_KEYS, "signature"] as const;
 const TRUSTED_KEY_KEYS = [
   "keyId",
   "owner",
@@ -78,6 +79,20 @@ export interface ProviderTrustRegistryTrustAnchor {
   readonly rootPublicKeyPem: string;
   /** SHA-256 of DER SubjectPublicKeyInfo bytes, as lowercase/uppercase hex. */
   readonly expectedSpkiSha256: string;
+}
+
+/** Structural validation only; cryptographic authentication belongs to the authenticator. */
+export function validateProviderTrustRegistrySnapshotEnvelope(
+  value: unknown
+): ProviderTrustRegistrySnapshotEnvelope {
+  if (!isRecord(value) || !hasExactKeys(value, SNAPSHOT_ENVELOPE_KEYS) ||
+      typeof value.signature !== "string" ||
+      !BASE64URL_SIGNATURE.test(value.signature)) {
+    throw new TypeError("TRUST_REGISTRY_SNAPSHOT_INVALID");
+  }
+  const { signature: _signature, ...payload } = value;
+  getProviderTrustRegistrySigningPayload(payload as ProviderTrustRegistrySnapshotPayload);
+  return value as unknown as ProviderTrustRegistrySnapshotEnvelope;
 }
 
 /** Canonical UTF-8 payload signed by the pinned registry root. */
@@ -201,6 +216,26 @@ export interface ProviderTrustRegistryHighWaterMarkStore {
     readonly expected: ProviderTrustRegistryHighWaterMark | null;
     readonly next: ProviderTrustRegistryHighWaterMark;
   }): Promise<boolean>;
+}
+
+/** Validates durable state before it participates in rollback decisions. */
+export function validateProviderTrustRegistryHighWaterMark(
+  value: unknown,
+  expectedRegistryId: string
+): ProviderTrustRegistryHighWaterMark {
+  if (!isRecord(value) ||
+      !hasExactKeys(value, ["registryId", "version", "canonicalPayloadSha256"]) ||
+      value.registryId !== expectedRegistryId ||
+      typeof value.registryId !== "string" ||
+      !SAFE_REGISTRY_ID.test(value.registryId) ||
+      typeof value.version !== "number" ||
+      !Number.isSafeInteger(value.version) ||
+      value.version < 1 ||
+      typeof value.canonicalPayloadSha256 !== "string" ||
+      !SHA256_HEX.test(value.canonicalPayloadSha256)) {
+    throw new TypeError("TRUST_REGISTRY_HIGH_WATER_MARK_INVALID");
+  }
+  return value as unknown as ProviderTrustRegistryHighWaterMark;
 }
 
 export interface ProviderTrustRegistryState {
