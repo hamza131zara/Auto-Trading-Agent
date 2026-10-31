@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Step 1: protocol contract and security boundary — complete. Step 2: root snapshot authenticator — implemented on this branch; final CodeQL verification is pending.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
+**Step 1: protocol contract — complete. Step 2: root snapshot authenticator — implemented and verified. Step 3: durable high-water mark/CAS — implemented on this branch; CI verification is pending.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
@@ -99,7 +99,23 @@ After cryptographic, schema, freshness and key-set checks pass, the caller atomi
 - Missing/corrupt/unavailable high-water state: deny.
 - Backup restoration must not silently lower the mark. Production recovery needs a separately protected recovery/fencing procedure.
 
-A durable store interface is defined, but no storage implementation is selected or provisioned in this step.
+At Step 1, only the interface was defined; the durable adapter is implemented in Step 3 below.
+
+## Step 3 — durable anti-rollback state and transactional CAS
+
+The PostgreSQL implementation is in `packages/market-data/src/provider-trust-registry-postgres-store.ts`:
+
+- Migration `infra/migrations/20261031_phase6_provider_trust_registry_high_water_marks.sql` creates one row per registry ID containing the highest accepted positive version, canonical unsigned-payload SHA-256 digest, and database timestamp.
+- The database constrains registry ID format, lowercase SHA-256 digest format, positive versions, and the JavaScript safe-integer maximum.
+- Reads return a validated record or `null`; malformed persisted state and database failures are distinct sanitized fail-closed errors.
+- Compare-and-set is a single SQL statement. Initial state uses `INSERT ... ON CONFLICT DO NOTHING`; subsequent advances use `UPDATE ... WHERE registry_id, expected version, and expected digest all match`. A stale/concurrent writer receives `false`.
+- `advanceProviderTrustRegistryHighWaterMark` revalidates snapshot shape, canonical payload digest, freshness and expiry; reads durable state; denies rollback/equivocation; permits same-version/same-digest replay only while still fresh; and returns the immutable snapshot only after a successful CAS or valid replay.
+- Store outages, invalid durable rows and CAS conflicts deny. No process-local cache or stale key fallback exists.
+- The migration is inventory-pinned in `infra/migrations/manifest.json`. It defines data only; no database was connected or modified and no runtime roles/permissions were provisioned by this code change.
+
+The PostgreSQL integration tests exercise idempotent schema creation, persistence across new store instances, concurrent independent workers racing from the same expected row, same-version replay/equivocation, rollback denial, monotonic advancement, corrupted rows and database failure. The package-level unit tests additionally cover unavailable stores and CAS conflicts. The adapter is not wired to an external transport or provider request; the future loader must call the anti-rollback gate before exposing keys.
+
+
 
 ## Loader boundary
 
