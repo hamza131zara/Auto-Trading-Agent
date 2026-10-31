@@ -135,7 +135,11 @@ function poolApiUrl(url) {
   return url.startsWith("https://api-v3.raydium.io/pools/info/mint?");
 }
 
-function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false, blockTimeResult = 1_798_765_432 } = {}) {
+function mockFetchFactory({
+  rpcOwnerOverrides = {},
+  hasNextPage = false,
+  blockTimeResult = Math.floor(Date.parse("2026-10-29T08:59:59.000Z") / 1_000)
+} = {}) {
   const calls = [];
   const dexPairs = [
     makePair(HIGH_CPMM, 500_000, 75_000),
