@@ -3192,3 +3192,5 @@ export {
 export type {
   TrustedProviderDecisionKeySnapshot
 } from "./provider-use-decision-verifier.js";
+
+export * from "./provider-trust-registry.js";
