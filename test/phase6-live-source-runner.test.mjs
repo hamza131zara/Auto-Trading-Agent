@@ -690,3 +690,55 @@ test("CLI refuses the live-source run without protected signed provider-use conf
   assert.doesNotMatch(result.stderr, /127\.0\.0\.1|never-contacted|api\.dexscreener\.com/);
 });
 
+
+test("signed DEX Screener decision allows one diagnostic fetch but mock data stays ineligible", async () => {
+  const fixtureText = readFileSync(
+    new URL("./fixtures/market-data/dexscreener-pair-v1.json", import.meta.url),
+    "utf8"
+  );
+  let adapterFetchCalls = 0;
+  const adapter = new DexScreenerPairsAdapter(async () => {
+    adapterFetchCalls += 1;
+    return new Response(fixtureText, { status: 200, headers: { "content-type": "application/json" } });
+  });
+  const resolver = createLiveSourceProviderUseDecisionResolver(
+    signedProviderAuthorizationEnvironment(["dex-screener"])
+  );
+  await assert.rejects(
+    buildTargetSnapshotFromDexScreener({
+      poolAddress: baseTarget.poolAddress,
+      baseMint: baseTarget.baseMint,
+      quoteMint: baseTarget.quoteMint,
+      rpcProviderId: "approved-rpc",
+      adapter,
+      now: () => "2026-10-31T12:01:00.000Z",
+      providerUseDecisionResolver: resolver
+    }),
+    { code: "TARGET_MUST_BE_REAL_INDEXED_SOURCE_EVIDENCE" }
+  );
+  assert.equal(adapterFetchCalls, 1, "a valid signed DEX decision permits the one explicit diagnostic HTTP read");
+});
+
+test("RPC-only signed decision cannot authorize the DEX Screener indexed API request", async () => {
+  let adapterFetchCalls = 0;
+  const adapter = new DexScreenerPairsAdapter(async () => {
+    adapterFetchCalls += 1;
+    return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+  });
+  const resolver = createLiveSourceProviderUseDecisionResolver(
+    signedProviderAuthorizationEnvironment(["solana-public-shared"])
+  );
+  await assert.rejects(
+    buildTargetSnapshotFromDexScreener({
+      poolAddress: baseTarget.poolAddress,
+      baseMint: baseTarget.baseMint,
+      quoteMint: baseTarget.quoteMint,
+      rpcProviderId: "solana-public-shared",
+      adapter,
+      now: () => "2026-10-31T12:01:00.000Z",
+      providerUseDecisionResolver: resolver
+    }),
+    { code: "INDEXED_API_PROVIDER_USE_DECISION_MISSING" }
+  );
+  assert.equal(adapterFetchCalls, 0, "a decision for the RPC provider cannot authorize DEX Screener");
+});
