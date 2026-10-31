@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Steps 1–4 are merged and verified. Step 5 is implemented on the active branch and is awaiting CI verification.** The concrete transport is generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
+**Phase 6.46 Steps 1–5 are implemented and verified on this branch.** The concrete transport is generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
