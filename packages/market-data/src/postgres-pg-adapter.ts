@@ -196,6 +196,20 @@ export class PostgresPgPoolAdapter implements PostgresPoolLike {
       throw new PostgresPgAdapterError("DATABASE_OPERATION_FAILED");
     }
 
+    // Keep the admission slot occupied until the underlying pool request settles,
+    // even when the caller's timeout fires. Otherwise timed-out callers could
+    // leave hidden waiters in pg's queue while admitting an unbounded replacement.
+    const trackedAcquisition = acquisition.then(
+      (client) => {
+        this.pendingAcquisitions -= 1;
+        return client;
+      },
+      () => {
+        this.pendingAcquisitions -= 1;
+        throw new PostgresPgAdapterError("DATABASE_OPERATION_FAILED");
+      }
+    );
+
     let timer: ReturnType<typeof setTimeout> | undefined;
     let timedOut = false;
     const timeout = new Promise<never>((_, reject) => {
@@ -206,18 +220,17 @@ export class PostgresPgPoolAdapter implements PostgresPoolLike {
     });
 
     try {
-      const client = await Promise.race([acquisition, timeout]);
+      const client = await Promise.race([trackedAcquisition, timeout]);
       return this.wrapClient(client);
     } catch (error) {
+      if (timedOut) {
+        // The late client is released when the underlying pool request settles.
+        void trackedAcquisition.then((client) => client.release(), () => undefined);
+      }
       if (error instanceof PostgresPgAdapterError) throw error;
       throw new PostgresPgAdapterError("DATABASE_OPERATION_FAILED");
     } finally {
       if (timer !== undefined) clearTimeout(timer);
-      this.pendingAcquisitions -= 1;
-      if (timedOut) {
-        // A timed-out pool.connect() may resolve later. Release that late client.
-        void acquisition.then((client) => client.release(), () => undefined);
-      }
     }
   }
 
