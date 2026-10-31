@@ -798,9 +798,72 @@ export function assessIndependentReservePriceAgreement(
     );
   }
 
-  const hasSyntheticReference = input.baseUsd.synthetic || input.quoteUsd.synthetic || input.indexedSynthetic;
+  let reserveTimestampAlignmentStatus:
+    "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED" = "NOT_ASSESSED";
+  let reserveReferenceTimestampSkewMs: number | null = null;
+  let comparisonFreshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID" = "FRESH";
+  const reserveTimestampReasonCodes: string[] = [];
+  if (input.policy.maxReserveReferenceTimestampSkewMs !== undefined) {
+    const reserveObservedAt = input.reserveSlotBlockTimeAt ?? null;
+    const reserveRetrievedAt = input.reserveSlotBlockTimeRetrievedAt ?? null;
+    if (reserveObservedAt === null) {
+      reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+      comparisonFreshness = "UNKNOWN";
+      reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_MISSING");
+    } else if (reserveRetrievedAt === null) {
+      reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+      comparisonFreshness = "UNKNOWN";
+      reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_RETRIEVAL_MISSING");
+    } else {
+      const nowMs = timestampMs(input.policy.nowAt);
+      const reserveObservedMs = timestampMs(reserveObservedAt);
+      const reserveRetrievedMs = timestampMs(reserveRetrievedAt);
+      if (reserveObservedMs > nowMs + input.policy.maxFutureSkewMs ||
+          reserveRetrievedMs > nowMs + input.policy.maxFutureSkewMs) {
+        reserveTimestampAlignmentStatus = "INVALID_INPUT";
+        comparisonFreshness = "INVALID";
+        reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_IN_FUTURE");
+      } else if (Math.max(0, nowMs - reserveObservedMs) > input.policy.maxSourceAgeMs) {
+        reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+        comparisonFreshness = "STALE";
+        reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_STALE");
+      } else if (Math.max(0, nowMs - reserveRetrievedMs) > input.policy.maxRetrievalAgeMs) {
+        reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+        comparisonFreshness = "STALE";
+        reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_RETRIEVAL_STALE");
+      } else {
+        reserveReferenceTimestampSkewMs = Math.max(
+          Math.abs(reserveObservedMs - timestampMs(input.baseUsd.publishedAt)),
+          Math.abs(reserveObservedMs - timestampMs(input.quoteUsd.publishedAt))
+        );
+        if (reserveReferenceTimestampSkewMs > input.policy.maxReserveReferenceTimestampSkewMs) {
+          reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+          reserveTimestampReasonCodes.push("RESERVE_REFERENCE_TIMES_UNALIGNED");
+        } else {
+          reserveTimestampAlignmentStatus = "AGREED";
+        }
+      }
+    }
+  }
+
+  const hasSyntheticReference = input.baseUsd.synthetic || input.quoteUsd.synthetic ||
+    input.indexedSynthetic ||
+    (input.policy.maxReserveReferenceTimestampSkewMs !== undefined &&
+      input.reserveSlotBlockTimeSynthetic === true);
   if (hasSyntheticReference && input.policy.allowSyntheticForTests !== true) {
-    return result("INSUFFICIENT_EVIDENCE", ["SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"], "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE", null, null, "FRESH", false);
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      [...reserveTimestampReasonCodes, "SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"],
+      "INSUFFICIENT_EVIDENCE",
+      "INSUFFICIENT_EVIDENCE",
+      null,
+      null,
+      comparisonFreshness,
+      false,
+      referenceTimestampSkewMs,
+      reserveTimestampAlignmentStatus,
+      reserveReferenceTimestampSkewMs
+    );
   }
 
   const baseUsd = parseExactPriceDecimal(input.baseUsd.priceUsd)!;
@@ -814,7 +877,7 @@ export function assessIndependentReservePriceAgreement(
 
   let indexedStatus: IndependentPriceComparisonStatus = "NOT_ASSESSED";
   let indexedDeviation: string | null = null;
-  const reasonCodes: string[] = [];
+  const reasonCodes: string[] = [...reserveTimestampReasonCodes];
   const indexedSourceTimestamp = input.indexedSourceEventAt ?? input.indexedSourceObservedAt ?? null;
   const usesObservationTimestamp =
     input.indexedSourceEventAt === null && input.indexedSourceObservedAt !== undefined &&
@@ -859,11 +922,13 @@ export function assessIndependentReservePriceAgreement(
   const status: IndependentPriceComparisonStatus =
     reserveStatus === "DISAGREEMENT" || indexedStatus === "DISAGREEMENT"
       ? "DISAGREEMENT"
-      : indexedStatus === "INVALID_INPUT"
+      : indexedStatus === "INVALID_INPUT" || reserveTimestampAlignmentStatus === "INVALID_INPUT"
         ? "INVALID_INPUT"
-        : reserveStatus === "AGREED" && indexedStatus === "AGREED"
-          ? "AGREED"
-          : "INSUFFICIENT_EVIDENCE";
+        : reserveTimestampAlignmentStatus === "INSUFFICIENT_EVIDENCE"
+          ? "INSUFFICIENT_EVIDENCE"
+          : reserveStatus === "AGREED" && indexedStatus === "AGREED"
+            ? "AGREED"
+            : "INSUFFICIENT_EVIDENCE";
   const evidenceComplete = status === "AGREED" && !hasSyntheticReference;
   return result(
     status,
@@ -872,9 +937,11 @@ export function assessIndependentReservePriceAgreement(
     indexedStatus,
     reserveComparison.deviationBpsRounded,
     indexedDeviation,
-    "FRESH",
+    comparisonFreshness,
     evidenceComplete,
-    referenceTimestampSkewMs
+    referenceTimestampSkewMs,
+    reserveTimestampAlignmentStatus,
+    reserveReferenceTimestampSkewMs
   );
 }
 
