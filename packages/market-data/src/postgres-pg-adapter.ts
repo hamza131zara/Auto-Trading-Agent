@@ -99,7 +99,7 @@ function validateConfig(value: unknown): asserts value is PostgresPgAdapterConfi
   }
   const host = value.host;
   if (typeof host !== "string" || host.length > 253 ||
-      host !== host.trim() || host.includes(":") || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) ||
+      host !== host.trim() || host.includes(":") || /^[0-9.]+$/.test(host) ||
       !/^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*$/.test(host) ||
       !positiveInteger(value.port, 65_535) ||
       typeof value.database !== "string" || !/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,62}$/.test(value.database) ||
