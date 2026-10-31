@@ -37,7 +37,7 @@ export function parseJsonPreservingNumericLexemes(text: string): unknown {
     }
 
     if (character === "-" || (character >= "0" && character <= "9")) {
-      const match = text.slice(index).match(/^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/);
+      const match = text.slice(index).match(/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/);
       if (match === null) throw new SyntaxError("Invalid JSON numeric token.");
       output += JSON.stringify(match[0]);
       index += match[0].length;
