@@ -9,6 +9,7 @@
  */
 import { Agent, request as defaultHttpsRequest } from "node:https";
 import type { IncomingMessage } from "node:http";
+import type { LookupFunction } from "node:net";
 import {
   PROVIDER_TRUST_REGISTRY_LIMITS,
   ProviderTrustRegistryError
@@ -107,9 +108,12 @@ function validateContentLength(value: string | null, maximum: number): void {
 export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustRegistryTransport {
   private readonly endpointUrl: URL;
   private readonly requester: HttpsRequester;
+  private readonly lookup: LookupFunction;
 
   constructor(input: {
     readonly endpointUrl: string;
+    /** Owner-supplied DNS/IP policy; the adapter never falls back to ambient lookup. */
+    readonly lookup: LookupFunction;
     readonly requester?: HttpsRequester;
   }) {
     if (typeof input !== "object" || input === null) {
@@ -135,7 +139,11 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
         endpoint.hostname.length === 0) {
       fail("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
     }
+    if (typeof input.lookup !== "function") {
+      fail("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
+    }
     this.endpointUrl = endpoint;
+    this.lookup = input.lookup;
     this.requester = input.requester ?? defaultHttpsRequest;
   }
 
@@ -266,6 +274,7 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
           method: "GET",
           agent,
           signal: request.signal,
+          lookup: this.lookup,
           servername: endpoint.hostname,
           rejectUnauthorized: true,
           minVersion: "TLSv1.2",
