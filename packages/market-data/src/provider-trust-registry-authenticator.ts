@@ -205,8 +205,10 @@ async function loadPinnedRootPublicKey(anchor: ProviderTrustRegistryTrustAnchor)
     throw new ProviderTrustRegistryError("TRUST_REGISTRY_ROOT_KEY_MISMATCH");
   }
 
+  const fingerprintInput = new Uint8Array(spkiDer.byteLength);
+  fingerprintInput.set(spkiDer);
   const actualFingerprint = new Uint8Array(
-    await globalThis.crypto.subtle.digest("SHA-256", spkiDer)
+    await globalThis.crypto.subtle.digest("SHA-256", fingerprintInput)
   );
   const expectedFingerprint = decodeHex(anchor.expectedSpkiSha256);
   if (expectedFingerprint === null || !fixedTimeEqual(expectedFingerprint, actualFingerprint)) {
