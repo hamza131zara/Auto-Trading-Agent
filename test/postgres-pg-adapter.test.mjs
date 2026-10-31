@@ -45,6 +45,10 @@ test("configuration rejects IP literals, URI-based configuration and insecure ti
     (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
   assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, host: "::1" }),
     (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
+  assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, host: "127.1" }),
+    (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
+  assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, host: "2130706433" }),
+    (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
   assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, connectionString: "postgres://x" }),
     (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
   assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, lockTimeoutMs: CONFIG.statementTimeoutMs }),
