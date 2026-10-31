@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — Phase 6.39 adds a test-only node-postgres 8.23.1 pool lifecycle experiment against disposable PostgreSQL 18.6. No production driver is selected; effective TLS/pool configuration, trust-anchor/endpoint identity, backup/PITR evidence, monitoring and owner approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
+**Status:** ACTIVE — Phase 6.40 adds test-only node-postgres TLS handshake checks against disposable PostgreSQL 18.6 fixtures. The production driver remains unselected; production CA/endpoint identity, rotation/monitoring, effective TLS/pool configuration, backup/PITR evidence and owner approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
 
 **Status:** ACTIVE — Phase 6.19/6.20 reproducible reference build and local evidence review completed; Phase 6.18 live Mainnet ProgramData comparison returned exact ELF hash MATCH at finalized slot `463153970`, with upgrade authority still present. Latest live Phase 6.14 candidate-discovery run [#12](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41005895558) completed both SOL/USDC and SOL/USDT pagination, checked 45 returned accounts, decoded 24 CPMM candidates and cross-checked all 24; zero candidates met unchanged USD 100,000 liquidity / USD 10,000 24-hour volume thresholds. Indexed source freshness remains UNKNOWN; independent price agreement, provider selection/terms/fallback, upgrade-authority policy and Phase 7 token safety remain open. Phase 6 stays active; production-provider approval and trading authorization are false.
 **Started:** 29 October 2026.
@@ -51,6 +51,7 @@
 29. [PostgreSQL client TLS policy preflight](37-postgres-client-tls-policy-preflight.md)
 30. [PostgreSQL pool lifecycle and timeout policy preflight](38-postgres-pool-lifecycle-policy-preflight.md)
 31. [Test-only node-postgres pool lifecycle experiment](39-node-postgres-pool-lifecycle-experiment.md)
+32. [node-postgres TLS handshake verification experiment](40-node-postgres-tls-handshake-verification.md)
 
 ## Initial implementation boundary
 
@@ -204,3 +205,8 @@ An offline driver-neutral preflight now checks explicit pool timeout relationshi
 ## Phase 6.39 — Test-only node-postgres pool lifecycle experiment
 
 The disposable PostgreSQL 18.6 workflow now exercises the existing transient `pg@8.23.1` dependency for pool acquisition timeout, server statement/lock/idle-transaction timeouts, an adapter-side bounded admission gate and graceful `pool.end()` behavior. The exact package version is asserted at runtime. The driver remains test-only and is not selected for production; a passing run establishes behavior only in the disposable CI service. See [Phase 6.39](39-node-postgres-pool-lifecycle-experiment.md).
+
+
+## Phase 6.40 — node-postgres TLS handshake verification experiment
+
+The PostgreSQL CI workflow now creates disposable CA/certificate fixtures and tests the test-only node-postgres client against PostgreSQL 18.6 for trusted-chain acceptance, untrusted CA rejection, hostname mismatch rejection, expired-certificate rejection, TLS-disabled endpoint rejection and protocol-minimum negotiation. The driver remains test-only; no production CA, endpoint, connection configuration or driver selection is approved. See [Phase 6.40](40-node-postgres-tls-handshake-verification.md).

@@ -19,6 +19,7 @@
     "test": "npm run build && node --test",
     "test:postgres": "npm run build && node --test test/provider-health-store.postgres.integration.test.mjs",
     "test:postgres:lifecycle": "node --test test/postgres-pool-lifecycle.pg.integration.test.mjs",
+    "test:postgres:tls": "node --test test/postgres-tls-policy.pg.integration.test.mjs",
     "check": "npm run validate:repo && npm run typecheck && npm test",
     "validate:phase6-live-source": "npm run build && node scripts/validate-raydium-live-source.mjs",
     "test:postgres:recovery": "npm run build && node --test test/phase6-postgres-recovery.integration.test.mjs",
