@@ -13,7 +13,7 @@ const CONFIG = Object.freeze({
   password: "test-only-password",
   caCertificate: "-----BEGIN CERTIFICATE-----\ntest-ca\n-----END CERTIFICATE-----",
   maxConnections: 4,
-  connectionTimeoutMs: 1_000,
+  connectionTimeoutMs: 2_000,
   acquisitionTimeoutMs: 1_500,
   idleTimeoutMs: 10_000,
   maximumConnectionLifetimeSeconds: 3_600,
@@ -52,6 +52,8 @@ test("configuration rejects IP literals, URI-based configuration and insecure ti
   assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, connectionString: "postgres://x" }),
     (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
   assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, lockTimeoutMs: CONFIG.statementTimeoutMs }),
+    (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
+  assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, connectionTimeoutMs: 1_000, acquisitionTimeoutMs: 1_500 }),
     (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
   assert.throws(() => buildPostgresPgPoolOptions({ ...CONFIG, maximumPendingAcquisitions: 0 }),
     (error) => error instanceof PostgresPgAdapterError && error.code === "INVALID_CONFIGURATION");
