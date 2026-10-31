@@ -112,16 +112,27 @@ implements ProviderTrustSnapshotAuthenticator {
     const canonicalPayloadSha256 = createHash("sha256")
       .update(payloadBytes)
       .digest("hex");
-    const keys = Object.freeze(envelope.keys.map((key) => Object.freeze({
-      keyId: key.keyId,
-      owner: key.owner,
-      publicKeyPem: key.publicKeyPem,
-      notBefore: key.notBefore,
-      expiresAt: key.expiresAt,
-      revokedAt: key.revokedAt,
-      allowedProviderIds: Object.freeze([...key.allowedProviderIds]),
-      allowedPurposes: Object.freeze([...key.allowedPurposes])
-    })));
+    const keys = Object.freeze(envelope.keys.map((key) => {
+      let providerDecisionKey: ReturnType<typeof createPublicKey>;
+      try {
+        providerDecisionKey = createPublicKey(key.publicKeyPem);
+      } catch {
+        throw new ProviderTrustRegistryError("TRUST_REGISTRY_SNAPSHOT_KEY_INVALID");
+      }
+      if (providerDecisionKey.asymmetricKeyType !== "ed25519") {
+        throw new ProviderTrustRegistryError("TRUST_REGISTRY_SNAPSHOT_KEY_INVALID");
+      }
+      return Object.freeze({
+        keyId: key.keyId,
+        owner: key.owner,
+        publicKeyPem: key.publicKeyPem,
+        notBefore: key.notBefore,
+        expiresAt: key.expiresAt,
+        revokedAt: key.revokedAt,
+        allowedProviderIds: Object.freeze([...key.allowedProviderIds]),
+        allowedPurposes: Object.freeze([...key.allowedPurposes])
+      });
+    }));
 
     return Object.freeze({
       registryId: envelope.registryId,
