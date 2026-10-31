@@ -6,7 +6,8 @@ import {
   PROVIDER_TRUST_REGISTRY_SNAPSHOT_VERSION
 } from "../packages/market-data/dist/provider-trust-registry.js";
 import {
-  createEd25519ProviderTrustSnapshotAuthenticator
+  createEd25519ProviderTrustSnapshotAuthenticator,
+  validateProviderTrustRegistryTrustAnchor
 } from "../packages/market-data/dist/provider-trust-registry-authenticator.js";
 
 const NOW = "2026-10-31T13:30:00.000Z";
@@ -309,5 +310,30 @@ test("rejects unknown fields, malformed key records and duplicate signing-key ID
       snapshotBytes: Buffer.from(JSON.stringify(duplicateIds), "utf8")
     })),
     "TRUST_REGISTRY_DUPLICATE_KEY_ID"
+  );
+});
+
+
+test("startup trust-anchor validation checks the Ed25519 SPKI pin without a registry response", async () => {
+  const f = fixture();
+  await assert.doesNotReject(validateProviderTrustRegistryTrustAnchor(f.trustAnchor));
+
+  await expectCode(
+    validateProviderTrustRegistryTrustAnchor({
+      ...f.trustAnchor,
+      expectedSpkiSha256: "b".repeat(64)
+    }),
+    "TRUST_REGISTRY_ROOT_FINGERPRINT_MISMATCH"
+  );
+
+  const rsaRoot = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const rsaDer = rsaRoot.publicKey.export({ type: "spki", format: "der" });
+  await expectCode(
+    validateProviderTrustRegistryTrustAnchor({
+      ...f.trustAnchor,
+      rootPublicKeyPem: rsaRoot.publicKey.export({ type: "spki", format: "pem" }).toString(),
+      expectedSpkiSha256: createHash("sha256").update(rsaDer).digest("hex")
+    }),
+    "TRUST_REGISTRY_ROOT_KEY_MISMATCH"
   );
 });

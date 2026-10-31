@@ -75,7 +75,7 @@ export type ProviderUseDecisionResolver = (
   providerId: string,
   purpose: ProviderUsePurpose,
   at: string
-) => unknown;
+) => unknown | Promise<unknown>;
 
 export interface ReadOnlyMarketDataOrchestratorOptions {
   readonly now: () => string;
@@ -627,7 +627,7 @@ export class ReadOnlyMarketDataOrchestrator {
       let useDecision: unknown = null;
       if (this.options.providerUseDecisionResolver !== undefined) {
         try {
-          useDecision = this.options.providerUseDecisionResolver(
+          useDecision = await this.options.providerUseDecisionResolver(
             providerId,
             this.options.usagePurpose,
             startedAt

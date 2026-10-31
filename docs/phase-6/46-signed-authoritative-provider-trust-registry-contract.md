@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Phase 6.46 Steps 1–6 are implemented and verified on this branch.** The concrete transport remains generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
+**Phase 6.46 Steps 1–6 are merged and verified. Step 7 startup/configuration wiring is implemented on this branch and awaits CI verification.** The trust registry remains disabled by default; no production endpoint, DNS allowlist, root key or credentials are selected.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
@@ -180,6 +180,40 @@ The real-handshake matrix verifies:
 - An AbortSignal cancels an in-flight TLS request and returns only the sanitized `TRUST_REGISTRY_UNAVAILABLE` reason.
 
 All certificates, keys, HTTP listeners and DNS mappings are disposable test fixtures. The test does not add a CA to production configuration, does not weaken certificate verification, and does not select a registry endpoint or resolver policy. Production DNS/origin/trust-anchor provisioning remains an owner decision. This test step verifies the generic transport's TLS behavior; it does not activate the trust registry or any provider.
+
+## Step 7 — disabled-by-default startup and authorization wiring
+
+The optional startup configuration boundary is implemented in \`packages/config/src/index.ts\` as \`parseProviderTrustRegistryConfig\`. Its default result is \`{ enabled: false }\`. When disabled, it rejects leftover registry values rather than silently ignoring a partially provisioned configuration. Enabling requires every owner-controlled value:
+
+| Environment variable | Purpose |
+|---|---|
+| \`ATA_PROVIDER_TRUST_REGISTRY_ENABLED\` | Exact \`true\` or \`false\`; defaults to disabled |
+| \`ATA_PROVIDER_TRUST_REGISTRY_ENDPOINT_URL\` | One canonical HTTPS URL with the fixed owner-selected path and optional static query; IP-literal endpoints are rejected |
+| \`ATA_PROVIDER_TRUST_REGISTRY_REGISTRY_ID\` | Stable registry identity, not a URL |
+| \`ATA_PROVIDER_TRUST_REGISTRY_ROOT_KEY_ID\` | Independently pinned Ed25519 root-key identifier |
+| \`ATA_PROVIDER_TRUST_REGISTRY_ROOT_PUBLIC_KEY_PEM\` | Ed25519 SPKI public-key PEM only; private-key PEM is rejected |
+| \`ATA_PROVIDER_TRUST_REGISTRY_ROOT_SPKI_SHA256\` | Independently provisioned 64-character SPKI SHA-256 fingerprint |
+| \`ATA_PROVIDER_TRUST_REGISTRY_DNS_ALLOWED_IPS\` | Comma-separated exact canonical IPv4/IPv6 addresses the endpoint hostname is allowed to resolve to |
+
+The parser enforces HTTPS, canonical URL form, no URL userinfo or fragment, bounded values, a DNS hostname rather than an IP-literal endpoint, canonical IP syntax, unique allowlist members and exact boolean spelling. It freezes the result and does not mutate the caller's environment. The example environment file contains only \`ATA_PROVIDER_TRUST_REGISTRY_ENABLED=false\`; no endpoint, IP address, registry identity or root key is preselected.
+
+The startup composition is exported as \`createProviderTrustRegistryAuthorizationRuntime\` from \`@ata/market-data\` and the \`@ata/market-data/provider-trust-registry-runtime\` package subpath. It accepts the parsed config, owner-supplied signed provider-use decision envelopes, and the query client of the application-managed PostgreSQL pool. It:
+
+- Returns a permanently default-deny resolver when disabled, without requiring a database client or constructing a network transport.
+- When enabled, revalidates the exact config shape, builds the independently pinned trust anchor, checks Ed25519 key type and computes/compares the SPKI fingerprint **before** any DNS lookup, HTTPS request or SQL query.
+- Creates a hostname-specific DNS lookup callback that resolves only the configured endpoint hostname and rejects the complete DNS answer if any returned IP is outside the exact owner allowlist. It handles both Node single-address and multi-address lookup callback modes; it does not use a proxy or response-selected host.
+- Composes the direct HTTPS adapter, Ed25519 snapshot authenticator, authenticated loader and PostgreSQL high-water-mark CAS store. Constructing the runtime does not read the network or database.
+- Clones and bounds the signed decision envelope set. No matching or ambiguous provider/purpose decision is denied before a registry request.
+- Provides an asynchronous provider-use decision resolver. The orchestrator now awaits sync or async resolvers before invoking any provider adapter. For exactly one matching decision, the resolver fetches a **fresh** snapshot, authenticates it, advances durable anti-rollback state, then verifies the signed decision against the authenticated key set and the requesting provider, purpose and time.
+- Returns no decision for missing/malformed configuration, DNS policy mismatch, TLS/HTTP error, signature failure, freshness error, rollback/equivocation, PostgreSQL outage/CAS conflict, or invalid/ambiguous decision. There is no cache or stale-key fallback. A failed authorization reaches the existing \`BLOCK_PROVIDER_USE_NOT_APPROVED\` gate before provider I/O.
+
+The startup factory does not select a provider vendor, secret service, registry URL, DNS answer, production root key or decision. Those values must come through the owner's independent deployment channel. The DNS allowlist is a sensitive security policy input and requires owner review; this implementation validates and enforces the exact list, but does not choose it.
+
+**Service boundary:** \`services/agent\` remains scaffold-only. This step provides a typed startup composition API and connects its asynchronous resolver to the orchestrator, but it does not create or launch an agent process, open a production database connection, automatically poll the registry or start market-data collection. A future customer-local service entrypoint must parse its environment, pass its already-managed PostgreSQL query client and owner-reviewed signed decisions to the factory, and inject the returned resolver into \`ReadOnlyMarketDataOrchestrator\`. If the feature remains disabled or any required owner value is absent, provider use stays default-deny.
+
+Verification includes disabled/partial configuration, canonical endpoint and DNS allowlist rejection, pinned-root mismatch before DB access, lazy bootstrap with no eager I/O, ambiguous decision denial, async resolver gating in the orchestrator, and an end-to-end local HTTPS test that obtains a root-signed snapshot, persists the initial high-water mark, and returns only a correctly signed diagnostic decision. All TLS fixtures and keys are disposable CI artifacts; no production endpoint or owner key is used.
+
+This step does not activate the trust registry on \`main\`, make a live external request, approve data-provider rights, alter freshness or discovery thresholds, or authorize production provider use, wallet signing, orders, spending or trading. Frozen Solana-only V1 scope and the existing default-deny gates remain unchanged.
 
 ## Step 2 — root snapshot authenticator
 
