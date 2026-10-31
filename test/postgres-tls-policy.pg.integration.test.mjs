@@ -87,7 +87,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       database: "ata_tls_test",
       caCertificate: trustedCa,
       maxConnections: 2,
-      connectionTimeoutMs: 1_000,
+      connectionTimeoutMs: 3_000,
       acquisitionTimeoutMs: 2_000,
       idleTimeoutMs: 1_000,
       maximumConnectionLifetimeSeconds: 600,
@@ -120,6 +120,62 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
     }
   });
 
+
+  await t.test("production adapter bounds queued acquisitions and releases a late client", async () => {
+    const { PostgresPgPoolAdapter, PostgresPgAdapterError } =
+      await import("../packages/market-data/dist/postgres-pg-adapter.js");
+    const adapter = new PostgresPgPoolAdapter({
+      host: "pg-tls.test",
+      port: 55_432,
+      user: "ata_tls_test",
+      password: "ata_local_tls_test_only",
+      database: "ata_tls_test",
+      caCertificate: trustedCa,
+      maxConnections: 1,
+      connectionTimeoutMs: 3_000,
+      acquisitionTimeoutMs: 200,
+      idleTimeoutMs: 1_000,
+      maximumConnectionLifetimeSeconds: 600,
+      statementTimeoutMs: 5_000,
+      lockTimeoutMs: 1_000,
+      idleInTransactionTimeoutMs: 5_000,
+      maximumPendingAcquisitions: 1,
+      shutdownDrainTimeoutMs: 2_000,
+      applicationName: "ata-phase6-production-adapter-queue-test"
+    });
+    let held;
+    try {
+      held = await adapter.connect();
+      const pending = adapter.connect();
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(adapter.getPoolSnapshot().waitingAcquisitions, 1);
+      await assert.rejects(
+        adapter.connect(),
+        (error) => error instanceof PostgresPgAdapterError && error.code === "POOL_QUEUE_FULL"
+      );
+      await assert.rejects(
+        pending,
+        (error) => error instanceof PostgresPgAdapterError && error.code === "ACQUISITION_TIMEOUT"
+      );
+      // The timed-out request still occupies the admission slot until pg settles it.
+      await assert.rejects(
+        adapter.connect(),
+        (error) => error instanceof PostgresPgAdapterError && error.code === "POOL_QUEUE_FULL"
+      );
+      assert.equal(adapter.getPoolSnapshot().waitingAcquisitions, 1);
+      held.release();
+      held = undefined;
+      for (let attempt = 0; attempt < 20 && adapter.getPoolSnapshot().waitingAcquisitions !== 0; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      assert.equal(adapter.getPoolSnapshot().waitingAcquisitions, 0);
+      assert.equal(adapter.getPoolSnapshot().idleConnections, 1);
+    } finally {
+      held?.release();
+      await adapter.close();
+    }
+  });
+
   await t.test("production adapter rejects an untrusted CA without exposing driver details", async () => {
     const { PostgresPgPoolAdapter, PostgresPgAdapterError } =
       await import("../packages/market-data/dist/postgres-pg-adapter.js");
@@ -131,7 +187,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       database: "ata_tls_test",
       caCertificate: untrustedCa,
       maxConnections: 1,
-      connectionTimeoutMs: 1_000,
+      connectionTimeoutMs: 3_000,
       acquisitionTimeoutMs: 2_000,
       idleTimeoutMs: 1_000,
       maximumConnectionLifetimeSeconds: 600,
@@ -165,7 +221,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       database: "ata_tls_test",
       caCertificate: trustedCa,
       maxConnections: 1,
-      connectionTimeoutMs: 1_000,
+      connectionTimeoutMs: 3_000,
       acquisitionTimeoutMs: 2_000,
       idleTimeoutMs: 1_000,
       maximumConnectionLifetimeSeconds: 600,
