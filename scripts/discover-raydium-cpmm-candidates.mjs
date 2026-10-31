@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import { parseJsonPreservingNumericLexemes } from "../packages/market-data/dist/providers/dex-screener.js";
 import {
   decodeRaydiumCpmmPool,
   isSolanaPublicKey,
@@ -87,7 +88,7 @@ function readThreshold(env, name, fallback) {
   if (!Number.isFinite(value) || value < 0 || value > 1_000_000_000_000) {
     throw codedError("DISCOVERY_THRESHOLD_OUT_OF_RANGE");
   }
-  return value;
+  return { value, exact: input };
 }
 
 async function readBoundedText(response, errorPrefix) {
@@ -132,7 +133,7 @@ async function readBoundedText(response, errorPrefix) {
   return chunks.join("");
 }
 
-async function fetchJson(fetchImpl, url, init, errorPrefix) {
+async function fetchJson(fetchImpl, url, init, errorPrefix, preserveNumericLexemes = false) {
   let response;
   try {
     response = await fetchImpl(url, {
@@ -146,23 +147,81 @@ async function fetchJson(fetchImpl, url, init, errorPrefix) {
   const rawText = await readBoundedText(response, errorPrefix);
   let payload;
   try {
-    payload = JSON.parse(rawText);
+    payload = preserveNumericLexemes
+      ? parseJsonPreservingNumericLexemes(rawText)
+      : JSON.parse(rawText);
   } catch {
     throw codedError(errorPrefix + "_JSON_INVALID");
   }
   return { payload, rawText };
 }
 
-function asNonNegativeMetric(value) {
+function exactNonNegativeDecimal(value) {
+  let text;
   if (typeof value === "number") {
-    return Number.isFinite(value) && value >= 0 ? value : null;
+    if (!Number.isFinite(value) || value < 0) return null;
+    text = String(value);
+  } else if (typeof value === "string" && value.length <= 128) {
+    text = value;
+  } else {
+    return null;
   }
-  if (typeof value === "string" && value.length <= 64 &&
-      /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value)) {
-    const number = Number(value);
-    return Number.isFinite(number) && number >= 0 ? number : null;
+
+  if (/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(text)) return text;
+
+  const match = text.match(/^(0|[1-9][0-9]*)(?:\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
+  if (match === null) return null;
+  const integerPart = match[1];
+  const exponentText = match[3];
+  if (integerPart === undefined || exponentText === undefined) return null;
+  const exponent = Number(exponentText);
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 64) return null;
+  const digits = integerPart + (match[2] ?? "");
+  const decimalPosition = integerPart.length + exponent;
+  let expanded;
+  if (decimalPosition <= 0) {
+    expanded = "0." + "0".repeat(-decimalPosition) + digits;
+  } else if (decimalPosition >= digits.length) {
+    expanded = digits + "0".repeat(decimalPosition - digits.length);
+  } else {
+    expanded = digits.slice(0, decimalPosition) + "." + digits.slice(decimalPosition);
   }
-  return null;
+  const [whole = "0", fraction] = expanded.split(".");
+  const normalizedWhole = whole.replace(/^0+(?=[0-9])/, "");
+  const normalized = fraction === undefined
+    ? normalizedWhole
+    : normalizedWhole + "." + fraction;
+  return normalized.length <= 128 && /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(normalized)
+    ? normalized
+    : null;
+}
+
+function compareNonNegativeDecimals(left, right) {
+  const leftDecimal = exactNonNegativeDecimal(left);
+  const rightDecimal = exactNonNegativeDecimal(right);
+  if (leftDecimal === null || rightDecimal === null) return null;
+  const [leftWhole = "0", leftFraction = ""] = leftDecimal.split(".");
+  const [rightWhole = "0", rightFraction = ""] = rightDecimal.split(".");
+  const scale = Math.max(leftFraction.length, rightFraction.length);
+  const leftScaled = BigInt(leftWhole + leftFraction.padEnd(scale, "0"));
+  const rightScaled = BigInt(rightWhole + rightFraction.padEnd(scale, "0"));
+  return leftScaled < rightScaled ? -1 : leftScaled > rightScaled ? 1 : 0;
+}
+
+function asNonNegativeMetric(value) {
+  const decimal = exactNonNegativeDecimal(value);
+  if (decimal === null) return null;
+  const number = Number(decimal);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function asSafeNonNegativeInteger(value) {
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  }
+  if (typeof value !== "string" || !/^(?:0|[1-9][0-9]*)$/.test(value)) return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? number : null;
 }
 
 function isRecord(value) {
