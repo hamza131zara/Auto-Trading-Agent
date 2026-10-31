@@ -43,7 +43,7 @@ jobs:
         env:
           REQUIRE_PG_TLS_INTEGRATION: "true"
           PG_TLS_CERT_DIR: ${{ runner.temp }}/ata-pg-tls
-        run: npm run test:postgres:tls
+        run: npm run build && npm run test:postgres:tls
 
       - name: Remove disposable PostgreSQL TLS fixtures and test keys
         if: always()
