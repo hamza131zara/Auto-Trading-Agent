@@ -8,6 +8,7 @@ import {
   buildTargetSnapshotFromDexScreener,
   parseArgs,
   readOperatorConfiguration,
+  readSlotBlockTimeEvidence,
   validateLiveTargetSnapshot,
   validateRpcEndpoint
 } from "../scripts/validate-raydium-live-source.mjs";
@@ -121,6 +122,83 @@ test("on-chain reserve report derives exact vault amounts and quote-per-base rat
   assert.equal(report.quoteVaultAmountRaw, "12345678900");
   assert.equal(report.reserveRatioQuotePerBase, "100");
   assert.equal(report.independentComparisonStatus, "NOT_ASSESSED");
+});
+
+test("slot block-time evidence is bound to the exact finalized account context slot", async () => {
+  const bundle = {
+    source: {
+      providerId: "solana-mainnet-rpc",
+      commitment: "finalized",
+      contextSlot: 462900001,
+      synthetic: false
+    }
+  };
+  const blockTimeSeconds = 1_798_765_432;
+  const reader = {
+    async getBlockTime(slot, requestId) {
+      assert.equal(slot, bundle.source.contextSlot);
+      assert.equal(requestId, "live-run-001-block-time");
+      return {
+        providerId: bundle.source.providerId,
+        slot,
+        state: "AVAILABLE",
+        blockTimeUnixSeconds: blockTimeSeconds,
+        observedAt: new Date(blockTimeSeconds * 1_000).toISOString(),
+        timestampKind: "SLOT_BLOCK_TIME_ESTIMATE",
+        retrievedAt: "2026-10-31T10:00:01.000Z",
+        requestId,
+        rawPayloadSha256: "c".repeat(64),
+        synthetic: false
+      };
+    }
+  };
+  const evidence = await readSlotBlockTimeEvidence(reader, bundle, "live-run-001");
+  assert.equal(evidence.state, "AVAILABLE");
+  assert.equal(evidence.slot, 462900001);
+  assert.equal(evidence.contextSlot, 462900001);
+  assert.equal(evidence.accountCommitment, "finalized");
+  assert.equal(evidence.timestampKind, "SLOT_BLOCK_TIME_ESTIMATE");
+  assert.equal(evidence.observedAt, new Date(blockTimeSeconds * 1_000).toISOString());
+  assert.deepEqual(evidence.reasonCodes, []);
+});
+
+test("slot block-time unavailability or RPC failure remains explicit and does not fabricate time", async () => {
+  const bundle = {
+    source: {
+      providerId: "solana-mainnet-rpc",
+      commitment: "finalized",
+      contextSlot: 462900001,
+      synthetic: false
+    }
+  };
+  const unavailableReader = {
+    async getBlockTime(slot, requestId) {
+      return {
+        providerId: "solana-mainnet-rpc",
+        slot,
+        state: "UNAVAILABLE",
+        blockTimeUnixSeconds: null,
+        observedAt: null,
+        timestampKind: "MISSING",
+        retrievedAt: "2026-10-31T10:00:01.000Z",
+        requestId,
+        rawPayloadSha256: "d".repeat(64),
+        synthetic: false
+      };
+    }
+  };
+  const unavailable = await readSlotBlockTimeEvidence(unavailableReader, bundle, "live-run-002");
+  assert.equal(unavailable.state, "UNAVAILABLE");
+  assert.equal(unavailable.observedAt, null);
+  assert.equal(unavailable.timestampKind, "MISSING");
+  assert.deepEqual(unavailable.reasonCodes, ["SOLANA_BLOCK_TIME_NOT_AVAILABLE"]);
+
+  const failed = await readSlotBlockTimeEvidence({
+    async getBlockTime() { throw Object.assign(new Error("do not leak details"), { code: "TIMEOUT" }); }
+  }, bundle, "live-run-003");
+  assert.equal(failed.state, "UNAVAILABLE");
+  assert.equal(failed.observedAt, null);
+  assert.deepEqual(failed.reasonCodes, ["SOLANA_BLOCK_TIME_TIMEOUT"]);
 });
 
 test("on-chain reserve report rejects a vault whose decoded mint does not match the target", () => {
