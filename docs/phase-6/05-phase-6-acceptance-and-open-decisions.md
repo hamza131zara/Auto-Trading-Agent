@@ -350,3 +350,18 @@ The evaluator is offline and driver-neutral. It does not open a database connect
 - [ ] Complete a separately authorized production-like restore drill with application-level validation.
 
 The preflight evaluates declarations only. It does not create or restore backups, connect to PostgreSQL or external storage, verify encryption/digests, contact providers/RPC, incur spend or authorize production recovery. Phase 6 remains ACTIVE. See [Phase 6.36](36-postgres-backup-pitr-policy-preflight.md).
+
+
+## Phase 6.37 — PostgreSQL client TLS policy preflight
+
+- [x] Add an offline, driver-neutral PostgreSQL client TLS policy evaluator.
+- [x] Require TLS, certificate-chain validation and hostname validation against the requested endpoint name.
+- [x] Block plaintext fallback, invalid certificate/hostname overrides and TLS 1.0/1.1.
+- [x] Require reviewed trust-anchor and server-identity references plus certificate expiry/rotation controls.
+- [x] Require explicit driver-adapter review and an isolated positive/negative handshake evidence matrix.
+- [x] Reject missing/extra/malformed fields and path/URL-like or credential-shaped references; preserve non-authorizing status.
+- [ ] Select/pin the production driver and verify its actual TLS defaults/configuration and effective runtime options.
+- [ ] Run isolated handshake tests for trusted/untrusted chains, hostname mismatch, expiry, plaintext downgrade and protocol-floor rejection.
+- [ ] Verify trust-anchor, endpoint identity, expiry monitoring and rotation evidence with the owner/database operator.
+
+The evaluator accepts declarations only; it does not choose a driver, access certificates/secrets, open a socket or connect to PostgreSQL. A successful policy result remains REVIEW_REQUIRED. Phase 6 remains ACTIVE. See [Phase 6.37](37-postgres-client-tls-policy-preflight.md).

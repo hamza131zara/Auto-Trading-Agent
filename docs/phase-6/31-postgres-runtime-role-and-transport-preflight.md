@@ -28,7 +28,7 @@ The diagnostic has only two statuses:
 
 It never returns READY. A database-side query cannot prove that the client verified the server certificate chain and hostname (for example, a driver's strict `verify-full` configuration), nor can it prove deployment-level pool limits, aggregate connection capacity, statement/connection timeouts, encrypted backup policy, point-in-time recovery, a successful restore drill, separate migration ownership, a reviewed rollback procedure, monitoring/alerting or an owner-approved operating model. Those items remain mandatory human/first-party evidence.
 
-The production PostgreSQL driver and provider-health-store deployment are still unselected/unapproved. The runtime role should be created separately from the migration owner, granted only the exact operations required by the store, and configured with verified TLS by the deployment owner. Do not infer or copy a connection string into the repository.
+The production PostgreSQL driver and provider-health-store deployment are still unselected/unapproved. The Phase 6.37 policy evaluator checks declared intent only; it cannot verify that a selected driver actually enforces the requested options. The runtime role should be created separately from the migration owner, granted only the exact operations required by the store, and configured with verified TLS by the deployment owner. Do not infer or copy a connection string into the repository.
 
 ## Test coverage and safety boundary
 
@@ -45,7 +45,8 @@ The production PostgreSQL driver and provider-health-store deployment are still 
 - [x] Keep TLS encryption as a required technical check and state explicitly that client certificate/hostname validation cannot be verified by the SQL query.
 - [x] Ensure even a technically passing report remains REVIEW_REQUIRED and always keeps provider-health deployment approval and trading authorization false.
 - [x] Cover the least-privilege role on real disposable PostgreSQL in CI.
-- [ ] Obtain owner-selected production driver/client TLS configuration and first-party verification of certificate-chain and hostname validation.
+- [x] Add an offline, driver-neutral TLS policy contract requiring TLS, certificate-chain validation, requested-endpoint hostname validation, no plaintext fallback, and TLS 1.2 or newer (Phase 6.37).
+- [ ] Obtain owner-selected production driver/client TLS configuration and first-party verification of certificate-chain and hostname validation with real negative handshake tests.
 - [x] Add a read-only, policy-driven PostgreSQL activity/connection/lock/deadlock/size snapshot and deterministic alert evaluation (Phase 6.34).
 - [x] Add an offline aggregate pool-capacity calculator with explicit reserved slots, service demand and minimum headroom (Phase 6.35).
 - [ ] Verify actual deployment-specific pool sizing/timeouts and capacity across runtime instances; obtain owner/database-operator approval. Also close backups/retention/PITR, migration-owner separation/rollback, production monitoring identity/thresholds/alert route and operational sign-off.
