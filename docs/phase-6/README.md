@@ -225,3 +225,8 @@ A reloadable provider-use resolver now re-reads the trusted-key/revocation regis
 ## Phase 6.44 — Live owner-key revocation freshness
 
 A reloadable provider-use resolver re-reads the trusted-key/revocation registry for each provider attempt. It requires an explicit bounded-age snapshot (maximum five minutes), rejects future/stale/malformed snapshots, and defaults to deny if the registry cannot be read. Tests prove that key revocation blocks the next attempt without a process restart. This still requires a real owner-controlled authoritative registry; no key is created or approved. See [Phase 6.44](44-owner-key-revocation-freshness.md). Phase 6 remains ACTIVE and trading remains unauthorized.
+
+
+## Phase 6.45 — Live-source signed provider authorization bootstrap
+
+The manual live-source CLI now requires verified signed diagnostic decisions for its selected RPC provider before RPC I/O, and passes a signed resolver into the DEX Screener orchestrator for direct pair lookups. The GitHub Actions job uses the protected `phase6-provider-authorization` Environment and reads decision envelopes/trusted Ed25519 public keys only from owner-managed environment secrets. Missing, malformed, revoked, out-of-scope or stale authorization blocks before network activity. No owner key, signed decision or provider approval has been created; an owner must configure the protected environment and supply current reviewed records. The one-shot GitHub Environment is not a dynamic revocation transport for a long-running agent. See [Phase 6.45](45-live-source-signed-provider-authorization-bootstrap.md). Phase 6 remains ACTIVE and trading remains unauthorized.

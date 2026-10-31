@@ -13,7 +13,15 @@ import {
   validateLiveTargetSnapshot,
   validateRpcEndpoint
 } from "../scripts/validate-raydium-live-source.mjs";
+import { generateKeyPairSync, sign } from "node:crypto";
 import { DexScreenerPairsAdapter } from "../packages/market-data/dist/providers/dex-screener.js";
+import {
+  getProviderUseDecisionSigningPayload
+} from "../packages/market-data/dist/provider-use-decision-verifier.js";
+import {
+  createLiveSourceProviderUseDecisionResolver,
+  requireSignedProviderUseDecision
+} from "../scripts/validate-raydium-live-source.mjs";
 
 const replay = JSON.parse(
   readFileSync(new URL("./fixtures/market-data/replay-v1.json", import.meta.url), "utf8")
@@ -469,6 +477,55 @@ test("CLI checks operator approvals before attempting live indexed API or RPC ac
 });
 
 
+
+function signedProviderAuthorizationEnvironment(providerIds, overrides = {}) {
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  const trustedKey = {
+    keyId: "phase6-owner-signing-key-01",
+    owner: "phase6-owner",
+    publicKeyPem: publicKey.export({ type: "spki", format: "pem" }),
+    notBefore: "2026-10-01T00:00:00.000Z",
+    expiresAt: "2027-01-01T00:00:00.000Z",
+    revokedAt: null,
+    allowedProviderIds: [...providerIds],
+    allowedPurposes: ["DIAGNOSTIC"]
+  };
+  const envelopes = providerIds.map((providerId) => {
+    const unsigned = {
+      schemaVersion: "ata.provider-use-decision.v1",
+      keyId: trustedKey.keyId,
+      algorithm: "Ed25519",
+      decision: {
+        providerId,
+        purpose: "DIAGNOSTIC",
+        decisionId: "owner-decision-" + providerId,
+        owner: trustedKey.owner,
+        outcome: "PROCEED_DIAGNOSTIC_ONLY",
+        scope: "One read-only Phase 6 identity diagnostic for " + providerId,
+        decidedAt: "2026-10-31T12:00:00.000Z",
+        expiresAt: "2026-10-31T18:00:00.000Z",
+        linkedEvidenceIds: ["reviewed-evidence-" + providerId],
+        evidenceManifestSha256: "c".repeat(64)
+      }
+    };
+    return {
+      ...unsigned,
+      signature: sign(
+        null,
+        Buffer.from(getProviderUseDecisionSigningPayload(unsigned), "utf8"),
+        privateKey
+      ).toString("base64url")
+    };
+  });
+  return {
+    ATA_PROVIDER_USE_DECISIONS_JSON: JSON.stringify(envelopes),
+    ATA_PROVIDER_TRUSTED_KEYS_JSON: JSON.stringify([trustedKey]),
+    ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT: "2026-10-31T12:00:00.000Z",
+    ATA_PROVIDER_TRUSTED_KEYS_MAX_AGE_MS: "300000",
+    ...overrides
+  };
+}
+
 function validOperatorEnvironment(overrides = {}) {
   return {
     ATA_LIVE_SOURCE_APPROVAL: "APPROVED_READ_ONLY_MAINNET_RPC",
@@ -534,4 +591,154 @@ test("program reference hash and exact ELF length must be supplied together", ()
     })),
     { code: "EXPECTED_PROGRAM_ELF_HASH_AND_LENGTH_REQUIRED_TOGETHER" }
   );
+});
+
+
+test("live-source owner bootstrap accepts only signed scoped RPC and indexed-provider decisions", () => {
+  const env = signedProviderAuthorizationEnvironment(["test-rpc", "dex-screener"]);
+  const resolver = createLiveSourceProviderUseDecisionResolver(env);
+  const at = "2026-10-31T12:01:00.000Z";
+  assert.equal(
+    requireSignedProviderUseDecision(resolver, "test-rpc", "DIAGNOSTIC", at, "RPC_PROVIDER_USE_DECISION_NOT_VERIFIED").providerId,
+    "test-rpc"
+  );
+  assert.equal(resolver("dex-screener", "DIAGNOSTIC", at)?.providerId, "dex-screener");
+  assert.equal(resolver("test-rpc", "PRODUCTION", at), undefined);
+  assert.equal(resolver("unlisted-provider", "DIAGNOSTIC", at), undefined);
+});
+
+test("live-source owner bootstrap rejects missing or malformed authorization before network use", () => {
+  assert.throws(
+    () => createLiveSourceProviderUseDecisionResolver({}),
+    { code: "PROVIDER_USE_AUTHORIZATION_CONFIG_MISSING_OR_OVERSIZED" }
+  );
+  const valid = signedProviderAuthorizationEnvironment(["test-rpc", "dex-screener"]);
+  assert.throws(
+    () => createLiveSourceProviderUseDecisionResolver({
+      ...valid,
+      ATA_PROVIDER_USE_DECISIONS_JSON: "{"
+    }),
+    { code: "PROVIDER_USE_AUTHORIZATION_JSON_INVALID" }
+  );
+  assert.throws(
+    () => createLiveSourceProviderUseDecisionResolver({
+      ...valid,
+      ATA_PROVIDER_TRUSTED_KEYS_JSON: "[]"
+    }),
+    { code: "PROVIDER_USE_TRUSTED_KEY_CONFIG_INVALID" }
+  );
+});
+
+test("live-source owner bootstrap rechecks the environment trust snapshot on every decision", () => {
+  const env = signedProviderAuthorizationEnvironment(["test-rpc"]);
+  const resolver = createLiveSourceProviderUseDecisionResolver(env);
+  const at = "2026-10-31T12:01:00.000Z";
+  assert.ok(resolver("test-rpc", "DIAGNOSTIC", at));
+
+  const key = JSON.parse(env.ATA_PROVIDER_TRUSTED_KEYS_JSON)[0];
+  key.revokedAt = "2026-10-31T12:01:01.000Z";
+  env.ATA_PROVIDER_TRUSTED_KEYS_JSON = JSON.stringify([key]);
+  env.ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT = "2026-10-31T12:01:01.000Z";
+  assert.equal(resolver("test-rpc", "DIAGNOSTIC", "2026-10-31T12:01:02.000Z"), undefined);
+
+  env.ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT = "2026-10-31T11:50:00.000Z";
+  assert.equal(resolver("test-rpc", "DIAGNOSTIC", "2026-10-31T12:01:02.000Z"), undefined);
+});
+
+test("direct RPC provider decision is mandatory even when the indexed target is already supplied", () => {
+  const resolver = createLiveSourceProviderUseDecisionResolver(
+    signedProviderAuthorizationEnvironment(["some-other-rpc"])
+  );
+  assert.throws(
+    () => requireSignedProviderUseDecision(
+      resolver,
+      "test-rpc",
+      "DIAGNOSTIC",
+      "2026-10-31T12:01:00.000Z",
+      "RPC_PROVIDER_USE_DECISION_NOT_VERIFIED"
+    ),
+    { code: "RPC_PROVIDER_USE_DECISION_NOT_VERIFIED" }
+  );
+});
+
+test("CLI refuses the live-source run without protected signed provider-use configuration", () => {
+  const result = spawnSync(process.execPath, [
+    "scripts/validate-raydium-live-source.mjs",
+    "--pool-address", baseTarget.poolAddress,
+    "--base-mint", baseTarget.baseMint,
+    "--quote-mint", baseTarget.quoteMint
+  ], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ATA_LIVE_SOURCE_APPROVAL: "APPROVED_READ_ONLY_MAINNET_RPC",
+      ATA_LIVE_TARGET_SOURCE_APPROVAL: "INDEPENDENT_INDEXED_SOURCE_REVIEWED",
+      ATA_LIVE_PROVIDER_TERMS_APPROVAL: "TERMS_QUOTA_AND_BUDGET_REVIEWED",
+      ATA_SOLANA_RPC_URL: "https://127.0.0.1:1/never-contacted",
+      ATA_SOLANA_RPC_PROVIDER_ID: "solana-public-shared",
+      ATA_LIVE_MIN_CONTEXT_SLOT: "1",
+      ATA_LIVE_MAX_RETRIEVAL_AGE_MS: "30000",
+      ATA_PROVIDER_USE_DECISIONS_JSON: "",
+      ATA_PROVIDER_TRUSTED_KEYS_JSON: "",
+      ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT: "",
+      ATA_PROVIDER_TRUSTED_KEYS_MAX_AGE_MS: "300000"
+    }
+  });
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /PROVIDER_USE_AUTHORIZATION_CONFIG_MISSING_OR_OVERSIZED/);
+  assert.doesNotMatch(result.stderr, /127\.0\.0\.1|never-contacted|api\.dexscreener\.com/);
+});
+
+
+test("signed DEX Screener decision allows one diagnostic fetch but mock data stays ineligible", async () => {
+  const fixtureText = readFileSync(
+    new URL("./fixtures/market-data/dexscreener-pair-v1.json", import.meta.url),
+    "utf8"
+  );
+  let adapterFetchCalls = 0;
+  const adapter = new DexScreenerPairsAdapter(async () => {
+    adapterFetchCalls += 1;
+    return new Response(fixtureText, { status: 200, headers: { "content-type": "application/json" } });
+  });
+  const resolver = createLiveSourceProviderUseDecisionResolver(
+    signedProviderAuthorizationEnvironment(["dex-screener"])
+  );
+  await assert.rejects(
+    buildTargetSnapshotFromDexScreener({
+      poolAddress: baseTarget.poolAddress,
+      baseMint: baseTarget.baseMint,
+      quoteMint: baseTarget.quoteMint,
+      rpcProviderId: "approved-rpc",
+      adapter,
+      now: () => "2026-10-31T12:01:00.000Z",
+      providerUseDecisionResolver: resolver
+    }),
+    { code: "TARGET_MUST_BE_REAL_INDEXED_SOURCE_EVIDENCE" }
+  );
+  assert.equal(adapterFetchCalls, 1, "a valid signed DEX decision permits the one explicit diagnostic HTTP read");
+});
+
+test("RPC-only signed decision cannot authorize the DEX Screener indexed API request", async () => {
+  let adapterFetchCalls = 0;
+  const adapter = new DexScreenerPairsAdapter(async () => {
+    adapterFetchCalls += 1;
+    return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+  });
+  const resolver = createLiveSourceProviderUseDecisionResolver(
+    signedProviderAuthorizationEnvironment(["solana-public-shared"])
+  );
+  await assert.rejects(
+    buildTargetSnapshotFromDexScreener({
+      poolAddress: baseTarget.poolAddress,
+      baseMint: baseTarget.baseMint,
+      quoteMint: baseTarget.quoteMint,
+      rpcProviderId: "solana-public-shared",
+      adapter,
+      now: () => "2026-10-31T12:01:00.000Z",
+      providerUseDecisionResolver: resolver
+    }),
+    { code: "INDEXED_API_PROVIDER_USE_DECISION_MISSING" }
+  );
+  assert.equal(adapterFetchCalls, 0, "a decision for the RPC provider cannot authorize DEX Screener");
 });
