@@ -263,7 +263,8 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   });
 
   assert.equal(calls.length, 7); // Two Raydium pair queries, account snapshot, block-time lookup and three exact CPMM pair lookups
-  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
+  assert.equal(report.status, "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN");
+  assert.equal(report.schemaVersion, "ata.phase6.cpmm-candidate-discovery.v4");
   assert.equal(report.sources.raydiumApi.providerId, "raydium-api-v3");
   assert.equal(report.sources.raydiumApi.freshness, "UNKNOWN");
   assert.equal(report.sources.raydiumApi.approvedQuotePairQueries.length, 2);
@@ -543,7 +544,7 @@ test("accepts Raydium SDK page shape and supported HTTP envelope forms", async (
       now: () => "2026-10-29T09:00:00.000Z"
     });
     assert.equal(report.selectionPolicy.candidateCount, 1);
-    assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
+    assert.equal(report.status, "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN");
   }
 });
 
@@ -606,7 +607,7 @@ test("uses nextPageId cursor and refuses to recommend from a partial page", asyn
   assert.equal(usdcQuery.pages.length, 10);
   assert.equal(report.selectionPolicy.scanIncomplete, true);
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
-  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
+  assert.equal(report.status, "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN_PARTIAL_SCAN");
 });
 
 test("keeps full numbered page incomplete when pagination signals are absent", async () => {
@@ -636,7 +637,7 @@ test("keeps full numbered page incomplete when pagination signals are absent", a
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
   // The separate SOL/USDT scan returns a qualifying fixture, but the overall
   // report remains partial because this SOL/USDC page has unknown pagination.
-  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
+  assert.equal(report.status, "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN_PARTIAL_SCAN");
   assert.equal(usdcQuery.pages[0].responseDiagnostics.pageHasNextPageType, "undefined");
   assert.equal(usdcQuery.pages[0].responseDiagnostics.poolArrayLength, 100);
 });
@@ -759,7 +760,7 @@ test("incomplete Raydium API paging cannot advertise a recommended pool", async 
     fetchImpl,
     now: () => "2026-10-29T09:00:00.000Z"
   });
-  assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN");
+  assert.equal(report.status, "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN_PARTIAL_SCAN");
   assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
 });
 

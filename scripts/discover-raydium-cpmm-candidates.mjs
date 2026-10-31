@@ -933,12 +933,19 @@ export async function discoverRaydiumCpmmCandidates({
   const displayCandidates = enrichedCandidates.slice(0, MAX_DISPLAY_CANDIDATES);
 
   return {
-    schemaVersion: "ata.phase6.cpmm-candidate-discovery.v3",
+    schemaVersion: "ata.phase6.cpmm-candidate-discovery.v4",
     generatedAt: now(),
     scope: "READ_ONLY_SOL_ALLOWLISTED_STABLECOIN_RAYDIUM_CPMM_CANDIDATE_DISCOVERY",
     status: scanIncomplete
-      ? qualifying.length > 0 ? "QUALIFYING_CPMM_CANDIDATES_FOUND_PARTIAL_SCAN" : "INCOMPLETE_DISCOVERY_SCAN"
-      : qualifying.length > 0 ? "QUALIFYING_CPMM_CANDIDATES_FOUND"
+      ? qualifying.length > 0
+        ? freshnessQualified.length > 0
+          ? "SOURCE_FRESHNESS_QUALIFIED_CANDIDATES_FOUND_PARTIAL_SCAN"
+          : "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN_PARTIAL_SCAN"
+        : "INCOMPLETE_DISCOVERY_SCAN"
+      : qualifying.length > 0
+        ? freshnessQualified.length > 0
+          ? "SOURCE_FRESHNESS_QUALIFIED_CANDIDATES_FOUND_PENDING_CRITICAL_EVIDENCE_GATE"
+          : "THRESHOLD_MATCHES_FOUND_SOURCE_FRESHNESS_UNKNOWN"
         : cpmmCandidates.length > 0 ? "CPMM_FOUND_BUT_NONE_CROSS_QUALIFIED"
           : "NO_CPMM_CANDIDATES_FOUND",
     sources: {
