@@ -843,7 +843,7 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   return identityPassed && (!expectedHashSupplied || deployedHashMatched) ? 0 : 1;
 }
 
-export { buildReport, readOperatorConfiguration, readSlotBlockTimeEvidence };
+export { buildReport, readOperatorConfiguration };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().then((code) => {
