@@ -9,6 +9,8 @@ import type {
   MarketDataRequest,
   MarketDataSourceKind
 } from "../index.js";
+import { parseJsonPreservingNumericLexemes } from "../json-number-lexemes.js";
+export { parseJsonPreservingNumericLexemes } from "../json-number-lexemes.js";
 
 const PROVIDER_ID = "dex-screener";
 const ADAPTER_VERSION = "0.1.0";
@@ -63,56 +65,6 @@ interface DecimalMeasure {
   readonly value: string;
   readonly unit: "USD" | "USD_PER_BASE";
   readonly assetId: null;
-}
-
-/**
- * Parse JSON while preserving each numeric lexeme as a string. This avoids
- * routing source decimal values through IEEE-754 before canonical storage.
- * JSON syntax is still fully checked by JSON.parse after token-preserving scan.
- */
-export function parseJsonPreservingNumericLexemes(text: string): unknown {
-  let output = "";
-  let inString = false;
-  let escaped = false;
-  let index = 0;
-
-  while (index < text.length) {
-    const character = text[index]!;
-
-    if (inString) {
-      output += character;
-      if (escaped) {
-        escaped = false;
-      } else if (character === "\\") {
-        escaped = true;
-      } else if (character === '"') {
-        inString = false;
-      }
-      index += 1;
-      continue;
-    }
-
-    if (character === '"') {
-      inString = true;
-      output += character;
-      index += 1;
-      continue;
-    }
-
-    if (character === "-" || (character >= "0" && character <= "9")) {
-      const match = text.slice(index).match(/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/);
-      if (match === null) throw new SyntaxError("Invalid JSON numeric token.");
-      output += JSON.stringify(match[0]);
-      index += match[0].length;
-      continue;
-    }
-
-    output += character;
-    index += 1;
-  }
-
-  if (inString || escaped) throw new SyntaxError("Unterminated JSON string.");
-  return JSON.parse(output) as unknown;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

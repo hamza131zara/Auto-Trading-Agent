@@ -9,6 +9,7 @@ import type {
   MarketDataRequest,
   MarketDataSourceKind
 } from "../index.js";
+import { parseJsonPreservingNumericLexemes } from "../json-number-lexemes.js";
 
 const PROVIDER_ID = "geckoterminal";
 const ADAPTER_VERSION = "0.1.0";
@@ -111,8 +112,26 @@ function isUtcTimestamp(value: unknown): value is string {
 }
 
 function canonicalDecimal(value: unknown): string | null {
-  if (typeof value !== "string" || value.length > 128 || !DECIMAL_PATTERN.test(value)) return null;
-  return value;
+  if (typeof value !== "string" || value.length > 128) return null;
+  if (DECIMAL_PATTERN.test(value)) return value;
+
+  // Expand exponent-form JSON numeric lexemes exactly; never route through Number.
+  const match = value.match(/^(0|[1-9][0-9]*)(?:\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
+  if (match === null) return null;
+  const integerPart = match[1];
+  const exponentText = match[3];
+  if (integerPart === undefined || exponentText === undefined) return null;
+  const exponent = Number(exponentText);
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 64) return null;
+
+  const digits = integerPart + (match[2] ?? "");
+  const point = integerPart.length + exponent;
+  const expanded = point <= 0
+    ? "0." + "0".repeat(-point) + digits
+    : point >= digits.length
+      ? digits + "0".repeat(point - digits.length)
+      : digits.slice(0, point) + "." + digits.slice(point);
+  return expanded.length <= 128 && DECIMAL_PATTERN.test(expanded) ? expanded : null;
 }
 
 function optionalMeasure(value: unknown, unit: DecimalMeasure["unit"]): DecimalMeasure | null | "INVALID" {
@@ -123,9 +142,14 @@ function optionalMeasure(value: unknown, unit: DecimalMeasure["unit"]): DecimalM
 
 function optionalCount(value: unknown): number | null | "INVALID" {
   if (value === undefined || value === null) return null;
-  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
-    ? value
-    : "INVALID";
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) && value >= 0 ? value : "INVALID";
+  }
+  if (typeof value === "string" && /^(?:0|[1-9][0-9]*)$/.test(value) && value.length <= 16) {
+    const parsed = Number(value);
+    return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : "INVALID";
+  }
+  return "INVALID";
 }
 
 function getRecord(value: unknown): Record<string, unknown> | null {
@@ -334,7 +358,7 @@ export class GeckoTerminalOhlcvPriceAdapter {
 
     let payload: unknown;
     try {
-      payload = JSON.parse(text) as unknown;
+      payload = parseJsonPreservingNumericLexemes(text);
     } catch {
       throw new GeckoTerminalAdapterError("PARSE", false);
     }
@@ -394,15 +418,20 @@ export class GeckoTerminalOhlcvPriceAdapter {
 
     const validCandles: Array<{ timestampSeconds: number; close: string }> = [];
     for (const row of list as unknown[]) {
-      if (!Array.isArray(row) || row.length < 6 ||
-          !Number.isSafeInteger(row[0]) || (row[0] as number) < 0) {
+      if (!Array.isArray(row) || row.length < 6) return fail("OHLCV_CANDLE_INVALID");
+      const timestampSeconds = typeof row[0] === "string" && /^(?:0|[1-9][0-9]*)$/.test(row[0])
+        ? Number(row[0])
+        : row[0];
+      if (typeof timestampSeconds !== "number" ||
+          !Number.isSafeInteger(timestampSeconds) ||
+          timestampSeconds < 0) {
         return fail("OHLCV_CANDLE_INVALID");
       }
       const close = expandJsonNumberDecimal(row[4]);
       if (close === null || !/[1-9]/.test(close)) return fail("OHLCV_CLOSE_INVALID");
-      const date = new Date((row[0] as number) * 1000);
+      const date = new Date(timestampSeconds * 1000);
       if (!Number.isFinite(date.getTime())) return fail("OHLCV_TIMESTAMP_INVALID");
-      validCandles.push({ timestampSeconds: row[0] as number, close });
+      validCandles.push({ timestampSeconds, close });
     }
     validCandles.sort((left, right) => right.timestampSeconds - left.timestampSeconds);
     const newest = validCandles[0];
@@ -504,7 +533,7 @@ export class GeckoTerminalPoolAdapter implements MarketDataAdapter {
 
     let payload: unknown;
     try {
-      payload = JSON.parse(text) as unknown;
+      payload = parseJsonPreservingNumericLexemes(text);
     } catch {
       throw new GeckoTerminalAdapterError("PARSE", false);
     }
