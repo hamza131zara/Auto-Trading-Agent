@@ -425,9 +425,11 @@ test("mocked DEX Screener adapter data cannot become an eligible live target", a
     new URL("./fixtures/market-data/dexscreener-pair-v1.json", import.meta.url),
     "utf8"
   );
-  const adapter = new DexScreenerPairsAdapter(async () =>
-    new Response(fixtureText, { status: 200, headers: { "content-type": "application/json" } })
-  );
+  let adapterFetchCalls = 0;
+  const adapter = new DexScreenerPairsAdapter(async () => {
+    adapterFetchCalls += 1;
+    return new Response(fixtureText, { status: 200, headers: { "content-type": "application/json" } });
+  });
   const times = ["2026-10-29T00:00:00.000Z", "2026-10-29T00:00:02.000Z"];
   await assert.rejects(
     buildTargetSnapshotFromDexScreener({
@@ -438,8 +440,9 @@ test("mocked DEX Screener adapter data cannot become an eligible live target", a
       adapter,
       now: () => times.shift()
     }),
-    { code: "TARGET_MUST_BE_REAL_INDEXED_SOURCE_EVIDENCE" }
+    { code: "INDEXED_API_PROVIDER_USE_DECISION_MISSING" }
   );
+  assert.equal(adapterFetchCalls, 0, "missing owner-use decision must block before the HTTP adapter is invoked");
 });
 
 test("CLI checks operator approvals before attempting live indexed API or RPC access", () => {

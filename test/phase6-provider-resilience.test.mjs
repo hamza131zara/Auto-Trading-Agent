@@ -134,7 +134,20 @@ function createHarness(adapters, state, healthPolicy = { failureThreshold: 2, co
     healthPolicy,
     maxHealthAgeMs: 60_000,
     requestTimeoutMs: 2_000,
-    requestId: (providerId, requestedAt) => providerId + "-" + requestedAt
+    requestId: (providerId, requestedAt) => providerId + "-" + requestedAt,
+    usagePurpose: "DIAGNOSTIC",
+    providerUseDecisionResolver: (providerId, purpose, at) => ({
+      providerId,
+      purpose,
+      decisionId: "test-resilience-decision-" + providerId,
+      owner: "test-only-fixture-owner",
+      outcome: "PROCEED_DIAGNOSTIC_ONLY",
+      scope: "Offline test-only provider resilience",
+      decidedAt: START,
+      expiresAt: "2026-10-30T00:00:00.000Z",
+      linkedEvidenceIds: ["test-resilience-evidence-" + providerId],
+      evidenceManifestSha256: "b".repeat(64)
+    })
   });
 }
 
