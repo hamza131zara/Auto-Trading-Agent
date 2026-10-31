@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Step 1: protocol contract, Step 2: root snapshot authenticator, and Step 3: durable high-water mark/CAS are implemented and verified on this branch.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
+**Steps 1–3 are implemented and verified. Step 4 — owner-configured registry load orchestration — is implemented on this branch; final CI verification is pending.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
@@ -119,7 +119,9 @@ The PostgreSQL integration tests exercise idempotent schema creation, persistenc
 
 ## Loader boundary
 
-The protocol is separated from transport. The authenticator consumes exact snapshot bytes and an independently provided trust anchor; the transport returns untrusted bytes only. A future owner-selected adapter must:
+The protocol remains separated from transport. Step 4 adds `AuthenticatedProviderTrustRegistry` in `packages/market-data/src/provider-trust-registry-loader.ts`. It orchestrates one injected transport read, the existing Ed25519 authenticator, and the durable high-water mark gate. It requires an explicit canonical HTTPS origin from the owner and validates response status, content type, final origin, redirect metadata and byte length before authenticating. It creates a bounded cancellation signal, sanitizes transport errors and does not return keys until the high-water mark operation succeeds.
+
+The concrete transport remains a separately injected, owner-approved implementation. It must:
 
 - Use one fixed owner-approved HTTPS origin and endpoint path; configure redirects as `error` and do not follow redirects to another origin.
 - Preserve normal certificate-chain and hostname validation; no plaintext fallback.
@@ -130,7 +132,21 @@ The protocol is separated from transport. The authenticator consumes exact snaps
 - Return retrieval metadata separately; it is not signature-covered evidence.
 - Never use cached keys as fallback when refresh fails.
 
-No registry vendor, hosting service, origin, account, endpoint, credential, key-management product or availability/cost model is selected here. The owner must approve those items before an adapter is implemented or used.
+The loader never supplies a default origin or endpoint path. No registry vendor, hosting service, account, endpoint path, credential, key-management product or availability/cost model is selected here. The caller must pass the owner-approved canonical HTTPS origin and inject a concrete transport with the owner-approved fixed path before any request can be made. Response metadata is a contract with that trusted adapter, not a substitute for real TLS certificate-chain and hostname verification. No concrete network client is included in this step.
+
+## Step 4 — authenticated loader orchestration
+
+The transport-independent implementation is in `packages/market-data/src/provider-trust-registry-loader.ts` and is exported from the market-data package.
+
+- Requires a caller-supplied canonical HTTPS origin. Rejects HTTP, non-canonical origins, userinfo, paths, query strings and fragments. No default origin or endpoint path exists.
+- Sends the origin, 5-second maximum timeout, 48 KiB response bound, `redirect: "error"`, `application/json` requirement and an abort signal to the injected transport.
+- Bounds the request with a local timeout and aborts the signal on expiry. Transport exceptions are mapped to a stable sanitized unavailable code.
+- Requires a response with exactly the status, content-type, final-origin, redirect and byte fields. Accepts only HTTP 200, JSON with optional UTF-8 charset, the exact expected origin, no redirect, and a bounded `Uint8Array`.
+- Copies response bytes before handing them to the authenticator, then uses the actual retrieval timestamp for authentication and freshness.
+- Passes the authenticated snapshot to `advanceProviderTrustRegistryHighWaterMark`; only the immutable value returned by that gate is exposed to the caller.
+- Authentication failure prevents any high-water store read; a storage outage or CAS conflict prevents snapshot/key return. There is no stale-key fallback or process-local trust cache.
+
+The loader is intentionally not a concrete HTTP implementation. The injected transport must use a fixed owner-approved endpoint path, preserve certificate-chain and hostname verification, reject redirects, avoid ambient proxy/DNS/host discovery behavior, enforce the 48 KiB decoded-body limit while streaming (including compressed expansion), and report truthful response metadata. The actual TLS/HTTP behavior must be independently tested when the owner selects an endpoint and adapter. This step does not make a live network request.
 
 ## Step 2 — root snapshot authenticator
 
