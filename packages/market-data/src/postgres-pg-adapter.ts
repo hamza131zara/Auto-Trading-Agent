@@ -164,11 +164,12 @@ export class PostgresPgPoolAdapter implements PostgresPoolLike {
   private pendingAcquisitions = 0;
   private closePromise: Promise<void> | null = null;
 
-  constructor(config: PostgresPgAdapterConfig, poolOverride?: PgPoolLike) {
+  constructor(config: PostgresPgAdapterConfig) {
     validateConfig(config);
-    this.config = config;
-    this.pool = poolOverride ?? new Pool(
-      buildPostgresPgPoolOptions(config)
+    // Snapshot validated primitive fields so caller mutation cannot weaken limits.
+    this.config = Object.freeze({ ...config });
+    this.pool = new Pool(
+      buildPostgresPgPoolOptions(this.config)
     ) as unknown as PgPoolLike;
     this.pool.on("error", () => {
       // Never leak driver messages, SQL, hostnames or credential-bearing details.
