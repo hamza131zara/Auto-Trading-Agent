@@ -16,6 +16,9 @@ import type {
   ProviderTrustRegistry,
   ProviderTrustRegistryTransportResponse
 } from "./provider-trust-registry.js";
+
+type ProviderTrustRegistryLoadInput =
+  Parameters<ProviderTrustRegistry["loadCurrentSnapshot"]>[0];
 import {
   advanceProviderTrustRegistryHighWaterMark
 } from "./provider-trust-registry-postgres-store.js";
@@ -117,65 +120,7 @@ function copyBytes(bytes: Uint8Array): Uint8Array {
  * advance durable anti-rollback state before returning a trusted snapshot.
  */
 export class AuthenticatedProviderTrustRegistry implements ProviderTrustRegistry {
-  async loadCurrentSnapshot(input: {
-    readonly now: string;
-    readonly expectedOrigin: string;
-    readonly requestTimeoutMs?: number;
-    readonly clock?: () => string;
-    readonly trustAnchor: {
-      readonly registryId: string;
-      readonly rootKeyId: string;
-      readonly rootPublicKeyPem: string;
-      readonly expectedSpkiSha256: string;
-    };
-    readonly state: {
-      readonly expectedRegistryId: string;
-      readonly maxSnapshotAgeMs: number;
-      readonly highWaterMarkStore: {
-        read(registryId: string): Promise<{
-          readonly registryId: string;
-          readonly version: number;
-          readonly canonicalPayloadSha256: string;
-        } | null>;
-        compareAndSet(input: {
-          readonly expected: {
-            readonly registryId: string;
-            readonly version: number;
-            readonly canonicalPayloadSha256: string;
-          } | null;
-          readonly next: {
-            readonly registryId: string;
-            readonly version: number;
-            readonly canonicalPayloadSha256: string;
-          };
-        }): Promise<boolean>;
-      };
-    };
-    readonly transport: {
-      readSnapshot(request: {
-        readonly expectedOrigin: string;
-        readonly timeoutMs: number;
-        readonly maxResponseBytes: number;
-        readonly redirect: "error";
-        readonly acceptContentType: "application/json";
-        readonly signal: AbortSignal;
-      }): Promise<unknown>;
-    };
-    readonly authenticator: {
-      authenticate(input: {
-        readonly snapshotBytes: Uint8Array;
-        readonly trustAnchor: {
-          readonly registryId: string;
-          readonly rootKeyId: string;
-          readonly rootPublicKeyPem: string;
-          readonly expectedSpkiSha256: string;
-        };
-        readonly now: string;
-        readonly retrievedAt: string;
-        readonly maxSnapshotAgeMs: number;
-      }): Promise<AuthenticatedProviderTrustSnapshot>;
-    };
-  }): Promise<AuthenticatedProviderTrustSnapshot> {
+  async loadCurrentSnapshot(input: ProviderTrustRegistryLoadInput): Promise<AuthenticatedProviderTrustSnapshot> {
     if (!isRecord(input) ||
         !isValidUtcTimestamp(input.now) ||
         !isRecord(input.trustAnchor) ||
