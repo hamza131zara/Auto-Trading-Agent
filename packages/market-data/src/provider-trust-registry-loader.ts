@@ -166,7 +166,9 @@ export class AuthenticatedProviderTrustRegistry implements ProviderTrustRegistry
       ]);
     } catch (error) {
       if (error instanceof ProviderTrustRegistryError &&
-          error.code === "TRUST_REGISTRY_UNAVAILABLE") {
+          (error.code === "TRUST_REGISTRY_UNAVAILABLE" ||
+           error.code === "TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID" ||
+           error.code === "TRUST_REGISTRY_RESPONSE_TOO_LARGE")) {
         throw error;
       }
       throw new ProviderTrustRegistryError("TRUST_REGISTRY_UNAVAILABLE");
