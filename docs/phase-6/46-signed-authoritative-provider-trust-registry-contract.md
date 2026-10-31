@@ -110,7 +110,7 @@ The protocol is separated from transport. The authenticator consumes exact snaps
 - Apply cancellation and a timeout no greater than five seconds.
 - Enforce the 48 KiB decoded body limit while streaming, before JSON parsing (including compressed response expansion).
 - Require the expected JSON content type and reject non-success status, malformed UTF-8/JSON, duplicate/unknown fields and schema drift.
-- Authenticate the exact received envelope bytes with the independently pinned root key.
+- Parse the exact received envelope bytes with duplicate-key rejection, reconstruct only the documented canonical payload, and verify its signature with the independently pinned root key.
 - Return retrieval metadata separately; it is not signature-covered evidence.
 - Never use cached keys as fallback when refresh fails.
 
