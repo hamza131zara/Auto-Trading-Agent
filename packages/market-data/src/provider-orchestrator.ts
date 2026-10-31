@@ -51,12 +51,42 @@ export interface ReadOnlyMarketDataTarget {
   readonly poolAddress: string | null;
 }
 
+export type ProviderUsePurpose = "DIAGNOSTIC" | "PRODUCTION";
+
+export interface ProviderUseDecision {
+  readonly providerId: string;
+  readonly purpose: ProviderUsePurpose;
+  readonly decisionId: string;
+  readonly owner: string;
+  readonly outcome:
+    | "PROCEED_DIAGNOSTIC_ONLY"
+    | "PROCEED_PRODUCTION_SCOPE"
+    | "REJECT"
+    | "DEFER";
+  readonly scope: string;
+  readonly decidedAt: string;
+  readonly expiresAt: string | null;
+  readonly linkedEvidenceIds: readonly string[];
+  /** SHA-256 of the exact owner-reviewed evidence manifest used by trusted bootstrap. */
+  readonly evidenceManifestSha256: string;
+}
+
+export type ProviderUseDecisionResolver = (
+  providerId: string,
+  purpose: ProviderUsePurpose,
+  at: string
+) => unknown;
+
 export interface ReadOnlyMarketDataOrchestratorOptions {
   readonly now: () => string;
   readonly healthPolicy: ProviderHealthPolicy;
   readonly maxHealthAgeMs: number;
   readonly requestTimeoutMs: number;
   readonly requestId?: (providerId: string, requestedAt: string) => string | null;
+  /** Runtime intent; diagnostic permission never implies production permission. */
+  readonly usagePurpose: ProviderUsePurpose;
+  /** Missing resolver means default-deny for every provider request. */
+  readonly providerUseDecisionResolver?: ProviderUseDecisionResolver;
   /** Optional shared store; inject the same PostgreSQL-backed implementation in every worker. */
   readonly providerHealthStore?: ProviderHealthStore;
   /** Required with providerHealthStore. The token callback must return a fresh CSPRNG-derived one-time bearer token; only its SHA-256 digest is persisted. */
@@ -78,7 +108,10 @@ export interface ProviderOrchestrationAttempt {
   readonly providerId: string;
   readonly independenceGroupId: string;
   readonly priority: number;
-  readonly permissionStatus: ProviderAttemptPermissionStatus | "BLOCK_PROVIDER_ATTEMPT_IN_FLIGHT";
+  readonly permissionStatus:
+    | ProviderAttemptPermissionStatus
+    | "BLOCK_PROVIDER_ATTEMPT_IN_FLIGHT"
+    | "BLOCK_PROVIDER_USE_NOT_APPROVED";
   readonly outcome: ProviderOrchestrationAttemptOutcome;
   readonly reasonCodes: readonly string[];
   readonly latencyMs: number | null;
@@ -140,6 +173,59 @@ function safeReason(value: unknown, fallback: string): string {
   return typeof value === "string" && /^[A-Z0-9_]{1,64}$/.test(value)
     ? value
     : fallback;
+}
+
+function assessProviderUseDecision(
+  value: unknown,
+  providerId: string,
+  purpose: ProviderUsePurpose,
+  at: string
+): { readonly authorized: boolean; readonly reasonCodes: readonly string[] } {
+  if (value === undefined || value === null) {
+    return { authorized: false, reasonCodes: ["PROVIDER_USE_DECISION_MISSING"] };
+  }
+  if (!isRecord(value) ||
+      value.providerId !== providerId ||
+      value.purpose !== purpose ||
+      typeof value.decisionId !== "string" ||
+      !SAFE_WORKER_ID.test(value.decisionId) ||
+      typeof value.owner !== "string" ||
+      value.owner.trim().length === 0 ||
+      value.owner.length > 160 ||
+      typeof value.scope !== "string" ||
+      value.scope.trim().length === 0 ||
+      value.scope.length > 512 ||
+      !["PROCEED_DIAGNOSTIC_ONLY", "PROCEED_PRODUCTION_SCOPE", "REJECT", "DEFER"].includes(String(value.outcome)) ||
+      !validUtcTimestamp(value.decidedAt) ||
+      !(value.expiresAt === null || validUtcTimestamp(value.expiresAt)) ||
+      !Array.isArray(value.linkedEvidenceIds) ||
+      value.linkedEvidenceIds.length === 0 ||
+      !value.linkedEvidenceIds.every((id) =>
+        typeof id === "string" && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(id)
+      ) ||
+      new Set(value.linkedEvidenceIds).size !== value.linkedEvidenceIds.length ||
+      typeof value.evidenceManifestSha256 !== "string" ||
+      !/^[a-fA-F0-9]{64}$/.test(value.evidenceManifestSha256)) {
+    return { authorized: false, reasonCodes: ["PROVIDER_USE_DECISION_INVALID"] };
+  }
+
+  if (Date.parse(value.decidedAt) > Date.parse(at)) {
+    return { authorized: false, reasonCodes: ["PROVIDER_USE_DECISION_NOT_YET_EFFECTIVE"] };
+  }
+  if (value.expiresAt !== null && Date.parse(value.expiresAt) <= Date.parse(at)) {
+    return { authorized: false, reasonCodes: ["PROVIDER_USE_DECISION_EXPIRED"] };
+  }
+  if (value.outcome === "REJECT") {
+    return { authorized: false, reasonCodes: ["PROVIDER_USE_DECISION_REJECTED"] };
+  }
+  if (value.outcome === "DEFER") {
+    return { authorized: false, reasonCodes: ["PROVIDER_USE_DECISION_DEFERRED"] };
+  }
+  if (purpose === "PRODUCTION" && value.outcome !== "PROCEED_PRODUCTION_SCOPE") {
+    return { authorized: false, reasonCodes: ["PROVIDER_PRODUCTION_USE_NOT_APPROVED"] };
+  }
+
+  return { authorized: true, reasonCodes: [] };
 }
 
 function classifyFailure(error: unknown, timedOut: boolean): {
@@ -442,6 +528,9 @@ export class ReadOnlyMarketDataOrchestrator {
       throw new TypeError("At least one read-only market-data provider is required.");
     }
     if (typeof options?.now !== "function" ||
+        !["DIAGNOSTIC", "PRODUCTION"].includes(String(options.usagePurpose)) ||
+        (options.providerUseDecisionResolver !== undefined &&
+          typeof options.providerUseDecisionResolver !== "function") ||
         !Number.isSafeInteger(options.maxHealthAgeMs) ||
         options.maxHealthAgeMs < 1 ||
         !Number.isSafeInteger(options.requestTimeoutMs) ||
@@ -534,6 +623,48 @@ export class ReadOnlyMarketDataOrchestrator {
       const providerId = registration.adapter.providerId;
       const startedAt = this.options.now();
       if (!validUtcTimestamp(startedAt)) throw new TypeError("Injected clock returned an invalid UTC timestamp.");
+
+      let useDecision: unknown = null;
+      if (this.options.providerUseDecisionResolver !== undefined) {
+        try {
+          useDecision = this.options.providerUseDecisionResolver(
+            providerId,
+            this.options.usagePurpose,
+            startedAt
+          );
+        } catch {
+          attempts.push({
+            providerId,
+            independenceGroupId: registration.independenceGroupId,
+            priority: registration.priority,
+            permissionStatus: "BLOCK_PROVIDER_USE_NOT_APPROVED",
+            outcome: "BLOCKED",
+            reasonCodes: ["PROVIDER_USE_DECISION_RESOLVER_FAILED"],
+            latencyMs: null
+          });
+          continue;
+        }
+      }
+
+      const useAuthorization = assessProviderUseDecision(
+        useDecision,
+        providerId,
+        this.options.usagePurpose,
+        startedAt
+      );
+      if (!useAuthorization.authorized) {
+        attempts.push({
+          providerId,
+          independenceGroupId: registration.independenceGroupId,
+          priority: registration.priority,
+          permissionStatus: "BLOCK_PROVIDER_USE_NOT_APPROVED",
+          outcome: "BLOCKED",
+          reasonCodes: [...useAuthorization.reasonCodes],
+          latencyMs: null
+        });
+        continue;
+      }
+
       let health = this.health.get(providerId)!;
       if (this.options.providerHealthStore !== undefined) {
         try {
