@@ -163,17 +163,38 @@ export function getProviderTrustRegistrySigningPayload(
 }
 
 export interface ProviderTrustRegistryRequest {
+  /** Canonical HTTPS origin selected by the owner; it contains no path or credentials. */
+  readonly expectedOrigin: string;
   readonly timeoutMs: number;
   readonly maxResponseBytes: number;
-  /** Concrete transports must use redirect:"error"; redirects are not trusted by default. */
+  /** Concrete transports must reject all redirects and never follow them. */
   readonly redirect: "error";
   readonly acceptContentType: "application/json";
-  readonly signal?: AbortSignal;
+  readonly signal: AbortSignal;
 }
 
-/** Transport returns bounded, untrusted bytes only. */
+/**
+ * Response metadata observed by the concrete transport. The loader independently
+ * checks status, media type, final origin, redirect flag and byte length.
+ */
+export interface ProviderTrustRegistryTransportResponse {
+  readonly status: number;
+  readonly contentType: string;
+  readonly finalOrigin: string;
+  readonly redirected: boolean;
+  readonly bytes: Uint8Array;
+}
+
+/**
+ * Concrete implementations must use the owner-approved fixed endpoint path,
+ * HTTPS with certificate-chain and hostname verification, no redirects, and
+ * the request signal/timeout and response-size limit. They must not use ambient
+ * proxy settings or discover a different host from response data.
+ */
 export interface ProviderTrustRegistryTransport {
-  readSnapshot(request: ProviderTrustRegistryRequest): Promise<Uint8Array>;
+  readSnapshot(
+    request: ProviderTrustRegistryRequest
+  ): Promise<ProviderTrustRegistryTransportResponse>;
 }
 
 export interface AuthenticatedProviderTrustSnapshot {
@@ -255,6 +276,10 @@ export interface ProviderTrustRegistryState {
 export interface ProviderTrustRegistry {
   loadCurrentSnapshot(input: {
     readonly now: string;
+    /** Must be the independently owner-approved canonical HTTPS origin. */
+    readonly expectedOrigin: string;
+    readonly requestTimeoutMs?: number;
+    readonly clock?: () => string;
     readonly trustAnchor: ProviderTrustRegistryTrustAnchor;
     readonly state: ProviderTrustRegistryState;
     readonly transport: ProviderTrustRegistryTransport;
@@ -264,6 +289,7 @@ export interface ProviderTrustRegistry {
 
 export type ProviderTrustRegistryFailureCode =
   | "TRUST_REGISTRY_UNAVAILABLE"
+  | "TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID"
   | "TRUST_REGISTRY_RESPONSE_TOO_LARGE"
   | "TRUST_REGISTRY_SNAPSHOT_INVALID"
   | "TRUST_REGISTRY_SNAPSHOT_KEY_INVALID"
