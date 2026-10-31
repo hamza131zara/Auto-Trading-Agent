@@ -19,7 +19,7 @@ This step closes a lifecycle gap in Phase 6.43: a static key snapshot can contin
 - If the registry loader throws, returns malformed data, or returns stale/future-dated data, no decision is returned.
 - A revoked/expired key blocks the next attempt using the refreshed snapshot.
 
-The resolver returns the same decision type expected by the Phase 6.75 orchestrator, so the existing default-deny behavior is retained. It never caches a successful key-verification result across requests.
+The resolver returns the same decision type expected by the PR #75 orchestrator, so the existing default-deny behavior is retained. It never caches a successful key-verification result across requests.
 
 ## Trust-source requirement
 
