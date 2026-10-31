@@ -352,4 +352,122 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
     }
   });
 
+  await t.test("production adapter runs the shared provider-health store over verified TLS", async () => {
+    const { randomBytes } = await import("node:crypto");
+    const migration = await readFile(
+      new URL("../infra/migrations/20261030_phase6_provider_health_and_recovery_leases.sql", import.meta.url),
+      "utf8"
+    );
+    const {
+      PostgresProviderHealthStore
+    } = await import("../packages/market-data/dist/provider-health-store.js");
+    const { PostgresPgPoolAdapter } =
+      await import("../packages/market-data/dist/postgres-pg-adapter.js");
+    const adapter = new PostgresPgPoolAdapter({
+      host: "pg-tls.test",
+      port: 55_432,
+      user: "ata_tls_test",
+      password: "ata_local_tls_test_only",
+      database: "ata_tls_test",
+      caCertificate: trustedCa,
+      maxConnections: 2,
+      connectionTimeoutMs: 3_000,
+      acquisitionTimeoutMs: 2_000,
+      idleTimeoutMs: 1_000,
+      maximumConnectionLifetimeSeconds: 600,
+      statementTimeoutMs: 5_000,
+      lockTimeoutMs: 1_000,
+      idleInTransactionTimeoutMs: 5_000,
+      maximumPendingAcquisitions: 2,
+      shutdownDrainTimeoutMs: 3_000,
+      applicationName: "ata-phase6-adapter-health-store-integration"
+    });
+    const providerId = "phase6-adapter-store-" + randomBytes(6).toString("hex");
+    const leaseToken = randomBytes(32).toString("base64url");
+    const store = new PostgresProviderHealthStore(adapter);
+    let migrationApplied = false;
+
+    try {
+      await adapter.query(migration);
+      migrationApplied = true;
+
+      const transport = await adapter.query(
+        "SELECT ssl, version FROM pg_stat_ssl WHERE pid = pg_backend_pid()"
+      );
+      assert.equal(transport.rows.length, 1);
+      assert.equal(transport.rows[0].ssl, true);
+      assert.match(String(transport.rows[0].version), /^TLSv1\\.(2|3)$/);
+
+      const failureAt = new Date(Date.now() - 2_000).toISOString();
+      const opened = await store.recordResult({
+        providerId,
+        result: {
+          kind: "FAILURE",
+          at: failureAt,
+          errorClass: "RATE_LIMIT",
+          retryable: true,
+          latencyMs: 19
+        },
+        policy: { failureThreshold: 1, cooldownMs: 1_000 }
+      });
+      assert.equal(opened.health.state, "CIRCUIT_OPEN");
+      assert.equal(opened.version, "1");
+
+      const persisted = await store.get(providerId);
+      assert.ok(persisted);
+      assert.equal(persisted.health.state, "CIRCUIT_OPEN");
+      assert.equal(persisted.version, "1");
+
+      const lease = await store.claimRecoveryProbe({
+        providerId,
+        ownerId: "tls-integration-worker",
+        leaseToken,
+        leaseDurationMs: 5_000
+      });
+      assert.ok(lease, "elapsed circuit cooldown must allow one recovery lease");
+
+      const recovered = await store.recordResult({
+        providerId,
+        result: {
+          kind: "SUCCESS",
+          at: new Date().toISOString(),
+          latencyMs: 11
+        },
+        policy: { failureThreshold: 1, cooldownMs: 1_000 },
+        recoveryLease: {
+          providerId: lease.providerId,
+          ownerId: lease.ownerId,
+          leaseToken: lease.leaseToken,
+          fencingToken: lease.fencingToken
+        }
+      });
+      assert.equal(recovered.health.state, "HEALTHY");
+      assert.equal(recovered.version, "2");
+      assert.equal(recovered.recoveryLeaseReleased, true);
+
+      const finalState = await store.get(providerId);
+      assert.equal(finalState?.health.state, "HEALTHY");
+      assert.equal(finalState?.version, "2");
+
+      const persistedLease = await adapter.query(
+        "SELECT owner_id, lease_token_hash, fencing_token " +
+        "FROM public.provider_recovery_probe_leases WHERE provider_id = $1",
+        [providerId]
+      );
+      assert.equal(persistedLease.rows.length, 1);
+      assert.equal(persistedLease.rows[0].owner_id, null);
+      assert.equal(persistedLease.rows[0].lease_token_hash, null);
+      assert.equal(String(persistedLease.rows[0].fencing_token), lease.fencingToken);
+      assert.notEqual(String(persistedLease.rows[0].lease_token_hash), leaseToken);
+    } finally {
+      if (migrationApplied) {
+        await adapter.query(
+          "DELETE FROM public.provider_health WHERE provider_id = $1",
+          [providerId]
+        ).catch(() => undefined);
+      }
+      await adapter.close();
+    }
+  });
+
 });
