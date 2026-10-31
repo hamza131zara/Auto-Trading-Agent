@@ -160,7 +160,6 @@ test("requires an explicit owner-supplied DNS lookup policy", async () => {
   await expectCode(
     Promise.resolve().then(() => new NodeHttpsProviderTrustRegistryTransport({
       endpointUrl: ENDPOINT,
-      lookup: approvedLookup,
       requester: fake.requester
     })),
     "TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID"
