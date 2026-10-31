@@ -69,7 +69,8 @@ function makeRequester(options = {}) {
         };
         const originalDestroy = response.destroy.bind(response);
         response.destroy = (error) => {
-          calls.responseDestroyed = true;
+          // Readable auto-destroys after normal end; only count premature aborts.
+          if (!response.readableEnded) calls.responseDestroyed = true;
           return originalDestroy(error);
         };
         onResponse(response);
@@ -159,6 +160,7 @@ test("requires an explicit owner-supplied DNS lookup policy", async () => {
   await expectCode(
     Promise.resolve().then(() => new NodeHttpsProviderTrustRegistryTransport({
       endpointUrl: ENDPOINT,
+      lookup: approvedLookup,
       requester: fake.requester
     })),
     "TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID"
@@ -270,6 +272,7 @@ test("rejects compressed or ambiguous content-encoding instead of risking expans
     });
     const transport = new NodeHttpsProviderTrustRegistryTransport({
       endpointUrl: ENDPOINT,
+      lookup: approvedLookup,
       requester: fake.requester
     });
     await expectCode(
@@ -290,6 +293,7 @@ test("returns response metadata for invalid status or content type for loader re
     const fake = makeRequester(invalidCase);
     const transport = new NodeHttpsProviderTrustRegistryTransport({
       endpointUrl: ENDPOINT,
+      lookup: approvedLookup,
       requester: fake.requester
     });
     const response = await transport.readSnapshot(makeRequest());
@@ -303,6 +307,7 @@ test("sanitizes socket failures and timeout failures", async () => {
     const fake = makeRequester(options);
     const transport = new NodeHttpsProviderTrustRegistryTransport({
       endpointUrl: ENDPOINT,
+      lookup: approvedLookup,
       requester: fake.requester
     });
     await expectCode(
