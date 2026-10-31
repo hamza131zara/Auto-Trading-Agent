@@ -79,7 +79,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
 
   await t.test("production PostgresPgPoolAdapter connects with verified CA and hostname", async () => {
     const { PostgresPgPoolAdapter } = await import("../packages/market-data/dist/postgres-pg-adapter.js");
-    const adapter = new PostgresPgPoolAdapter({
+    const adapterConfig = {
       host: "pg-tls.test",
       port: 55_432,
       user: "ata_tls_test",
@@ -97,7 +97,11 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       maximumPendingAcquisitions: 2,
       shutdownDrainTimeoutMs: 2_000,
       applicationName: "ata-phase6-production-adapter-integration"
-    });
+    };
+    const adapter = new PostgresPgPoolAdapter(adapterConfig);
+    // Caller-side mutation after construction must not change the validated policy.
+    adapterConfig.maximumPendingAcquisitions = 0;
+    adapterConfig.acquisitionTimeoutMs = 1;
 
     try {
       const client = await adapter.connect();
