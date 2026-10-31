@@ -55,6 +55,10 @@
     "./provider-use-decision-verifier": {
       "types": "./dist/provider-use-decision-verifier.d.ts",
       "import": "./dist/provider-use-decision-verifier.js"
+    },
+    "./provider-trust-registry": {
+      "types": "./dist/provider-trust-registry.d.ts",
+      "import": "./dist/provider-trust-registry.js"
     }
   },
   "scripts": {
