@@ -445,6 +445,81 @@ test("independent reserve-price agreement uses exact decimals and requires both 
   assert.equal(result.tradingAuthorized, false);
 });
 
+test("reserve slot block-time must align with both Pyth reference publication timestamps when the gate is enabled", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: { maxReserveReferenceTimestampSkewMs: 5_000 }
+  }));
+  assert.equal(result.status, "AGREED");
+  assert.equal(result.reserveTimestampAlignmentStatus, "AGREED");
+  assert.equal(result.reserveSlotTimestampKind, "SLOT_BLOCK_TIME_ESTIMATE");
+  assert.equal(result.maxReserveReferenceTimestampSkewMs, 5_000);
+  assert.equal(result.reserveReferenceTimestampSkewMs, 1_000);
+  assert.equal(result.comparisonEvidenceComplete, true);
+});
+
+test("missing reserve slot block-time keeps otherwise agreeing reserve evidence incomplete", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    reserveSlotBlockTimeAt: null,
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: { maxReserveReferenceTimestampSkewMs: 5_000 }
+  }));
+  assert.equal(result.reserveComparison.status, "AGREED");
+  assert.equal(result.indexedPriceComparison.status, "AGREED");
+  assert.equal(result.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.reserveTimestampAlignmentStatus, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.reserveSlotTimestampKind, "MISSING");
+  assert.ok(result.reasonCodes.includes("RESERVE_SLOT_BLOCK_TIME_MISSING"));
+  assert.equal(result.comparisonEvidenceComplete, false);
+});
+
+test("reserve slot time outside the approved Pyth timestamp window is blocked", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:30.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: { maxReserveReferenceTimestampSkewMs: 5_000 }
+  }));
+  assert.equal(result.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.reserveTimestampAlignmentStatus, "INSUFFICIENT_EVIDENCE");
+  assert.equal(result.reserveReferenceTimestampSkewMs, 20_000);
+  assert.ok(result.reasonCodes.includes("RESERVE_REFERENCE_TIMES_UNALIGNED"));
+});
+
+test("stale, future or synthetic slot block-time evidence cannot become eligible", () => {
+  const shared = {
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: { maxReserveReferenceTimestampSkewMs: 5_000 }
+  };
+  const stale = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    ...shared,
+    reserveSlotBlockTimeAt: "2026-10-29T12:40:00.000Z"
+  }));
+  assert.equal(stale.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(stale.sourceFreshness, "STALE");
+  assert.ok(stale.reasonCodes.includes("RESERVE_SLOT_BLOCK_TIME_STALE"));
+
+  const future = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    ...shared,
+    reserveSlotBlockTimeAt: "2026-10-29T12:45:10.000Z"
+  }));
+  assert.equal(future.status, "INVALID_INPUT");
+  assert.ok(future.reasonCodes.includes("RESERVE_SLOT_BLOCK_TIME_IN_FUTURE"));
+
+  const synthetic = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    ...shared,
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeSynthetic: true
+  }));
+  assert.equal(synthetic.status, "INSUFFICIENT_EVIDENCE");
+  assert.ok(synthetic.reasonCodes.includes("SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"));
+  assert.equal(synthetic.comparisonEvidenceComplete, false);
+});
+
 test("independent base/USD and quote/USD feeds must be timestamp-aligned within the explicit policy", () => {
   const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
     quoteUsd: { publishedAt: "2026-10-29T12:44:59.000Z", retrievedAt: "2026-10-29T12:44:55.000Z" },
