@@ -76,6 +76,7 @@ jobs:
     name: Read-only DEX Screener + Solana RPC identity check
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: phase6-provider-authorization
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -149,6 +150,10 @@ jobs:
           ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_SHA256: ${{ inputs.expected_program_elf_sha256 }}
           ATA_RAYDIUM_EXPECTED_DEPLOYED_ELF_BYTES: ${{ inputs.expected_program_elf_bytes }}
           ATA_LIVE_PROGRAM_BUILD_HASH_REVIEW: ${{ inputs.confirm_program_build_hash_review == 'yes' && 'EXPECTED_RAYDIUM_ELF_HASH_REVIEWED' || 'NOT_REVIEWED' }}
+          ATA_PROVIDER_USE_DECISIONS_JSON: ${{ secrets.ATA_PROVIDER_USE_DECISIONS_JSON }}
+          ATA_PROVIDER_TRUSTED_KEYS_JSON: ${{ secrets.ATA_PROVIDER_TRUSTED_KEYS_JSON }}
+          ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT: ${{ secrets.ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT }}
+          ATA_PROVIDER_TRUSTED_KEYS_MAX_AGE_MS: ${{ secrets.ATA_PROVIDER_TRUSTED_KEYS_MAX_AGE_MS }}
         run: |
           node scripts/validate-raydium-live-source.mjs \
             --pool-address "$POOL_ADDRESS" \

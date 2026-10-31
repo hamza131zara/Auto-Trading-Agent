@@ -20,7 +20,8 @@ import {
   SolanaRpcAccountReader,
   assessRaydiumCpmmIdentityEvidence,
   readRaydiumCpmmIdentityBundle,
-  validateCanonicalMarketSnapshot
+  validateCanonicalMarketSnapshot,
+  createReloadableSignedProviderUseDecisionResolver
 } from "../packages/market-data/dist/index.js";
 
 const SOURCE_APPROVAL = "APPROVED_READ_ONLY_MAINNET_RPC";
@@ -60,6 +61,14 @@ function usage() {
     "  ATA_SOLANA_RPC_PROVIDER_ID=<safe provider slug>",
     "  ATA_LIVE_MIN_CONTEXT_SLOT=<explicit positive finalized-slot floor>",
     "  ATA_LIVE_MAX_RETRIEVAL_AGE_MS=<explicit retrieval-age limit, 1-300000>",
+    "  ATA_PROVIDER_USE_DECISIONS_JSON=<signed provider-use decision envelope array>",
+    "  ATA_PROVIDER_TRUSTED_KEYS_JSON=<owner-controlled Ed25519 public-key array>",
+    "  ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT=<UTC timestamp of trusted-key snapshot>",
+    "  ATA_PROVIDER_TRUSTED_KEYS_MAX_AGE_MS=<trusted-key snapshot age limit, 1-300000>",
+    "",
+    "The live-source command requires signed DIAGNOSTIC decisions for the selected RPC provider",
+    "and, in direct lookup mode, dex-screener. Supply these from the protected owner environment.",
+    "Missing, expired, revoked, stale or invalid authorization stops before any network request.",
     "",
     "The target must be a non-synthetic ata.market-data.v1 snapshot sourced from a",
     "reviewed independent indexed API with a request ID and SHA-256 source digest.",
@@ -178,6 +187,94 @@ export function parseArgs(argv) {
  * Fetch the exact pair named by the operator through the existing read-only DEX Screener adapter.
  * The adapter marks any injected/mock fetch as synthetic, so test doubles cannot become live evidence.
  */
+
+const PROVIDER_AUTHORIZATION_MAX_BYTES = 48 * 1024;
+const PROVIDER_AUTHORIZATION_NOW = () => new Date().toISOString();
+
+function parseBoundedJsonArray(env, name) {
+  const raw = env[name];
+  if (typeof raw !== "string" || raw.length === 0 ||
+      new TextEncoder().encode(raw).byteLength > PROVIDER_AUTHORIZATION_MAX_BYTES) {
+    throw codedError("PROVIDER_USE_AUTHORIZATION_CONFIG_MISSING_OR_OVERSIZED");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw codedError("PROVIDER_USE_AUTHORIZATION_JSON_INVALID");
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 64) {
+    throw codedError("PROVIDER_USE_AUTHORIZATION_ARRAY_INVALID");
+  }
+  return parsed;
+}
+
+/**
+ * Build the live-source resolver from protected owner-environment records.
+ * The signed decisions and trusted key registry are separate inputs. The
+ * loader reparses the key snapshot on every resolution so an updated process
+ * environment is observed immediately; long-running services must replace
+ * this environment adapter with an authoritative live registry loader.
+ */
+export function createLiveSourceProviderUseDecisionResolver(env) {
+  const envelopes = parseBoundedJsonArray(env, "ATA_PROVIDER_USE_DECISIONS_JSON");
+  const trustedKeysRaw = env.ATA_PROVIDER_TRUSTED_KEYS_JSON;
+  if (typeof trustedKeysRaw !== "string" || trustedKeysRaw.length === 0 ||
+      new TextEncoder().encode(trustedKeysRaw).byteLength > PROVIDER_AUTHORIZATION_MAX_BYTES) {
+    throw codedError("PROVIDER_USE_TRUSTED_KEY_CONFIG_MISSING_OR_OVERSIZED");
+  }
+  const loadedAt = env.ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT;
+  if (typeof loadedAt !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.[0-9]{1,3})?Z$/.test(loadedAt) ||
+      !Number.isFinite(Date.parse(loadedAt))) {
+    throw codedError("PROVIDER_USE_TRUSTED_KEY_SNAPSHOT_TIME_INVALID");
+  }
+  const maxSnapshotAgeMs = readPositiveInteger(
+    env,
+    "ATA_PROVIDER_TRUSTED_KEYS_MAX_AGE_MS",
+    300_000
+  );
+
+  // Validate the initial snapshot shape before the CLI starts any external I/O.
+  try {
+    const initialKeys = JSON.parse(trustedKeysRaw);
+    if (!Array.isArray(initialKeys) || initialKeys.length === 0 || initialKeys.length > 64) {
+      throw codedError("PROVIDER_USE_TRUSTED_KEY_CONFIG_INVALID");
+    }
+  } catch (error) {
+    if (error?.code === "PROVIDER_USE_TRUSTED_KEY_CONFIG_INVALID") throw error;
+    throw codedError("PROVIDER_USE_TRUSTED_KEY_JSON_INVALID");
+  }
+
+  return createReloadableSignedProviderUseDecisionResolver({
+    envelopes,
+    maxSnapshotAgeMs,
+    loadTrustedKeySnapshot: () => {
+      let keys;
+      try {
+        keys = JSON.parse(env.ATA_PROVIDER_TRUSTED_KEYS_JSON);
+      } catch {
+        throw codedError("PROVIDER_USE_TRUSTED_KEY_JSON_INVALID");
+      }
+      return {
+        loadedAt: env.ATA_PROVIDER_TRUSTED_KEYS_LOADED_AT,
+        keys
+      };
+    }
+  });
+}
+
+function requireSignedProviderUseDecision(resolver, providerId, purpose, at, reasonCode) {
+  let decision;
+  try {
+    decision = resolver(providerId, purpose, at);
+  } catch {
+    throw codedError(reasonCode);
+  }
+  if (decision === undefined || decision === null) throw codedError(reasonCode);
+  return decision;
+}
+
 export async function buildTargetSnapshotFromDexScreener({
   poolAddress,
   baseMint,
@@ -777,6 +874,14 @@ async function main(argv = process.argv.slice(2), env = process.env) {
 
   // Validate the approval and RPC configuration before making any provider call.
   const config = readOperatorConfiguration(env);
+  const providerUseDecisionResolver = createLiveSourceProviderUseDecisionResolver(env);
+  requireSignedProviderUseDecision(
+    providerUseDecisionResolver,
+    config.providerId,
+    "DIAGNOSTIC",
+    PROVIDER_AUTHORIZATION_NOW(),
+    "RPC_PROVIDER_USE_DECISION_NOT_VERIFIED"
+  );
   let target;
   let targetPath = null;
   if (args.target !== null) {
@@ -792,7 +897,8 @@ async function main(argv = process.argv.slice(2), env = process.env) {
       poolAddress: args.poolAddress,
       baseMint: args.baseMint,
       quoteMint: args.quoteMint,
-      rpcProviderId: config.providerId
+      rpcProviderId: config.providerId,
+      providerUseDecisionResolver
     });
   }
 
@@ -848,7 +954,11 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   return identityPassed && (!expectedHashSupplied || deployedHashMatched) ? 0 : 1;
 }
 
-export { buildReport, readOperatorConfiguration };
+export {
+  buildReport,
+  readOperatorConfiguration,
+  requireSignedProviderUseDecision
+};
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main().then((code) => {
