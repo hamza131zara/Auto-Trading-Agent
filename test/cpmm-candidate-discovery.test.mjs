@@ -135,7 +135,11 @@ function poolApiUrl(url) {
   return url.startsWith("https://api-v3.raydium.io/pools/info/mint?");
 }
 
-function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) {
+function mockFetchFactory({
+  rpcOwnerOverrides = {},
+  hasNextPage = false,
+  blockTimeResult = Math.floor(Date.parse("2026-10-29T08:59:59.000Z") / 1_000)
+} = {}) {
   const calls = [];
   const dexPairs = [
     makePair(HIGH_CPMM, 500_000, 75_000),
@@ -174,6 +178,18 @@ function mockFetchFactory({ rpcOwnerOverrides = {}, hasNextPage = false } = {}) 
     if (url.startsWith("https://api.mainnet.solana.com")) {
       assert.equal(init.method, "POST");
       const request = JSON.parse(init.body);
+      if (request.method === "getBlockTime") {
+        assert.equal(request.params.length, 1);
+        assert.equal(request.params[0], 462900001);
+        return new Response(JSON.stringify({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: blockTimeResult
+        }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        });
+      }
       assert.equal(request.method, "getMultipleAccounts");
       assert.equal(request.params[1].commitment, "finalized");
       const addresses = request.params[0];
@@ -246,7 +262,7 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
     now: () => "2026-10-29T09:00:00.000Z"
   });
 
-  assert.equal(calls.length, 6); // Two Raydium pair queries, one RPC bundle, three exact CPMM pair lookups
+  assert.equal(calls.length, 7); // Two Raydium pair queries, account snapshot, block-time lookup and three exact CPMM pair lookups
   assert.equal(report.status, "QUALIFYING_CPMM_CANDIDATES_FOUND");
   assert.equal(report.sources.raydiumApi.providerId, "raydium-api-v3");
   assert.equal(report.sources.raydiumApi.freshness, "UNKNOWN");
@@ -254,6 +270,12 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   assert.equal(report.sources.raydiumApi.complete, true);
   assert.equal(report.rpcEvidence.synthetic, true);
   assert.equal(report.rpcEvidence.contextSlot, 462900001);
+  assert.equal(report.rpcEvidence.slotBlockTimeEvidence.contextSlot, 462900001);
+  assert.equal(report.rpcEvidence.slotBlockTimeEvidence.state, "AVAILABLE");
+  assert.equal(report.rpcEvidence.slotBlockTimeEvidence.timestampKind, "SLOT_BLOCK_TIME_ESTIMATE");
+  assert.equal(report.rpcEvidence.slotBlockTimeEvidence.observedAt, new Date(Math.floor(Date.parse("2026-10-29T08:59:59.000Z") / 1_000) * 1_000).toISOString());
+  assert.equal(report.rpcEvidence.slotBlockTimeEvidence.synthetic, true);
+  assert.deepEqual(report.rpcEvidence.slotBlockTimeEvidence.reasonCodes, []);
   assert.equal(report.selectionPolicy.candidateCount, 3);
   assert.equal(report.selectionPolicy.thresholdQualifiedCount, 2);
   assert.equal(report.selectionPolicy.freshnessQualifiedCount, 0);
@@ -325,6 +347,12 @@ test("cross-checks every CPMM candidate beyond the former 20-pool cap", async ()
     }
     if (url.startsWith("https://api.mainnet.solana.com")) {
       const request = JSON.parse(init.body);
+      if (request.method === "getBlockTime") {
+        assert.equal(request.params[0], 462900099);
+        return new Response(JSON.stringify({
+          jsonrpc: "2.0", id: request.id, result: Math.floor(Date.parse("2026-10-29T08:59:59.000Z") / 1_000)
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
       assert.equal(request.method, "getMultipleAccounts");
       const foundAddresses = request.params[0];
       return new Response(JSON.stringify({
@@ -643,6 +671,24 @@ test("does not count wrong mint pairs or non-standard pools from the Raydium API
   assert.equal(report.selectionPolicy.candidateCount, 0);
 });
 
+test("missing getBlockTime result is explicit and does not fabricate freshness or abort discovery", async () => {
+  const { fetchImpl } = mockFetchFactory({ blockTimeResult: null });
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+  const evidence = report.rpcEvidence.slotBlockTimeEvidence;
+  assert.equal(evidence.contextSlot, report.rpcEvidence.contextSlot);
+  assert.equal(evidence.state, "UNAVAILABLE");
+  assert.equal(evidence.blockTimeUnixSeconds, null);
+  assert.equal(evidence.observedAt, null);
+  assert.equal(evidence.timestampKind, "MISSING");
+  assert.ok(evidence.reasonCodes.includes("RPC_BLOCK_TIME_NOT_AVAILABLE"));
+  assert.equal(report.selectionPolicy.candidateCount, 3);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+});
+
 test("does not admit a CPMM pool if the API program ID disagrees with the on-chain owner", async () => {
   const { fetchImpl } = mockFetchFactory({ rpcOwnerOverrides: { [HIGH_CPMM]: AMM_V4 } });
   const report = await discoverRaydiumCpmmCandidates({
@@ -665,6 +711,11 @@ test("wrong PoolState size fails closed", async () => {
     }
     if (url.startsWith("https://api.mainnet.solana.com")) {
       const request = JSON.parse(init.body);
+      if (request.method === "getBlockTime") {
+        return new Response(JSON.stringify({
+          jsonrpc: "2.0", id: request.id, result: null
+        }), { status: 200 });
+      }
       return new Response(JSON.stringify({
         jsonrpc: "2.0",
         id: request.id,

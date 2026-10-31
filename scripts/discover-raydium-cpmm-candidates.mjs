@@ -6,7 +6,8 @@ import { parseJsonPreservingNumericLexemes } from "../packages/market-data/dist/
 import {
   decodeRaydiumCpmmPool,
   isSolanaPublicKey,
-  RAYDIUM_CPMM_PROGRAM_ID
+  RAYDIUM_CPMM_PROGRAM_ID,
+  SolanaRpcAccountReader
 } from "../packages/market-data/dist/index.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
@@ -527,6 +528,66 @@ function checkRpcAccounts(payload, requestId, expectedAddresses, expectedPoolMet
   return { contextSlot, classified };
 }
 
+async function readSlotBlockTimeEvidence(fetchImpl, contextSlot, requestId, now) {
+  const synthetic = fetchImpl !== globalThis.fetch;
+  const blockTimeRequestId = requestId + "-block-time";
+  const base = {
+    providerId: RPC_PROVIDER_ID,
+    commitment: "finalized",
+    contextSlot,
+    slot: contextSlot,
+    state: "UNAVAILABLE",
+    blockTimeUnixSeconds: null,
+    observedAt: null,
+    timestampKind: "MISSING",
+    retrievedAt: null,
+    requestId: blockTimeRequestId,
+    rawPayloadSha256: null,
+    synthetic,
+    reasonCodes: []
+  };
+  const unavailable = (reasonCode) => ({ ...base, reasonCodes: [reasonCode] });
+
+  if (!Number.isSafeInteger(contextSlot) || contextSlot < 0 ||
+      !RPC_REQUEST_ID_PATTERN.test(blockTimeRequestId)) {
+    return unavailable("RPC_BLOCK_TIME_INPUT_INVALID");
+  }
+
+  try {
+    const reader = new SolanaRpcAccountReader({
+      endpoint: RPC_URL,
+      providerId: RPC_PROVIDER_ID,
+      clock: now,
+      ...(synthetic ? { fetchImpl } : {})
+    });
+    const evidence = await reader.getBlockTime(contextSlot, blockTimeRequestId);
+    return {
+      ...evidence,
+      commitment: "finalized",
+      contextSlot,
+      reasonCodes: evidence.state === "AVAILABLE"
+        ? []
+        : ["RPC_BLOCK_TIME_NOT_AVAILABLE"]
+    };
+  } catch (error) {
+    const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,80}$/.test(error.code)
+      ? error.code
+      : "REQUEST_FAILED";
+    let retrievedAt = null;
+    try {
+      const value = now();
+      if (typeof value === "string" && Number.isFinite(Date.parse(value))) retrievedAt = value;
+    } catch {
+      // Keep retrieval time unavailable when the injected/system clock fails.
+    }
+    return {
+      ...base,
+      retrievedAt,
+      reasonCodes: ["RPC_BLOCK_TIME_" + code]
+    };
+  }
+}
+
 export async function discoverRaydiumCpmmCandidates({
   env = process.env,
   fetchImpl = globalThis.fetch,
@@ -626,7 +687,22 @@ export async function discoverRaydiumCpmmCandidates({
     contextSlot: null,
     requestId: null,
     rawPayloadSha256: null,
-    synthetic: fetchImpl !== globalThis.fetch
+    synthetic: fetchImpl !== globalThis.fetch,
+    slotBlockTimeEvidence: {
+      providerId: RPC_PROVIDER_ID,
+      commitment: "finalized",
+      contextSlot: null,
+      slot: null,
+      state: "NOT_REQUESTED",
+      blockTimeUnixSeconds: null,
+      observedAt: null,
+      timestampKind: "MISSING",
+      retrievedAt: null,
+      requestId: null,
+      rawPayloadSha256: null,
+      synthetic: fetchImpl !== globalThis.fetch,
+      reasonCodes: ["FINALIZED_ACCOUNT_CONTEXT_NOT_AVAILABLE"]
+    }
   };
   let classifications = [];
   if (selected.length > 0) {
@@ -663,13 +739,20 @@ export async function discoverRaydiumCpmmCandidates({
       expectedPoolMetadata
     );
     classifications = checked.classified;
+    const slotBlockTimeEvidence = await readSlotBlockTimeEvidence(
+      fetchImpl,
+      checked.contextSlot,
+      rpcRequestId,
+      now
+    );
     rpcEvidence = {
       providerId: RPC_PROVIDER_ID,
       commitment: "finalized",
       contextSlot: checked.contextSlot,
       requestId: rpcRequestId,
       rawPayloadSha256: sha256(rpc.rawText),
-      synthetic: fetchImpl !== globalThis.fetch
+      synthetic: fetchImpl !== globalThis.fetch,
+      slotBlockTimeEvidence
     };
   }
 
