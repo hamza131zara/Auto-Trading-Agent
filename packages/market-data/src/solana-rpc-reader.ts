@@ -513,16 +513,16 @@ export class SolanaRpcAccountReader {
     } catch {
       throw new SolanaRpcReaderError("PARSE", false);
     }
-    if (!isRecord(payload) || payload.jsonrpc !== "2.0" ||
-        payload.id !== requestId || !("result" in payload)) {
+    if (!isRecord(payload) || payload.jsonrpc !== "2.0" || payload.id !== requestId) {
       throw new SolanaRpcReaderError("PARSE", false);
     }
     if ("error" in payload) throw new SolanaRpcReaderError("RPC", false);
+    if (!("result" in payload)) throw new SolanaRpcReaderError("PARSE", false);
 
     const blockTime = payload.result;
     if (blockTime !== null &&
         (!Number.isSafeInteger(blockTime) || (blockTime as number) < 0 ||
-         (blockTime as number) > 8_640_000_000_000)) {
+         (blockTime as number) > 253_402_300_799)) {
       throw new SolanaRpcReaderError("PARSE", false);
     }
 
