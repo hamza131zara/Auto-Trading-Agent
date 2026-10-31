@@ -200,6 +200,26 @@ test("rejects non-HTTPS, credential-bearing, queried, fragmented and IP-literal 
   }
 });
 
+test("permits fixed non-sensitive endpoint query parameters but rejects credential-like query names", () => {
+  const packet = validPacket();
+  packet.registry.endpointUrl =
+    "https://registry.example.net/v1/signed-snapshot?registry=owner-provider-trust&schema=v1";
+  packet.registry.deploymentDescriptorSha256 =
+    getProviderTrustRegistryDeploymentDescriptorSha256(packet.registry);
+  const result = validate(packet);
+  assert.equal(result.valid, true, result.reasonCodes.join(", "));
+
+  const credentialQuery = validPacket();
+  credentialQuery.registry.endpointUrl =
+    "https://registry.example.net/v1/signed-snapshot?access_token=not-a-real-token";
+  credentialQuery.registry.deploymentDescriptorSha256 =
+    getProviderTrustRegistryDeploymentDescriptorSha256(credentialQuery.registry);
+  assert.ok(hasReason(
+    validate(credentialQuery),
+    "REGISTRY_ENDPOINT_NOT_FIXED_CANONICAL_HTTPS"
+  ));
+});
+
 test("rejects malformed, duplicate, loopback, link-local and multicast DNS allowlist addresses", () => {
   for (const addresses of [
     [],
