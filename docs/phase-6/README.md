@@ -210,3 +210,8 @@ The disposable PostgreSQL 18.6 workflow now exercises the existing transient `pg
 ## Phase 6.40 — node-postgres TLS handshake verification experiment
 
 The PostgreSQL CI workflow now creates disposable CA/certificate fixtures and tests the test-only node-postgres client against PostgreSQL 18.6 for trusted-chain acceptance, untrusted CA rejection, hostname mismatch rejection, expired-certificate rejection, TLS-disabled endpoint rejection and protocol-minimum negotiation. The driver remains test-only; no production CA, endpoint, connection configuration or driver selection is approved. See [Phase 6.40](40-node-postgres-tls-handshake-verification.md).
+
+
+## Phase 6.43 — Signed owner provider-use decisions
+
+A separate Ed25519 verification primitive now checks the full provider-use decision payload against an independently supplied owner-controlled trust-key registry. Key validity/revocation, provider and purpose scope, owner identity, finite decision expiry, ambiguous records and signature integrity are fail-closed. The resolver is not wired into live runtime bootstrap because no real owner public key or signed decision has been supplied and reviewed. Test keys are ephemeral only. A valid signature does not authenticate underlying evidence or grant provider/legal rights. See [Phase 6.43](43-signed-provider-use-decisions.md). The work is under review; no provider activation, production approval, DB deployment, wallet, signer or trading permission is added.

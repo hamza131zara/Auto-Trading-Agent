@@ -51,6 +51,10 @@
     "./postgres-pg-adapter": {
       "types": "./dist/postgres-pg-adapter.d.ts",
       "import": "./dist/postgres-pg-adapter.js"
+    },
+    "./provider-use-decision-verifier": {
+      "types": "./dist/provider-use-decision-verifier.d.ts",
+      "import": "./dist/provider-use-decision-verifier.js"
     }
   },
   "scripts": {
