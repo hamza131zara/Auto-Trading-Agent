@@ -262,3 +262,86 @@ export async function assessUpgradeableProgramDeployment(input: {
   if (authorityTag === 1) reasons.push("PROGRAM_REMAINS_UPGRADEABLE");
   return resultWithInspection(input.synthetic ? "SYNTHETIC_MATCH" : "MATCH", reasons, common);
 }
+
+
+export type ProgramUpgradeAuthorityReviewStatus =
+  | "NOT_ASSESSED"
+  | "OWNER_DECISION_REQUIRED";
+
+export interface ProgramUpgradeAuthorityReviewResult {
+  readonly status: ProgramUpgradeAuthorityReviewStatus;
+  readonly reasonCodes: readonly string[];
+  readonly programId: string;
+  readonly deploymentStatus: ProgramDeploymentVerificationStatus | "MISSING";
+  readonly deploymentSlot: string | null;
+  readonly observedContextSlot: number | null;
+  readonly upgradeAuthorityPresent: boolean | null;
+  /** No policy decision is inferred from a hash match or an observed authority state. */
+  readonly ownerPolicyDecision: null;
+  readonly revalidationRequired: true;
+  readonly productionProviderSelectionAllowed: false;
+  readonly tradingAuthorized: false;
+}
+
+/**
+ * Keep program-byte integrity and upgrade-authority governance as separate gates.
+ * A real ELF hash MATCH is not an owner decision to accept an upgradeable program.
+ */
+export function assessProgramUpgradeAuthorityReview(
+  deployment: ProgramDeploymentVerificationResult | null | undefined
+): ProgramUpgradeAuthorityReviewResult {
+  const programId = typeof deployment?.programId === "string" ? deployment.programId : "";
+  const deploymentStatus = deployment?.status ?? "MISSING";
+  const deploymentSlot = typeof deployment?.deploymentSlot === "string"
+    ? deployment.deploymentSlot
+    : null;
+  const observedContextSlot = Number.isSafeInteger(deployment?.programDataContextSlot)
+    ? deployment!.programDataContextSlot
+    : Number.isSafeInteger(deployment?.programAccountContextSlot)
+      ? deployment!.programAccountContextSlot
+      : null;
+  const upgradeAuthorityPresent = typeof deployment?.upgradeAuthorityPresent === "boolean"
+    ? deployment.upgradeAuthorityPresent
+    : null;
+
+  if (deploymentStatus !== "MATCH" || deployment?.synthetic !== false ||
+      upgradeAuthorityPresent === null) {
+    const reasonCodes = deployment?.synthetic === true
+      ? ["SYNTHETIC_DEPLOYMENT_NOT_ELIGIBLE"]
+      : deploymentStatus !== "MATCH"
+        ? ["REAL_DEPLOYMENT_HASH_MATCH_REQUIRED"]
+        : ["UPGRADE_AUTHORITY_STATE_UNAVAILABLE"];
+    return {
+      status: "NOT_ASSESSED",
+      reasonCodes,
+      programId,
+      deploymentStatus,
+      deploymentSlot,
+      observedContextSlot,
+      upgradeAuthorityPresent,
+      ownerPolicyDecision: null,
+      revalidationRequired: true,
+      productionProviderSelectionAllowed: false,
+      tradingAuthorized: false
+    };
+  }
+
+  return {
+    status: "OWNER_DECISION_REQUIRED",
+    reasonCodes: [
+      upgradeAuthorityPresent
+        ? "PROGRAM_REMAINS_UPGRADEABLE"
+        : "NO_UPGRADE_AUTHORITY_AT_OBSERVED_SLOT",
+      "OWNER_UPGRADE_AUTHORITY_POLICY_REQUIRED"
+    ],
+    programId,
+    deploymentStatus,
+    deploymentSlot,
+    observedContextSlot,
+    upgradeAuthorityPresent,
+    ownerPolicyDecision: null,
+    revalidationRequired: true,
+    productionProviderSelectionAllowed: false,
+    tradingAuthorized: false
+  };
+}

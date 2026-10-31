@@ -3099,10 +3099,13 @@ export type {
 export {
   UPGRADEABLE_LOADER_PROGRAM_ID,
   inspectUpgradeableProgramAccount,
-  assessUpgradeableProgramDeployment
+  assessUpgradeableProgramDeployment,
+  assessProgramUpgradeAuthorityReview
 } from "./program-deployment-verification.js";
 export type {
   UpgradeableProgramAccountInspection,
   ProgramDeploymentVerificationStatus,
-  ProgramDeploymentVerificationResult
+  ProgramDeploymentVerificationResult,
+  ProgramUpgradeAuthorityReviewStatus,
+  ProgramUpgradeAuthorityReviewResult
 } from "./program-deployment-verification.js";
