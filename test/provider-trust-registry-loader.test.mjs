@@ -65,7 +65,7 @@ function response(overrides = {}) {
 
 function makeStore(options = {}) {
   let current = options.initial ? { ...options.initial } : null;
-  const events = [];
+  const events = options.events ?? [];
   return {
     events,
     async read(registryId) {
@@ -95,7 +95,7 @@ function makeStore(options = {}) {
 function makeLoaderInput(options = {}) {
   const events = options.events ?? [];
   const transportResponse = options.response ?? response();
-  const store = options.store ?? makeStore();
+  const store = options.store ?? makeStore({ events });
   const transport = options.transport ?? {
     async readSnapshot(request) {
       events.push("transport");
