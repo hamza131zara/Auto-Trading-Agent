@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Steps 1–3 are implemented and verified. Step 4 — owner-configured registry load orchestration — is implemented on this branch; final CI verification is pending.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
+**Phase 6.46 Steps 1–4 are implemented and verified on this branch.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
