@@ -107,7 +107,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
         );
         assert.equal(result.rows.length, 1);
         assert.equal(result.rows[0].ssl, true);
-        assert.match(result.rows[0].version, /^TLSv1\\.(2|3)$/);
+        assert.match(result.rows[0].version, /^TLSv1\.(2|3)$/);
       } finally {
         client.release();
       }
@@ -177,7 +177,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
         adapter.connect(),
         (error) => error instanceof PostgresPgAdapterError &&
           error.code === "DATABASE_OPERATION_FAILED" &&
-          !/wrong\\.pg-tls|certificate|hostname/i.test(error.message)
+          !/wrong\.pg-tls|certificate|hostname/i.test(error.message)
       );
     } finally {
       await adapter.close();
