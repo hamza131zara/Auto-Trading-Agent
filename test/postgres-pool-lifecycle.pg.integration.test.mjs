@@ -179,9 +179,18 @@ test("node-postgres 8.23.1 pool lifecycle behavior against disposable PostgreSQL
   await t.test("an adapter-side admission cap rejects excess waiters before the pg pool queue grows", async () => {
     const pool = createPool({ max: 1, connectionTimeoutMillis: 5_000 });
     const held = await pool.connect();
-    const clients = [];
+    const acquiredClients = new Set();
+    let heldReleased = false;
     let pending = 0;
+    let first;
+    let second;
     const maximumPending = 2;
+    const releaseHeld = () => {
+      if (!heldReleased) {
+        heldReleased = true;
+        held.release();
+      }
+    };
     const acquireWithAdmissionCap = () => {
       if (pending >= maximumPending) {
         const error = new Error("POOL_ADMISSION_LIMIT_REACHED");
@@ -189,14 +198,17 @@ test("node-postgres 8.23.1 pool lifecycle behavior against disposable PostgreSQL
         return Promise.reject(error);
       }
       pending += 1;
-      return pool.connect().finally(() => {
+      return pool.connect().then((client) => {
+        acquiredClients.add(client);
+        return client;
+      }).finally(() => {
         pending -= 1;
       });
     };
 
     try {
-      const first = acquireWithAdmissionCap();
-      const second = acquireWithAdmissionCap();
+      first = acquireWithAdmissionCap();
+      second = acquireWithAdmissionCap();
       await new Promise((resolve) => setImmediate(resolve));
 
       assert.equal(pool.waitingCount, 2);
@@ -207,24 +219,25 @@ test("node-postgres 8.23.1 pool lifecycle behavior against disposable PostgreSQL
       assert.equal(pool.waitingCount, 2,
         "the rejected third waiter must never enter the underlying FIFO queue");
 
-      held.release();
+      releaseHeld();
       const firstClient = await first;
-      clients.push(firstClient);
       firstClient.release();
-      clients.pop();
+      acquiredClients.delete(firstClient);
 
       const secondClient = await second;
-      clients.push(secondClient);
       secondClient.release();
-      clients.pop();
+      acquiredClients.delete(secondClient);
 
       assert.equal(pool.waitingCount, 0);
       assert.equal(pending, 0);
+      assert.equal(acquiredClients.size, 0);
     } finally {
-      for (const client of clients) {
+      releaseHeld();
+      await Promise.allSettled([first, second].filter(Boolean));
+      for (const client of acquiredClients) {
         try { client.release(true); } catch {}
       }
-      held.release();
+      acquiredClients.clear();
       await closePool(pool);
     }
   });
