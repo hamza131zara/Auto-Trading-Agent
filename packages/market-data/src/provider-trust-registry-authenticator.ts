@@ -378,9 +378,7 @@ function isValidUtcTimestamp(value: unknown): value is string {
   if (typeof value !== "string" || !UTC_TIMESTAMP.test(value)) return false;
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return false;
-  const normalized = value.replace(
-    /(?:\.(\d{1,3}))?Z$/,
-    (_match, fraction: string | undefined) => `.\${(fraction ?? "").padEnd(3, "0")}Z`
-  );
+  const fraction = /\.(\d{1,3})Z$/.exec(value)?.[1] ?? "";
+  const normalized = value.replace(/(?:\.\d{1,3})?Z$/, "." + fraction.padEnd(3, "0") + "Z");
   return new Date(timestamp).toISOString() === normalized;
 }
