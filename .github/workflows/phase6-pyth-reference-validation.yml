@@ -187,7 +187,7 @@ jobs:
             echo "::error::Repository secret PYTH_API_KEY is missing; no provider requests were made."
             exit 2
           fi
-          for field in MAX_REFERENCE_SOURCE_AGE_MS MAX_REFERENCE_RETRIEVAL_AGE_MS MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS MAX_FUTURE_SKEW_MS MAX_DEVIATION_BPS; do
+          for field in MAX_REFERENCE_SOURCE_AGE_MS MAX_REFERENCE_RETRIEVAL_AGE_MS MAX_REFERENCE_TIMESTAMP_SKEW_MS MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS MAX_FUTURE_SKEW_MS MAX_DEVIATION_BPS; do
             if [[ ! "${!field}" =~ ^(0|[1-9][0-9]*)$ ]]; then
               echo "::error::Invalid comparison-policy input: $field"
               exit 2
