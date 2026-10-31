@@ -1,100 +1,136 @@
 # Phase 6.46 — Signed authoritative provider trust-registry contract
 
-## Status
+## Status and boundary
 
-**Step 1: contract and security boundary.** This change specifies the trust-registry protocol before selecting or connecting an external service. It does not add a provider, endpoint, credential, root key, signing key, network client, or runtime activation.
+**Step 1: protocol contract and security boundary.** This defines a provider-neutral, root-authenticated trust-registry protocol. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
 
-The existing `ata.provider-use-decision.v1` Ed25519 decision envelope and its signing payload are unchanged. A registry snapshot authenticates the trusted-key/revocation set; it does not replace or sign individual provider-use decisions.
+The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
-## Threat model and trust hierarchy
+## Trust hierarchy
 
-The registry is not allowed to establish its own trust. The consumer must receive the registry root public key and its expected SHA-256 SPKI fingerprint through an independently controlled deployment trust channel. The root key must not be accepted from the registry response, provider decision envelope, or an unauthenticated URL/config response.
+The registry cannot establish its own trust. The consumer receives all of the following through an independently controlled deployment channel:
+
+- Stable expected `registryId`.
+- Pinned `rootKeyId`.
+- Ed25519 root public key in SPKI PEM form.
+- Independently recorded SHA-256 fingerprint of the DER SPKI bytes.
+
+The root key and fingerprint must not be accepted from the registry response, provider decision envelope, or an unauthenticated URL/config response. The root key must parse as Ed25519 and its computed SPKI fingerprint must match the pinned fingerprint before signature verification.
 
 The hierarchy is:
 
-1. **Deployment trust anchor:** owner-controlled pinned Ed25519 registry-root public key plus independently recorded SHA-256 fingerprint.
-2. **Signed registry snapshot:** root-signed, versioned, bounded snapshot containing the current provider-decision signing keys and revocation state.
-3. **Provider-use decision:** existing owner-signed `ata.provider-use-decision.v1` envelope verified against exactly one eligible key in the authenticated snapshot.
-4. **Provider request:** only after snapshot verification, freshness, rollback protection, key scope, key status, decision scope, and decision expiry all pass.
+1. **Deployment trust anchor:** owner-controlled registry identity, root key ID, Ed25519 public key and SPKI SHA-256 fingerprint.
+2. **Signed registry snapshot:** root-signed, versioned, bounded complete replacement set of trusted provider-decision signing keys and revocation states.
+3. **Provider-use decision:** existing owner-signed `ata.provider-use-decision.v1` envelope checked against exactly one eligible key in the authenticated snapshot.
+4. **Provider request:** allowed only after snapshot authentication, freshness, rollback protection, key validity/revocation/scope, decision signature, decision scope and decision expiry all pass.
 
-A registry signature proves that the pinned registry root signed the snapshot. It does not prove the correctness of provider legal evidence, source independence, data freshness, or commercial rights.
+A registry signature proves only that the pinned registry root signed the snapshot. It does not prove legal evidence correctness, source independence, market data freshness or provider commercial rights.
 
-## Snapshot wire contract
+## Exact snapshot wire contract
 
-The versioned envelope is `ata.provider-trust-registry-snapshot.v1` and has exactly these top-level fields:
+The wire envelope has exactly these top-level fields, matching `ProviderTrustRegistrySnapshotEnvelope` in `packages/market-data/src/provider-trust-registry.ts`:
 
 | Field | Contract |
 |---|---|
 | `schemaVersion` | Exact literal `ata.provider-trust-registry-snapshot.v1` |
-| `registryId` | Stable owner-assigned identifier, not a URL |
-| `rootKeyId` | Identifier of the deployment-pinned registry root |
+| `registryId` | Stable owner-assigned identifier; not a URL |
+| `rootKeyId` | Exact ID of the deployment-pinned registry root |
 | `algorithm` | Exact literal `Ed25519` |
-| `version` | Positive safe integer, strictly monotonic per registry |
-| `issuedAt` | UTC timestamp assigned when the complete snapshot is published |
-| `expiresAt` | UTC timestamp; must be later than issuedAt and current verification time |
-| `keys` | Complete current array of trusted provider-decision signing-key records |
+| `version` | Positive JavaScript safe integer, strictly monotonic per registry and no greater than `Number.MAX_SAFE_INTEGER` |
+| `issuedAt` | UTC publication timestamp covered by the signature |
+| `expiresAt` | UTC expiry timestamp, strictly later than `issuedAt` and the verification time |
+| `keys` | Ordered complete array of at most 64 trusted provider-decision signing-key records |
 | `signature` | Canonical unpadded base64url encoding of a 64-byte Ed25519 signature |
 
-The signature covers a domain-separated UTF-8 canonical payload containing every field above except `signature`, in a fixed documented property order. The canonical payload includes the complete ordered key records, including `revokedAt`, validity bounds, provider allowlists and purpose allowlists. No field may be silently omitted, normalized, or reconstructed from a second source.
+The snapshot payload excludes only `signature`. The root signs the UTF-8 bytes of the exact domain-separated JSON returned by `getProviderTrustRegistrySigningPayload`. Its first-level property order is fixed:
 
-The snapshot is a **complete replacement set**, not a delta. Absence of a previously known key means it is no longer trusted. Revocation must be explicit in the snapshot for auditability, but the consumer must not retain omitted keys as fallback.
+1. `domain` = `ata.provider-trust-registry.snapshot.signature.v1`
+2. `schemaVersion`
+3. `registryId`
+4. `rootKeyId`
+5. `algorithm`
+6. `version`
+7. `issuedAt`
+8. `expiresAt`
+9. `keys`
 
-## Verification requirements
+Each key record is serialized in the fixed order `keyId`, `owner`, `publicKeyPem`, `notBefore`, `expiresAt`, `revokedAt`, `allowedProviderIds`, `allowedPurposes`. Array order is significant and is covered by the signature. Extra/missing fields, duplicate key IDs, malformed scope arrays and invalid version/time values are rejected by the canonical payload builder or verifier. No field may be silently omitted, normalized, or reconstructed from a second source.
 
-A future implementation must reject by default when any of these conditions holds:
+The `keys` set uses the existing `TrustedProviderDecisionSigningKey` shape. It contains only public key material and policy metadata; no private signing keys. A snapshot is a **complete replacement set**, not a delta. A key omitted from a newer accepted set is no longer trusted. Explicit `revokedAt` remains valuable audit evidence, but omitted, revoked, expired or out-of-scope keys must never be retained as fallback.
 
-- Missing deployment-pinned root key or expected fingerprint.
-- Root key is not Ed25519, cannot be parsed, or its SPKI SHA-256 fingerprint differs from the independently configured fingerprint.
-- Unknown schema, extra/missing fields, malformed identifiers/timestamps, duplicate key IDs, malformed key records, or invalid signature encoding.
-- Invalid root signature or a snapshot signed by a different root key ID.
-- Snapshot version is lower than the durable high-water mark for that registry.
-- Same version is presented with a different canonical snapshot digest than the durably recorded digest.
-- Snapshot is future-dated, expired, has an invalid time interval, or exceeds the configured maximum age.
-- Registry response exceeds a strict byte limit, retrieval times out, is cancelled, or the loader returns an error.
-- Any required key is missing, duplicated, expired, not-yet-valid, revoked, or outside provider/purpose scope.
+## Resource and freshness limits
 
-The maximum snapshot age must be explicit and bounded to at most five minutes for the Phase 6 diagnostic path unless a separately reviewed policy changes it. Retrieval time is not a substitute for `issuedAt`.
+The contract constants in `PROVIDER_TRUST_REGISTRY_LIMITS` are normative:
 
-## Rollback and durable state
+- Maximum raw snapshot body: **49,152 bytes (48 KiB)**, enforced while streaming and before JSON parsing.
+- Maximum key records: **64**.
+- Maximum snapshot age: **300,000 ms (five minutes)**.
+- Maximum retrieval timeout: **5,000 ms**.
 
-The verifier must be pure and must not claim rollback resistance from process memory alone. The caller must supply a durable per-`registryId` high-water record containing the last accepted version and canonical snapshot SHA-256 digest. After a snapshot passes every cryptographic and semantic check, the caller atomically commits the new high-water record before using any keys from that snapshot.
+The authenticated `issuedAt` must not be in the future, `expiresAt` must be later than current verification time, and `now - issuedAt` must not exceed the configured age bound. The bound must be a positive integer no greater than 300,000 ms. Retrieval time is metadata and never substitutes for signed `issuedAt`.
 
-The storage adapter must provide compare-and-swap or equivalent transactional monotonic update semantics. A missing, corrupt, stale, or unavailable high-water record denies authorization. Restoring an old database backup must not silently lower the high-water mark; production design must specify an independently protected recovery/fencing procedure. Concurrent workers must not accept an older snapshot after a newer version has been committed.
+## Verification and failure behavior
 
-Equal-version replay is allowed only when the canonical digest exactly matches the durable digest and the snapshot remains within its validity window. A same-version different digest is a rollback/equivocation failure.
+Fail closed on any of the following:
+
+- Missing/malformed trust anchor, non-Ed25519 root, root-key ID mismatch or SPKI fingerprint mismatch.
+- Unknown schema, extra/missing fields, malformed identifiers/timestamps, duplicate key IDs, malformed key records or invalid signature encoding.
+- Invalid root signature or snapshot signed by a root key other than the independently pinned root.
+- Future-issued, expired or stale snapshot.
+- Snapshot body above 48 KiB or key count above 64.
+- Lower snapshot version than the durable high-water mark.
+- Same version with a different canonical payload SHA-256 digest (equivocation).
+- Registry timeout, cancellation, redirect, HTTP downgrade, non-success response, invalid content type, malformed UTF-8/JSON or loader failure.
+- Missing, corrupt or unavailable anti-rollback state.
+- Any required decision key missing, duplicated, expired, not-yet-valid, revoked or outside provider/purpose scope.
+
+Errors and logs expose stable sanitized reason codes only. Never include response bodies, authorization headers, credentials, private keys or secret-bearing URLs.
+
+## Durable anti-rollback and concurrency
+
+The verifier must not claim rollback resistance from process memory alone. The caller supplies a durable per-`registryId` high-water record containing the last accepted `version` and canonical unsigned-payload SHA-256 digest.
+
+After cryptographic, schema, freshness and key-set checks pass, the caller atomically advances the high-water mark **before** exposing any keys to provider authorization. The `ProviderTrustRegistryHighWaterMarkStore.compareAndSet` contract must provide transactional compare-and-swap semantics across workers and process restarts.
+
+- Lower version: reject as rollback.
+- Same version, same digest: allow replay only while the snapshot remains within its validity window.
+- Same version, different digest: reject as equivocation.
+- Higher version: accept only after successful atomic compare-and-swap from the exact record previously read; a conflict must cause re-read/revalidation or denial, never acceptance based on stale state.
+- Missing/corrupt/unavailable high-water state: deny.
+- Backup restoration must not silently lower the mark. Production recovery needs a separately protected recovery/fencing procedure.
+
+A durable store interface is defined, but no storage implementation is selected or provisioned in this step.
 
 ## Loader boundary
 
-The protocol verifier accepts bytes/parsed data and explicit trust inputs; it performs no network I/O and has no provider, wallet, signer, or trading capability.
+The protocol is separated from transport. The authenticator consumes exact snapshot bytes and an independently provided trust anchor; the transport returns untrusted bytes only. A future owner-selected adapter must:
 
-A later owner-selected loader adapter must:
-- Use a fixed, owner-approved origin and endpoint path; never follow redirects to a different origin.
-- Require HTTPS with normal certificate-chain and hostname verification; prohibit plaintext fallback.
-- Apply a bounded timeout and cancellation signal.
-- Enforce a response-body byte limit while streaming, before JSON parsing.
-- Reject non-success status, unexpected content type, compressed/decoded-size overflow, malformed UTF-8/JSON, and duplicate/unknown schema fields.
-- Avoid logging response bodies, authorization headers, tokens, or key material.
-- Return the snapshot plus independently measured retrieval metadata; retrieval metadata is not signed evidence.
-- Never cache a previously accepted snapshot as a fallback when refresh fails.
+- Use one fixed owner-approved HTTPS origin and endpoint path; configure redirects as `error` and do not follow redirects to another origin.
+- Preserve normal certificate-chain and hostname validation; no plaintext fallback.
+- Apply cancellation and a timeout no greater than five seconds.
+- Enforce the 48 KiB decoded body limit while streaming, before JSON parsing (including compressed response expansion).
+- Require the expected JSON content type and reject non-success status, malformed UTF-8/JSON, duplicate/unknown fields and schema drift.
+- Authenticate the exact received envelope bytes with the independently pinned root key.
+- Return retrieval metadata separately; it is not signature-covered evidence.
+- Never use cached keys as fallback when refresh fails.
 
-No external registry vendor or hosting service is selected by this contract. The owner must approve the provider, account, endpoint, availability model, costs, terms, retention and incident process before an adapter is implemented or used.
+No registry vendor, hosting service, origin, account, endpoint, credential, key-management product or availability/cost model is selected here. The owner must approve those items before an adapter is implemented or used.
 
-## Required adversarial verification
+## Required adversarial verification for the implementation step
 
-The implementation PR must include generated in-process Ed25519 fixtures only and cover:
-- Valid root signature and matching fingerprint.
-- Wrong root key, wrong fingerprint, invalid signature, altered payload and non-canonical signature.
-- Missing/extra fields, unknown schema, duplicate IDs, malformed key records and oversized snapshots.
-- Expired/future snapshots and stale retrieval age.
-- Lower version, same-version digest equivocation, and durable compare-and-swap races.
-- Revoked/expired/not-yet-valid provider key and provider/purpose mismatch.
-- Timeout, abort, redirect, HTTP downgrade, non-success status, malformed JSON and streamed body-size overflow in loader tests.
-- Registry unavailable or high-water storage unavailable: deny before any provider/RPC request.
+Use generated in-process Ed25519 fixtures only; no production keys, external credentials or live network dependencies:
 
-Tests must not contain production keys, secrets, external service credentials, or live network dependencies.
+- Valid signature and matching root SPKI fingerprint.
+- Wrong root key, root key ID, fingerprint or algorithm; invalid signature; altered payload; non-canonical signature.
+- Missing/extra fields, unknown schema, duplicate key IDs, malformed records and oversized body/key set.
+- Expired/future/stale snapshots and safe-integer version overflow.
+- Lower version, same-version digest equivocation, identical-version replay and compare-and-swap races.
+- Revoked/expired/not-yet-valid provider decision key and provider/purpose mismatch.
+- Timeout, abort, redirect, HTTP downgrade, non-success status, malformed JSON and streaming body-size overflow.
+- Registry or durable high-water store unavailable: deny before any provider/RPC request.
 
 ## Non-goals and unchanged controls
 
-This contract does not create keys, populate GitHub Environment secrets, select an external trust service, make a live request, enable provider access, approve commercial rights, establish independent price agreement, change discovery thresholds, or authorize trading.
+This step does not generate keys, populate GitHub Environment secrets, choose a trust service, make a live request, activate providers, approve commercial rights, establish independent price agreement, alter discovery thresholds or authorize wallet signing, orders or trading.
 
-Solana-only V1, USD 100,000 liquidity threshold, USD 10,000 24-hour-volume threshold, 10-bps diagnostic tolerance, and all existing Phase 6 default-deny gates remain unchanged. Phase 6 remains ACTIVE.
+Solana-only V1, the USD 100,000 liquidity threshold, USD 10,000 24-hour-volume threshold, 10-bps diagnostic tolerance and all existing Phase 6 default-deny gates remain unchanged. Phase 6 remains ACTIVE.
