@@ -206,9 +206,5 @@ test("validates freshness and recomputes the canonical digest before any store o
   await expectCode(
     advance(candidate, store),
     "TRUST_REGISTRY_HIGH_WATER_MARK_CONFLICT"
-  ).catch((error) => {
-    // The first call above must fail on digest mismatch; this second assertion
-    // confirms the valid candidate gets as far as the supplied CAS implementation.
-    assert.equal(error.code, "TRUST_REGISTRY_HIGH_WATER_MARK_CONFLICT");
-  });
+  );
 });
