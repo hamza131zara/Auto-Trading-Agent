@@ -389,9 +389,9 @@ The evaluator accepts declarations only; it does not create a pool, connect to P
 - [x] Verify the actual package version at test runtime.
 - [x] Demonstrate a bounded adapter-side admission gate and verify that rejected callers do not enter the underlying FIFO queue.
 - [x] Restrict test connections to the disposable local PostgreSQL service; keep the driver out of application dependencies and the committed lockfile.
-- [ ] Owner explicitly selects or rejects `pg@8.23.1` as the production driver.
-- [ ] If selected, implement/review a production adapter with strict TLS, bounded admission, safe transaction/cancellation handling, approved pool limits and shutdown supervision.
-- [ ] Run real TLS trust/hostname/downgrade tests and verify effective production runtime settings.
+- [x] Owner explicitly selected `pg@8.23.1` as the production driver for implementation/review (Phase 6.41); production deployment remains separately gated.
+- [x] Implement/review the production adapter with strict TLS, bounded admission, timeout handling, safe client release and shutdown supervision (PR #62); production pool sizing and runtime deployment approval remain open.
+- [x] Run real TLS trust/hostname/downgrade tests against disposable PostgreSQL fixtures; effective settings on an actual production target remain unverified.
 - [ ] Obtain separate database deployment, backup/PITR, monitoring, provider and trading approvals.
 
 The experiment proves behavior only for the exact test-only driver version and disposable PostgreSQL CI environment. It does not select a production driver, add production connectivity or authorize deployment, provider activation or trading. Phase 6 remains ACTIVE. See [Phase 6.39](39-node-postgres-pool-lifecycle-experiment.md).
@@ -405,8 +405,8 @@ The experiment proves behavior only for the exact test-only driver version and d
 - [x] Verify untrusted CA, hostname mismatch, expired certificate and plaintext endpoint rejection.
 - [x] Verify protocol negotiation rejects a server below an explicitly configured client minimum.
 - [x] Keep all listeners loopback-only and remove containers/private test keys after CI.
-- [ ] Owner selects/pins the production PostgreSQL driver and approves the real production CA, endpoint/SNI identity and certificate-rotation model.
-- [ ] Repeat the complete handshake matrix with the owner-selected production driver and actual target certificate chain.
+- [x] Owner selected/pinned `pg@8.23.1` for adapter implementation/review. [ ] Real production CA, endpoint/SNI identity and certificate-rotation model remain unapproved.
+- [ ] Repeat/verify the handshake matrix against the actual target certificate chain after a production database and CA are separately authorized; disposable TLS matrix passed in CI.
 - [ ] Verify expiry monitoring, rotation ownership, effective runtime options and separate production deployment approvals.
 
 The tests use only disposable containers, generated certificates and the transient CI driver. They do not approve a production TLS policy, database, provider or trading runtime. Phase 6 remains ACTIVE. See [Phase 6.40](40-node-postgres-tls-handshake-verification.md).
@@ -425,6 +425,6 @@ The tests use only disposable containers, generated certificates and the transie
 - [x] Correct the test's promise-identity assertion in [PR #64](https://github.com/hamza131zara/Auto-Trading-Agent/pull/64); compare subsequent close calls with the raw drain promise.
 - [x] Verify the dedicated integration workflow: [run #41196013163](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41196013163), both jobs green; TLS suite 12 passed, 0 failed.
 - [x] Merge PR #64 into main at `8f9250119c5b90d1e11072177ddbf220b35648ca`.
-- [ ] Verify the post-merge main workflow runs on the merge commit before closing the post-merge CI gate.
+- [x] Verify post-merge `main` workflows on documentation/acceptance commit `ff9c61f125317a3e57b6f1408cbae8847c9327bb`: CI, Push on main and Phase 6 PostgreSQL integration all passed; integration run [#41196599190](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41196599190) completed both jobs successfully.
 
 Production database deployment, provider activation, wallet signing, orders and trading remain separately unauthorized.
