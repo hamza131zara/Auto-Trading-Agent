@@ -68,7 +68,7 @@ test("rejects a decision changed after it was signed", () => {
   const f = fixtures();
   const tampered = {
     ...f.envelope,
-    decision: { ...f.envelope.decision, outcome: "PROCEED_PRODUCTION_SCOPE" }
+    decision: { ...f.envelope.decision, scope: "Changed scope that was never signed" }
   };
   const result = verifySignedProviderUseDecision({
     envelope: tampered,
