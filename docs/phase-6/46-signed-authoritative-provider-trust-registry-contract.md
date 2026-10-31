@@ -181,6 +181,70 @@ The real-handshake matrix verifies:
 
 All certificates, keys, HTTP listeners and DNS mappings are disposable test fixtures. The test does not add a CA to production configuration, does not weaken certificate verification, and does not select a registry endpoint or resolver policy. Production DNS/origin/trust-anchor provisioning remains an owner decision. This test step verifies the generic transport's TLS behavior; it does not activate the trust registry or any provider.
 
+## Step 8 — offline provisioning readiness and independent approval gate
+
+The offline validator is implemented in \`scripts/lib/provider-trust-registry-provisioning.mjs\` and exposed as:
+
+\`\`\`sh
+npm run trust-registry:preflight -- --input /absolute/path/outside/repository/provisioning-packet.json
+\`\`\`
+
+The packet must be a regular, non-symlink JSON file outside the Git working tree and no larger than 64 KiB. The CLI reads it only; it does not write a report file, apply configuration, call DNS/HTTPS, connect to PostgreSQL, inspect a secure store or contact an evidence system. Its JSON output omits the endpoint URL, DNS addresses, root fingerprint and all evidence references.
+
+### Packet contract
+
+The exact top-level schema is \`ata.provider-trust-registry-provisioning-packet.v1\`. It binds:
+
+| Section | Required evidence and declarations |
+|---|---|
+| \`registry\` | Stable registry ID, root key ID, canonical HTTPS endpoint, exact DNS/IP allowlist, SPKI SHA-256 root fingerprint, configuration descriptor digest, endpoint-ownership review, DNS-policy review, TLS endpoint review, root ceremony/custody/recovery evidence, and rotation/revocation runbooks |
+| \`persistence\` | Exact high-water migration ID and SHA-256 from the current repository migration manifest, applied-migration evidence, high-water readback evidence, least-privilege runtime-role review, PostgreSQL \`verify-full\` TLS review, recent backup and restore-drill evidence, and anti-rollback recovery review |
+| \`operations\` | Monitoring plan, alert route, incident runbook, recent rotation and revocation exercises, registry-outage drill, and explicit fresh-snapshot/no-stale-fallback/default-deny declarations |
+| \`configDelivery\` | Owner-selected secure-store reference, access and audit review, independent delivery-channel review, and declarations that trust configuration remains outside the repository and private material is excluded |
+| \`freshnessPolicy\` | Explicit bounded maximum ages for registry review, backup, restore drill and operational exercises |
+| \`approvals\` | Four distinct owner references: \`registry-owner\`, \`security-reviewer\`, \`database-operator\`, and \`service-owner\`, each with a separate evidence reference and approval time |
+| \`maintenanceWindow\` | A future window no longer than 12 hours |
+| top-level metadata | Change-control ID, \`staging\` or \`production\` target, packet creation/expiry timestamps, and (for production only) a staging-promotion evidence reference |
+
+The canonical deployment descriptor digest is computed over the exact registry ID, root key ID, endpoint URL, sorted DNS/IP allowlist and root SPKI fingerprint. This binds the packet to the owner-selected runtime configuration without putting the root public-key PEM or any private key into the packet. The endpoint must be HTTPS, canonical, DNS-hosted and have a fixed path; non-sensitive fixed query parameters are permitted, while credential-like query names are rejected. DNS addresses must be canonical, unique and not loopback, link-local, unspecified or multicast addresses.
+
+The high-water migration identity and checksum are compared against the committed migration inventory at validation time. A packet referring to an older or different migration cannot pass. The evidence-age limits are explicit owner declarations and are bounded by the validator; backup, restore, registry-review and operational-exercise timestamps must satisfy them.
+
+### Result semantics
+
+- \`BLOCKED_REVIEW_REQUIRED\`: schema, descriptor, migration binding, evidence references, timestamp/freshness, approval separation, endpoint policy or fail-closed declarations are incomplete or inconsistent.
+- \`TECHNICAL_PRECHECK_PASSED_REVIEW_REQUIRED\`: packet declarations are structurally consistent, configuration-bound and linked to the current high-water migration. Independent human review is still mandatory.
+
+**Even a passing packet permanently returns** \`registryProvisioningAuthorized: false\`, \`providerActivationAuthorized: false\`, and \`tradingAuthorized: false\`. Approval/evidence references are pointers supplied by the packet author; the validator does not authenticate identities, check signatures, retrieve referenced documents, prove the DNS/endpoint ownership, verify a live TLS certificate, query the database, confirm the actual secure-store contents or prove the declared operational exercises occurred. The output is a technical preflight only, not a provisioning action or authorization.
+
+### Owner/operator review still required
+
+Before any owner changes \`ATA_PROVIDER_TRUST_REGISTRY_ENABLED\` from \`false\`, independently verify:
+
+1. The registry endpoint and hosting-account ownership, exact endpoint path, DNS/IP allowlist, certificate chain/hostname policy and the pinned root fingerprint through separate trusted channels.
+2. Root generation ceremony, offline/HSM custody, recovery, rotation and revocation procedures. The registry must not be able to redefine its own root trust.
+3. The high-water migration is present on the intended database, the runtime role has only required privileges, PostgreSQL uses full TLS verification, and backup/restore plus anti-rollback recovery evidence is current.
+4. Monitoring, alert delivery, incident ownership, registry-outage default-deny behavior, key rotation and revocation exercises.
+5. The four independent approvers and the underlying approval evidence, and the secure configuration-store access/audit controls.
+
+For a production packet, staging-promotion evidence is mandatory. A successful staging packet is not a production approval. No packet or CLI output automatically changes environment variables or starts a service.
+
+### Acceptance and boundary
+
+- [x] Add a strict, credential-aware offline packet validator and a CLI that accepts only an external bounded file.
+- [x] Bind the endpoint, DNS allowlist, registry/root identity and SPKI fingerprint to a canonical descriptor digest.
+- [x] Bind persistence evidence to the exact current high-water migration ID and SHA-256.
+- [x] Require current database backup/restore, runtime-role, TLS, monitoring, incident, key lifecycle and outage evidence references.
+- [x] Require four distinct owner/security/database/service approvers, a short-lived packet and a future maintenance window.
+- [x] Require staging promotion evidence before a production packet can pass.
+- [x] Reject endpoint credentials, credential-like query parameters, inline secrets/key material, unknown fields, unsafe IP addresses and stale evidence declarations.
+- [x] Keep registry provisioning, provider activation and trading authorization false even for a passing packet.
+- [ ] Independently authenticate approver identities, signed approvals and referenced evidence outside this validator.
+- [ ] Provision the owner-selected registry, DNS policy, root key and protected configuration store through the reviewed external deployment channel.
+- [ ] Verify the live endpoint/TLS chain, secure-store values, PostgreSQL migration/readback and production operational controls in the actual target environment.
+
+No external service, DNS resolver, TLS endpoint or database was contacted by this step. No production endpoint, DNS address, root key, credential or owner approval was selected or created. No trust-registry enablement, provider activation, wallet signing, order, spending or trade is authorized. Frozen Solana-only V1 scope, the USD 100,000 liquidity threshold, USD 10,000 24-hour volume threshold, 10-bps diagnostic tolerance and all existing default-deny gates remain unchanged. Phase 6 stays ACTIVE.
+
 ## Step 7 — disabled-by-default startup and authorization wiring
 
 The optional startup configuration boundary is implemented in \`packages/config/src/index.ts\` as \`parseProviderTrustRegistryConfig\`. Its default result is \`{ enabled: false }\`. When disabled, it rejects leftover registry values rather than silently ignoring a partially provisioned configuration. Enabling requires every owner-controlled value:
