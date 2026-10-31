@@ -301,4 +301,54 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       "TLS protocol below the explicitly configured TLS 1.3 minimum"
     );
   });
+
+  await t.test("production adapter shutdown rejects new work and drains checked-out clients", async () => {
+    const { PostgresPgPoolAdapter, PostgresPgAdapterError } =
+      await import("../packages/market-data/dist/postgres-pg-adapter.js");
+    const adapter = new PostgresPgPoolAdapter({
+      host: "pg-tls.test",
+      port: 55_432,
+      user: "ata_tls_test",
+      password: "ata_local_tls_test_only",
+      database: "ata_tls_test",
+      caCertificate: trustedCa,
+      maxConnections: 1,
+      connectionTimeoutMs: 3_000,
+      acquisitionTimeoutMs: 2_000,
+      idleTimeoutMs: 1_000,
+      maximumConnectionLifetimeSeconds: 600,
+      statementTimeoutMs: 5_000,
+      lockTimeoutMs: 1_000,
+      idleInTransactionTimeoutMs: 5_000,
+      maximumPendingAcquisitions: 1,
+      shutdownDrainTimeoutMs: 2_000,
+      applicationName: "ata-phase6-production-adapter-drain-test"
+    });
+    const held = await adapter.connect();
+    let closeResolved = false;
+    const closePromise = adapter.close().then(() => {
+      closeResolved = true;
+    });
+
+    try {
+      assert.equal(adapter.getPoolSnapshot().closing, true);
+      await assert.rejects(
+        adapter.connect(),
+        (error) => error instanceof PostgresPgAdapterError &&
+          error.code === "POOL_CLOSING"
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.equal(closeResolved, false,
+        "shutdown must wait for a checked-out client rather than terminate it");
+      assert.equal(adapter.close(), closePromise,
+        "repeated close calls must share the same drain operation");
+      held.release();
+      await closePromise;
+      assert.equal(closeResolved, true);
+    } finally {
+      held.release();
+      await closePromise;
+    }
+  });
+
 });
