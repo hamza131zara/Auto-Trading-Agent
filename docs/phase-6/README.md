@@ -220,3 +220,8 @@ A separate Ed25519 verification primitive now checks the full provider-use decis
 ## Phase 6.44 — Live owner-key revocation freshness
 
 A reloadable provider-use resolver now re-reads the trusted-key/revocation registry for each provider attempt. It requires a bounded-age snapshot timestamp (maximum five minutes), rejects future/stale/malformed snapshots, and defaults to deny if the registry cannot be read. Tests prove a key revocation blocks the next attempt without a process restart. This still requires a real owner-controlled authoritative registry and does not create or approve a signing key. See [Phase 6.43 revocation-freshness section](43-signed-provider-use-decisions.md). Phase 6 remains ACTIVE and trading remains unauthorized.
+
+
+## Phase 6.44 — Live owner-key revocation freshness
+
+A reloadable provider-use resolver re-reads the trusted-key/revocation registry for each provider attempt. It requires an explicit bounded-age snapshot (maximum five minutes), rejects future/stale/malformed snapshots, and defaults to deny if the registry cannot be read. Tests prove that key revocation blocks the next attempt without a process restart. This still requires a real owner-controlled authoritative registry; no key is created or approved. See [Phase 6.44](44-owner-key-revocation-freshness.md). Phase 6 remains ACTIVE and trading remains unauthorized.
