@@ -307,9 +307,12 @@ function hasExactKeys(value: Record<string, unknown>, expected: readonly string[
 }
 
 function validUtcTimestamp(value: unknown): value is string {
-  return typeof value === "string" &&
-    UTC_TIMESTAMP.test(value) &&
-    Number.isFinite(Date.parse(value));
+  if (typeof value !== "string" || !UTC_TIMESTAMP.test(value)) return false;
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return false;
+  const fraction = /\.(\d{1,3})Z$/.exec(value)?.[1] ?? "";
+  const normalized = value.replace(/(?:\.\d{1,3})?Z$/, "." + fraction.padEnd(3, "0") + "Z");
+  return new Date(timestamp).toISOString() === normalized;
 }
 
 function isUniqueStringArray(
