@@ -396,7 +396,7 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       );
       assert.equal(transport.rows.length, 1);
       assert.equal(transport.rows[0].ssl, true);
-      assert.match(String(transport.rows[0].version), /^TLSv1\\.(2|3)$/);
+      assert.match(String(transport.rows[0].version), /^TLSv1\.(2|3)$/);
 
       const failureAt = new Date(Date.now() - 2_000).toISOString();
       const opened = await store.recordResult({
