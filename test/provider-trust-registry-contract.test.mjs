@@ -87,6 +87,13 @@ test("envelope validation requires the exact protocol fields and signature encod
     () => validateProviderTrustRegistrySnapshotEnvelope({ ...snapshot(), signature: "short" }),
     /TRUST_REGISTRY_SNAPSHOT_INVALID/
   );
+  assert.throws(
+    () => validateProviderTrustRegistrySnapshotEnvelope({
+      ...snapshot(),
+      signature: "A".repeat(85) + "B"
+    }),
+    /TRUST_REGISTRY_SNAPSHOT_INVALID/
+  );
 });
 
 test("canonical payload rejects wrong schema, extra fields and unsafe versions", () => {
