@@ -114,6 +114,8 @@ export interface IndependentReservePriceComparisonPolicy {
   readonly maxReferenceTimestampSkewMs: number;
   /** Optional explicit bound for finalized-slot time versus both USD reference publication times. */
   readonly maxReserveReferenceTimestampSkewMs?: number;
+  /** Optional explicit bound for finalized-slot time versus the indexed price event/observation time. */
+  readonly maxReserveIndexedTimestampSkewMs?: number;
   readonly maxFutureSkewMs: number;
   readonly maxDeviationBps: number;
   readonly approvedProviderId: string;
@@ -180,6 +182,9 @@ export interface IndependentReservePriceComparisonResult {
   readonly reserveTimestampAlignmentStatus: "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED";
   readonly maxReserveReferenceTimestampSkewMs: number | null;
   readonly reserveReferenceTimestampSkewMs: number | null;
+  readonly reserveIndexedTimestampAlignmentStatus: "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED";
+  readonly maxReserveIndexedTimestampSkewMs: number | null;
+  readonly reserveIndexedTimestampSkewMs: number | null;
   readonly comparisonEvidenceComplete: boolean;
   /** This comparator only assesses evidence quality; it never authorizes a trade. */
   readonly tradingAuthorized: false;
@@ -603,6 +608,10 @@ function validComparisonPolicy(policy: IndependentReservePriceComparisonPolicy):
       (Number.isSafeInteger(policy.maxReserveReferenceTimestampSkewMs) &&
        policy.maxReserveReferenceTimestampSkewMs >= 0 &&
        policy.maxReserveReferenceTimestampSkewMs <= 300_000)) &&
+    (policy.maxReserveIndexedTimestampSkewMs === undefined ||
+      (Number.isSafeInteger(policy.maxReserveIndexedTimestampSkewMs) &&
+       policy.maxReserveIndexedTimestampSkewMs >= 0 &&
+       policy.maxReserveIndexedTimestampSkewMs <= 300_000)) &&
     Number.isSafeInteger(policy.maxFutureSkewMs) && policy.maxFutureSkewMs >= 0 &&
     Number.isSafeInteger(policy.maxDeviationBps) &&
     policy.maxDeviationBps >= 0 && policy.maxDeviationBps <= 10_000 &&
@@ -683,7 +692,9 @@ export function assessIndependentReservePriceAgreement(
     evidenceComplete = false,
     referenceTimestampSkewMs: number | null = null,
     reserveTimestampAlignmentStatus: "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED" = "NOT_ASSESSED",
-    reserveReferenceTimestampSkewMs: number | null = null
+    reserveReferenceTimestampSkewMs: number | null = null,
+    reserveIndexedTimestampAlignmentStatus: "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED" = "NOT_ASSESSED",
+    reserveIndexedTimestampSkewMs: number | null = null
   ): IndependentReservePriceComparisonResult => ({
     status,
     reasonCodes: [...new Set(reasonCodes)],
@@ -717,6 +728,9 @@ export function assessIndependentReservePriceAgreement(
     reserveTimestampAlignmentStatus,
     maxReserveReferenceTimestampSkewMs: input?.policy?.maxReserveReferenceTimestampSkewMs ?? null,
     reserveReferenceTimestampSkewMs,
+    reserveIndexedTimestampAlignmentStatus,
+    maxReserveIndexedTimestampSkewMs: input?.policy?.maxReserveIndexedTimestampSkewMs ?? null,
+    reserveIndexedTimestampSkewMs,
     comparisonEvidenceComplete: evidenceComplete,
     tradingAuthorized: false
   });
@@ -732,7 +746,8 @@ export function assessIndependentReservePriceAgreement(
       !isSafeSlug(input.indexedIndependenceGroupId) ||
       typeof input.indexedRetrievedAt !== "string" ||
       !isUtcTimestamp(input.indexedRetrievedAt) ||
-      (input.policy.maxReserveReferenceTimestampSkewMs === undefined
+      (input.policy.maxReserveReferenceTimestampSkewMs === undefined &&
+       input.policy.maxReserveIndexedTimestampSkewMs === undefined
         ? input.reserveSlotBlockTimeAt !== undefined ||
           input.reserveSlotBlockTimeRetrievedAt !== undefined ||
           input.reserveSlotBlockTimeSynthetic !== undefined
