@@ -137,8 +137,8 @@ function validateContentLength(value: string | null, maximum: number): void {
  */
 export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustRegistryTransport {
   private readonly endpointUrl!: URL;
-  private readonly requester: HttpsRequester;
-  private readonly lookup: LookupFunction;
+  private readonly requester!: HttpsRequester;
+  private readonly lookup!: LookupFunction;
 
   constructor(input: {
     readonly endpointUrl: string;
