@@ -7,9 +7,8 @@
  * following, and a streamed 48 KiB cap. Compression is deliberately rejected:
  * Accept-Encoding is identity, so received bytes are also decoded bytes.
  */
+// @ts-expect-error Node 24 provides this built-in at runtime; this workspace intentionally omits @types/node.
 import { Agent, request as defaultHttpsRequest } from "node:https";
-import type { IncomingMessage } from "node:http";
-import type { LookupFunction } from "node:net";
 import {
   PROVIDER_TRUST_REGISTRY_LIMITS,
   ProviderTrustRegistryError
@@ -20,7 +19,38 @@ import type {
   ProviderTrustRegistryTransportResponse
 } from "./provider-trust-registry.js";
 
-type HttpsRequester = typeof defaultHttpsRequest;
+type LookupFunction = (...args: any[]) => any;
+
+interface IncomingMessageLike extends AsyncIterable<Uint8Array> {
+  readonly statusCode?: number;
+  readonly headers: Readonly<Record<string, string | string[] | undefined>>;
+  destroy(): this;
+}
+
+interface ClientRequestLike {
+  on(event: "error", listener: () => void): this;
+  setTimeout(timeoutMs: number, callback: () => void): this;
+  end(): this;
+  destroy(): this;
+}
+
+interface DirectHttpsRequestOptions {
+  readonly method: "GET";
+  readonly agent: unknown;
+  readonly signal: AbortSignal;
+  readonly lookup: LookupFunction;
+  readonly servername: string;
+  readonly rejectUnauthorized: true;
+  readonly minVersion: "TLSv1.2";
+  readonly maxHeaderSize: number;
+  readonly headers: Readonly<Record<string, string>>;
+}
+
+type HttpsRequester = (
+  url: URL,
+  options: DirectHttpsRequestOptions,
+  callback: (response: IncomingMessageLike) => void
+) => ClientRequestLike;
 
 const MAX_ORIGIN_LENGTH = 512;
 const MAX_ENDPOINT_LENGTH = 2_048;
@@ -106,7 +136,7 @@ function validateContentLength(value: string | null, maximum: number): void {
  * is discovered from response content.
  */
 export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustRegistryTransport {
-  private readonly endpointUrl: URL;
+  private readonly endpointUrl!: URL;
   private readonly requester: HttpsRequester;
   private readonly lookup: LookupFunction;
 
@@ -193,7 +223,7 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
         reject(new ProviderTrustRegistryError(code));
       };
 
-      const consume = async (response: IncomingMessage): Promise<void> => {
+      const consume = async (response: IncomingMessageLike): Promise<void> => {
         const status = response.statusCode ?? 0;
         const contentType = readSingleHeader(response.headers["content-type"]) ?? "";
         const metadata = {
@@ -243,7 +273,7 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
           return;
         }
 
-        const chunks: Buffer[] = [];
+        const chunks: Uint8Array[] = [];
         let totalBytes = 0;
         try {
           for await (const chunk of response) {
@@ -252,16 +282,21 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
               rejectWith("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
               return;
             }
-            const buffer = Buffer.from(chunk);
-            totalBytes += buffer.byteLength;
+            const copiedChunk = new Uint8Array(chunk);
+            totalBytes += copiedChunk.byteLength;
             if (totalBytes > request.maxResponseBytes) {
               response.destroy();
               rejectWith("TRUST_REGISTRY_RESPONSE_TOO_LARGE");
               return;
             }
-            chunks.push(buffer);
+            chunks.push(copiedChunk);
           }
-          const bytes = Buffer.concat(chunks, totalBytes);
+          const bytes = new Uint8Array(totalBytes);
+          let offset = 0;
+          for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+          }
           finish({ ...metadata, bytes });
         } catch {
           response.destroy();
