@@ -102,6 +102,7 @@ test("acquisition queue is bounded and timed-out late clients are released", asy
   pool.nextConnect = pending;
   const adapter = new PostgresPgPoolAdapter({
     ...CONFIG,
+    connectionTimeoutMs: 10,
     acquisitionTimeoutMs: 20
   }, pool);
 
