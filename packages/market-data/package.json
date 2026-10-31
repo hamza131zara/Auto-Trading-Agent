@@ -59,6 +59,10 @@
     "./provider-trust-registry": {
       "types": "./dist/provider-trust-registry.d.ts",
       "import": "./dist/provider-trust-registry.js"
+    },
+    "./provider-trust-registry-authenticator": {
+      "types": "./dist/provider-trust-registry-authenticator.d.ts",
+      "import": "./dist/provider-trust-registry-authenticator.js"
     }
   },
   "scripts": {
