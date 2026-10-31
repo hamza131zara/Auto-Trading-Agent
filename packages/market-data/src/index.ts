@@ -3194,3 +3194,8 @@ export type {
 } from "./provider-use-decision-verifier.js";
 
 export * from "./provider-trust-registry.js";
+
+export {
+  createEd25519ProviderTrustSnapshotAuthenticator,
+  Ed25519ProviderTrustSnapshotAuthenticator
+} from "./provider-trust-registry-authenticator.js";
