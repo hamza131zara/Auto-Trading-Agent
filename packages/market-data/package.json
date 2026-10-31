@@ -63,6 +63,10 @@
     "./provider-trust-registry-authenticator": {
       "types": "./dist/provider-trust-registry-authenticator.d.ts",
       "import": "./dist/provider-trust-registry-authenticator.js"
+    },
+    "./provider-trust-registry-postgres-store": {
+      "types": "./dist/provider-trust-registry-postgres-store.d.ts",
+      "import": "./dist/provider-trust-registry-postgres-store.js"
     }
   },
   "scripts": {
