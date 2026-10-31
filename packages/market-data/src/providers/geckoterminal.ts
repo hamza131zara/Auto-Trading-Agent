@@ -116,7 +116,7 @@ function canonicalDecimal(value: unknown): string | null {
   if (DECIMAL_PATTERN.test(value)) return value;
 
   // Expand exponent-form JSON numeric lexemes exactly; never route through Number.
-  const match = value.match(/^(0|[1-9][0-9]*)(?:\\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
+  const match = value.match(/^(0|[1-9][0-9]*)(?:\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
   if (match === null) return null;
   const integerPart = match[1];
   const exponentText = match[3];
