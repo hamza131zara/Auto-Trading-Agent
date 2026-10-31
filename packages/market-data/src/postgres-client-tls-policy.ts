@@ -169,6 +169,21 @@ function isNullableReference(value: unknown): value is string | null {
   return value === null || isReference(value);
 }
 
+function isTlsVersion(value: unknown): value is PostgresTlsMinimumVersion {
+  return typeof value === "string" &&
+    (TLS_VERSIONS as readonly string[]).includes(value);
+}
+
+function isTrustAnchorSource(value: unknown): value is PostgresTlsTrustAnchorSource {
+  return typeof value === "string" &&
+    (TRUST_ANCHOR_SOURCES as readonly string[]).includes(value);
+}
+
+function isDriverAdapterState(value: unknown): value is PostgresTlsDriverAdapterState {
+  return typeof value === "string" &&
+    (DRIVER_STATES as readonly string[]).includes(value);
+}
+
 function isEvidenceState(value: unknown): value is PostgresTlsEvidenceState {
   return value === "VERIFIED" || value === "UNVERIFIED" || value === "DISABLED";
 }
@@ -207,14 +222,11 @@ export function assessPostgresClientTlsPolicy(
       typeof input.plaintextFallbackAllowed !== "boolean" ||
       typeof input.allowInvalidCertificates !== "boolean" ||
       typeof input.allowInvalidHostnames !== "boolean" ||
-      typeof input.minimumTlsVersion !== "string" ||
-      !(TLS_VERSIONS as readonly string[]).includes(input.minimumTlsVersion) ||
-      typeof input.trustAnchorSource !== "string" ||
-      !(TRUST_ANCHOR_SOURCES as readonly string[]).includes(input.trustAnchorSource) ||
+      !isTlsVersion(input.minimumTlsVersion) ||
+      !isTrustAnchorSource(input.trustAnchorSource) ||
       !isNullableReference(input.trustAnchorEvidenceReference) ||
       !isNullableReference(input.serverIdentityEvidenceReference) ||
-      typeof input.driverAdapterState !== "string" ||
-      !(DRIVER_STATES as readonly string[]).includes(input.driverAdapterState) ||
+      !isDriverAdapterState(input.driverAdapterState) ||
       !isNullableReference(input.driverAdapterEvidenceReference) ||
       !isEvidenceState(input.certificateExpiryMonitoring) ||
       !isEvidenceState(input.certificateRotationRunbook) ||
