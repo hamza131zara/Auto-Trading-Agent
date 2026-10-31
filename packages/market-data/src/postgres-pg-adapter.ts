@@ -124,6 +124,38 @@ function validateConfig(value: unknown): asserts value is PostgresPgAdapterConfi
   }
 }
 
+/** Build the effective pg.Pool options from validated explicit configuration. */
+export function buildPostgresPgPoolOptions(configInput: unknown): Readonly<Record<string, unknown>> {
+  validateConfig(configInput);
+  const config = configInput;
+  return Object.freeze({
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    user: config.user,
+    password: config.password,
+    application_name: config.applicationName,
+    max: config.maxConnections,
+    connectionTimeoutMillis: config.connectionTimeoutMs,
+    idleTimeoutMillis: config.idleTimeoutMs,
+    maxLifetimeSeconds: config.maximumConnectionLifetimeSeconds,
+    allowExitOnIdle: false,
+    // Never pass connectionString: node-postgres URL SSL parameters can override
+    // this explicit, security-critical TLS configuration.
+    ssl: Object.freeze({
+      ca: config.caCertificate,
+      rejectUnauthorized: true,
+      minVersion: "TLSv1.2",
+      servername: config.host
+    }),
+    options: [
+      "-c", "statement_timeout=" + config.statementTimeoutMs,
+      "-c", "lock_timeout=" + config.lockTimeoutMs,
+      "-c", "idle_in_transaction_session_timeout=" + config.idleInTransactionTimeoutMs
+    ].join(" ")
+  });
+}
+
 /** Concrete adapter for the existing structural PostgresPoolLike contract. */
 export class PostgresPgPoolAdapter implements PostgresPoolLike {
   private readonly pool: PgPoolLike;
@@ -135,32 +167,9 @@ export class PostgresPgPoolAdapter implements PostgresPoolLike {
   constructor(config: PostgresPgAdapterConfig, poolOverride?: PgPoolLike) {
     validateConfig(config);
     this.config = config;
-    this.pool = poolOverride ?? new Pool({
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      password: config.password,
-      application_name: config.applicationName,
-      max: config.maxConnections,
-      connectionTimeoutMillis: config.connectionTimeoutMs,
-      idleTimeoutMillis: config.idleTimeoutMs,
-      maxLifetimeSeconds: config.maximumConnectionLifetimeSeconds,
-      allowExitOnIdle: false,
-      // No connectionString: it can override/replace this explicit TLS object.
-      ssl: {
-        ca: config.caCertificate,
-        rejectUnauthorized: true,
-        minVersion: "TLSv1.2",
-        servername: config.host
-      },
-      // PostgreSQL enforces cancellation server-side for every session.
-      options: [
-        "-c", "statement_timeout=" + config.statementTimeoutMs,
-        "-c", "lock_timeout=" + config.lockTimeoutMs,
-        "-c", "idle_in_transaction_session_timeout=" + config.idleInTransactionTimeoutMs
-      ].join(" ")
-    }) as unknown as PgPoolLike;
+    this.pool = poolOverride ?? new Pool(
+      buildPostgresPgPoolOptions(config)
+    ) as unknown as PgPoolLike;
     this.pool.on("error", () => {
       // Never leak driver messages, SQL, hostnames or credential-bearing details.
     });
