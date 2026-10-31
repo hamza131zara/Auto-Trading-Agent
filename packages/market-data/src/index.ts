@@ -3204,3 +3204,7 @@ export {
   PostgresProviderTrustRegistryHighWaterMarkStore,
   advanceProviderTrustRegistryHighWaterMark
 } from "./provider-trust-registry-postgres-store.js";
+
+export {
+  AuthenticatedProviderTrustRegistry
+} from "./provider-trust-registry-loader.js";
