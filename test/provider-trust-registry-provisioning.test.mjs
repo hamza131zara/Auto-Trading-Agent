@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
 import {
   mkdtemp,
   rm,
@@ -404,14 +403,20 @@ test("CLI reads a private external packet and emits only redacted review-require
 });
 
 test("CLI refuses a packet stored inside the working tree", () => {
-  const result = execFileSync(process.execPath, [
-    CLI,
-    "--input",
-    CLI
-  ], {
-    cwd: process.cwd(),
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"]
-  }).toString();
-  assert.equal(typeof result, "string");
+  assert.throws(
+    () => execFileSync(process.execPath, [
+      CLI,
+      "--input",
+      CLI
+    ], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    }),
+    (error) => {
+      assert.equal(error.status, 2);
+      assert.match(error.stderr.toString(), /must remain outside the Git working tree/);
+      return true;
+    }
+  );
 });
