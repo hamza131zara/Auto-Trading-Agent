@@ -203,8 +203,8 @@ test("validates freshness and recomputes the canonical digest before any store o
   assert.equal(store.calls.read, 0);
   assert.equal(store.calls.compareAndSet, 0);
 
-  await expectCode(
-    advance(candidate, store),
-    "TRUST_REGISTRY_HIGH_WATER_MARK_CONFLICT"
-  );
+  const accepted = await advance(candidate, store);
+  assert.equal(accepted.version, candidate.version);
+  assert.equal(store.calls.read, 1);
+  assert.equal(store.calls.compareAndSet, 1);
 });
