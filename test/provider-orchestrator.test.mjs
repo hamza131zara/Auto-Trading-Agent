@@ -121,6 +121,154 @@ function agreement(result, nowAt = NOW) {
   });
 }
 
+test("provider use is default-deny when no owner decision resolver is configured", async () => {
+  const primary = adapter("provider-primary");
+  const orchestrator = new ReadOnlyMarketDataOrchestrator(
+    [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+    {
+      now: () => NOW,
+      healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+      maxHealthAgeMs: 60_000,
+      requestTimeoutMs: 2_000,
+      usagePurpose: "DIAGNOSTIC"
+    }
+  );
+
+  const result = await orchestrator.collect(TARGET);
+  assert.equal(primary.calls, 0, "provider adapter must not be called without a scoped owner decision");
+  assert.equal(result.attempts[0].outcome, "BLOCKED");
+  assert.equal(result.attempts[0].permissionStatus, "BLOCK_PROVIDER_USE_NOT_APPROVED");
+  assert.deepEqual(result.attempts[0].reasonCodes, ["PROVIDER_USE_DECISION_MISSING"]);
+  assert.equal(result.observations.length, 0);
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("diagnostic-only owner decision cannot authorize production-purpose collection", async () => {
+  const primary = adapter("provider-primary");
+  const orchestrator = new ReadOnlyMarketDataOrchestrator(
+    [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+    {
+      now: () => NOW,
+      healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+      maxHealthAgeMs: 60_000,
+      requestTimeoutMs: 2_000,
+      usagePurpose: "PRODUCTION",
+      providerUseDecisionResolver: (providerId, purpose, at) =>
+        testUseDecision(providerId, "DIAGNOSTIC", at)
+    }
+  );
+
+  const result = await orchestrator.collect(TARGET);
+  assert.equal(primary.calls, 0);
+  assert.equal(result.attempts[0].outcome, "BLOCKED");
+  assert.deepEqual(result.attempts[0].reasonCodes, ["PROVIDER_USE_DECISION_INVALID"]);
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("production-purpose collection requires a production-scope owner decision", async () => {
+  const primary = adapter("provider-primary");
+  const orchestrator = new ReadOnlyMarketDataOrchestrator(
+    [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+    {
+      now: () => NOW,
+      healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+      maxHealthAgeMs: 60_000,
+      requestTimeoutMs: 2_000,
+      usagePurpose: "PRODUCTION",
+      providerUseDecisionResolver: (providerId, purpose, at) =>
+        testUseDecision(providerId, purpose, at, { outcome: "PROCEED_PRODUCTION_SCOPE" })
+    }
+  );
+
+  const result = await orchestrator.collect(TARGET);
+  assert.equal(primary.calls, 1);
+  assert.equal(result.attempts[0].outcome, "OBSERVATION_NORMALIZED");
+  assert.equal(result.tradingAuthorized, false);
+});
+
+test("expired, future, mismatched, rejected, deferred and malformed owner decisions block before provider calls", async () => {
+  const cases = [
+    {
+      name: "expired",
+      overrides: { expiresAt: "2026-10-29T11:59:00.000Z" },
+      reason: "PROVIDER_USE_DECISION_EXPIRED"
+    },
+    {
+      name: "not yet effective",
+      overrides: { decidedAt: "2026-10-29T12:01:00.000Z" },
+      reason: "PROVIDER_USE_DECISION_NOT_YET_EFFECTIVE"
+    },
+    {
+      name: "wrong provider",
+      overrides: { providerId: "another-provider" },
+      reason: "PROVIDER_USE_DECISION_INVALID"
+    },
+    {
+      name: "rejected",
+      overrides: { outcome: "REJECT" },
+      reason: "PROVIDER_USE_DECISION_REJECTED"
+    },
+    {
+      name: "deferred",
+      overrides: { outcome: "DEFER" },
+      reason: "PROVIDER_USE_DECISION_DEFERRED"
+    },
+    {
+      name: "invalid evidence manifest digest",
+      overrides: { evidenceManifestSha256: "not-a-digest" },
+      reason: "PROVIDER_USE_DECISION_INVALID"
+    },
+    {
+      name: "empty linked evidence",
+      overrides: { linkedEvidenceIds: [] },
+      reason: "PROVIDER_USE_DECISION_INVALID"
+    }
+  ];
+
+  for (const item of cases) {
+    const primary = adapter("provider-primary");
+    const orchestrator = new ReadOnlyMarketDataOrchestrator(
+      [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+      {
+        now: () => NOW,
+        healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+        maxHealthAgeMs: 60_000,
+        requestTimeoutMs: 2_000,
+        usagePurpose: "DIAGNOSTIC",
+        providerUseDecisionResolver: (providerId, purpose, at) =>
+          testUseDecision(providerId, purpose, at, item.overrides)
+      }
+    );
+    const result = await orchestrator.collect(TARGET);
+    assert.equal(primary.calls, 0, item.name + ": provider must not be called");
+    assert.equal(result.attempts[0].permissionStatus, "BLOCK_PROVIDER_USE_NOT_APPROVED", item.name);
+    assert.deepEqual(result.attempts[0].reasonCodes, [item.reason], item.name);
+  }
+});
+
+test("provider use decision resolver exceptions block without invoking providers", async () => {
+  const primary = adapter("provider-primary");
+  const orchestrator = new ReadOnlyMarketDataOrchestrator(
+    [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+    {
+      now: () => NOW,
+      healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+      maxHealthAgeMs: 60_000,
+      requestTimeoutMs: 2_000,
+      usagePurpose: "DIAGNOSTIC",
+      providerUseDecisionResolver: () => {
+        throw new Error("sensitive manifest lookup details");
+      }
+    }
+  );
+
+  const result = await orchestrator.collect(TARGET);
+  assert.equal(primary.calls, 0);
+  assert.equal(result.attempts[0].outcome, "BLOCKED");
+  assert.deepEqual(result.attempts[0].reasonCodes, ["PROVIDER_USE_DECISION_RESOLVER_FAILED"]);
+  assert.equal(JSON.stringify(result).includes("sensitive manifest lookup details"), false);
+});
+
 test("orchestrator collects agreeing independent providers without synthetic promotion", async () => {
   const primary = adapter("provider-primary");
   const fallback = adapter("provider-fallback");
