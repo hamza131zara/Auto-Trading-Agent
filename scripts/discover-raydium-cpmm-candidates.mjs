@@ -6,7 +6,8 @@ import { parseJsonPreservingNumericLexemes } from "../packages/market-data/dist/
 import {
   decodeRaydiumCpmmPool,
   isSolanaPublicKey,
-  RAYDIUM_CPMM_PROGRAM_ID
+  RAYDIUM_CPMM_PROGRAM_ID,
+  SolanaRpcAccountReader
 } from "../packages/market-data/dist/index.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
@@ -532,6 +533,7 @@ async function readSlotBlockTimeEvidence(fetchImpl, contextSlot, requestId, now)
   const blockTimeRequestId = requestId + "-block-time";
   const base = {
     providerId: RPC_PROVIDER_ID,
+    commitment: "finalized",
     contextSlot,
     slot: contextSlot,
     state: "UNAVAILABLE",
@@ -552,74 +554,37 @@ async function readSlotBlockTimeEvidence(fetchImpl, contextSlot, requestId, now)
   }
 
   try {
-    const body = JSON.stringify({
-      jsonrpc: "2.0",
-      id: blockTimeRequestId,
-      method: "getBlockTime",
-      params: [contextSlot]
+    const reader = new SolanaRpcAccountReader({
+      endpoint: RPC_URL,
+      providerId: RPC_PROVIDER_ID,
+      clock: now,
+      ...(synthetic ? { fetchImpl } : {})
     });
-    const response = await fetchJson(fetchImpl, RPC_URL, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json"
-      },
-      body
-    }, "RPC_BLOCK_TIME");
-
-    if (!isRecord(response.payload) ||
-        response.payload.jsonrpc !== "2.0" ||
-        response.payload.id !== blockTimeRequestId ||
-        !Object.prototype.hasOwnProperty.call(response.payload, "result") ||
-        Object.prototype.hasOwnProperty.call(response.payload, "error")) {
-      return unavailable("RPC_BLOCK_TIME_RESPONSE_INVALID");
-    }
-
-    const blockTime = response.payload.result;
-    if (blockTime === null) {
-      const retrievedAt = now();
-      if (typeof retrievedAt !== "string" || !Number.isFinite(Date.parse(retrievedAt))) {
-        return unavailable("RPC_BLOCK_TIME_RETRIEVAL_TIME_INVALID");
-      }
-      return {
-        ...base,
-        retrievedAt,
-        rawPayloadSha256: sha256(response.rawText),
-        reasonCodes: ["RPC_BLOCK_TIME_NOT_AVAILABLE"]
-      };
-    }
-    if (!Number.isSafeInteger(blockTime) ||
-        (blockTime as number) < 0 ||
-        (blockTime as number) > 253_402_300_799) {
-      return unavailable("RPC_BLOCK_TIME_VALUE_INVALID");
-    }
-
-    const retrievedAt = now();
-    if (typeof retrievedAt !== "string" || !Number.isFinite(Date.parse(retrievedAt))) {
-      return unavailable("RPC_BLOCK_TIME_RETRIEVAL_TIME_INVALID");
-    }
-
-    let observedAt;
-    try {
-      observedAt = new Date((blockTime as number) * 1_000).toISOString();
-    } catch {
-      return unavailable("RPC_BLOCK_TIME_VALUE_INVALID");
-    }
-
+    const evidence = await reader.getBlockTime(contextSlot, blockTimeRequestId);
     return {
-      ...base,
-      state: "AVAILABLE",
-      blockTimeUnixSeconds: blockTime as number,
-      observedAt,
-      timestampKind: "SLOT_BLOCK_TIME_ESTIMATE",
-      retrievedAt,
-      rawPayloadSha256: sha256(response.rawText)
+      ...evidence,
+      commitment: "finalized",
+      contextSlot,
+      reasonCodes: evidence.state === "AVAILABLE"
+        ? []
+        : ["RPC_BLOCK_TIME_NOT_AVAILABLE"]
     };
   } catch (error) {
     const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,80}$/.test(error.code)
-      ? "RPC_BLOCK_TIME_" + error.code
-      : "RPC_BLOCK_TIME_REQUEST_FAILED";
-    return unavailable(code);
+      ? error.code
+      : "REQUEST_FAILED";
+    let retrievedAt = null;
+    try {
+      const value = now();
+      if (typeof value === "string" && Number.isFinite(Date.parse(value))) retrievedAt = value;
+    } catch {
+      // Keep retrieval time unavailable when the injected/system clock fails.
+    }
+    return {
+      ...base,
+      retrievedAt,
+      reasonCodes: ["RPC_BLOCK_TIME_" + code]
+    };
   }
 }
 
