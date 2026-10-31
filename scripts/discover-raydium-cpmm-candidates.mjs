@@ -429,7 +429,7 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expected
   const response = await fetchJson(fetchImpl, url, {
     method: "GET",
     headers: { accept: "application/json" }
-  }, "DEX_SCREENER_PAIR");
+  }, "DEX_SCREENER_PAIR", true);
   if (!isRecord(response.payload) ||
       !(Array.isArray(response.payload.pairs) || response.payload.pairs === null)) {
     throw codedError("DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID");
@@ -533,8 +533,10 @@ export async function discoverRaydiumCpmmCandidates({
   now = () => new Date().toISOString()
 } = {}) {
   approvalGate(env);
-  const minimumLiquidityUsd = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_LIQUIDITY_USD", "100000");
-  const minimumVolume24hUsd = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_VOLUME_24H_USD", "10000");
+  const minimumLiquidityThreshold = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_LIQUIDITY_USD", "100000");
+  const minimumVolumeThreshold = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_VOLUME_24H_USD", "10000");
+  const minimumLiquidityUsd = minimumLiquidityThreshold.value;
+  const minimumVolume24hUsd = minimumVolumeThreshold.value;
   const clientRequestId = "cpmm-discovery-" + Date.now().toString(36);
   if (!RPC_REQUEST_ID_PATTERN.test(clientRequestId + "-rpc")) {
     throw codedError("DISCOVERY_REQUEST_ID_INVALID");
@@ -559,7 +561,8 @@ export async function discoverRaydiumCpmmCandidates({
         fetchImpl,
         buildRaydiumPoolQueryUrl(quoteAsset.mint, pageNumber),
         { method: "GET", headers: { accept: "application/json" } },
-        "RAYDIUM_API"
+        "RAYDIUM_API",
+        true
       );
       const retrievedAt = now();
       const page = normalizeRaydiumPage(raydium.payload, {
@@ -676,11 +679,15 @@ export async function discoverRaydiumCpmmCandidates({
       ownerProgramId: null,
       classification: "NOT_CHECKED_ACCOUNT_CAP"
     };
+    const liquidityComparison = compareNonNegativeDecimals(
+      candidate.raydiumLiquidityUsdExact, minimumLiquidityThreshold.exact
+    );
+    const volumeComparison = compareNonNegativeDecimals(
+      candidate.raydiumVolume24hUsdExact, minimumVolumeThreshold.exact
+    );
     const meetsRaydiumThresholds =
-      candidate.raydiumLiquidityUsd !== null &&
-      candidate.raydiumVolume24hUsd !== null &&
-      candidate.raydiumLiquidityUsd >= minimumLiquidityUsd &&
-      candidate.raydiumVolume24hUsd >= minimumVolume24hUsd;
+      liquidityComparison !== null && liquidityComparison >= 0 &&
+      volumeComparison !== null && volumeComparison >= 0;
     return {
       ...candidate,
       onChainProgram: onChain.classification,
@@ -696,7 +703,12 @@ export async function discoverRaydiumCpmmCandidates({
 
   const cpmmCandidates = decodedCpmmCandidates
     .filter((candidate) => candidate.onChainProgram === "RAYDIUM_CPMM")
-    .sort((a, b) => (b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
+    .sort((a, b) => {
+      const exactOrder = compareNonNegativeDecimals(
+        b.raydiumLiquidityUsdExact, a.raydiumLiquidityUsdExact
+      );
+      return exactOrder ?? ((b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
+    });
   const candidatesToCrossCheck = cpmmCandidates.slice(0, MAX_CROSS_CHECK_CANDIDATES);
   const dexScreenerEvidence = [];
   const dexByAddress = new Map();
@@ -721,12 +733,16 @@ export async function discoverRaydiumCpmmCandidates({
 
   const enrichedCandidates = cpmmCandidates.map((candidate) => {
     const dexPair = dexByAddress.get(candidate.poolAddress) ?? null;
+    const dexLiquidityComparison = dexPair === null ? null : compareNonNegativeDecimals(
+      dexPair.liquidityUsdExact, minimumLiquidityThreshold.exact
+    );
+    const dexVolumeComparison = dexPair === null ? null : compareNonNegativeDecimals(
+      dexPair.volume24hUsdExact, minimumVolumeThreshold.exact
+    );
     const dexMeetsThresholds = dexPair !== null &&
       dexPair.quoteMint === candidate.quoteMint &&
-      dexPair.liquidityUsd !== null &&
-      dexPair.volume24hUsd !== null &&
-      dexPair.liquidityUsd >= minimumLiquidityUsd &&
-      dexPair.volume24hUsd >= minimumVolume24hUsd;
+      dexLiquidityComparison !== null && dexLiquidityComparison >= 0 &&
+      dexVolumeComparison !== null && dexVolumeComparison >= 0;
     const meetsLiquidityAndVolumeThresholds = candidate.meetsRaydiumThresholds && dexMeetsThresholds;
     const sourceFreshness = "UNKNOWN";
     const evidenceReadinessReasonCodes = [];
@@ -746,7 +762,9 @@ export async function discoverRaydiumCpmmCandidates({
       dexScreenerPairFound: dexPair !== null,
       dexScreenerMetrics: dexPair === null ? null : {
         liquidityUsd: dexPair.liquidityUsd,
+        liquidityUsdExact: dexPair.liquidityUsdExact,
         volume24hUsd: dexPair.volume24hUsd,
+        volume24hUsdExact: dexPair.volume24hUsdExact,
         priceUsd: dexPair.priceUsd,
         priceUsdMint: dexPair.priceUsdMint,
         buys24h: dexPair.buys24h,
@@ -811,7 +829,10 @@ export async function discoverRaydiumCpmmCandidates({
       approvedQuoteAssets: APPROVED_QUOTE_ASSETS,
       requiredOnChainPoolOwner: RAYDIUM_CPMM_PROGRAM_ID,
       minimumLiquidityUsd,
+      minimumLiquidityUsdExact: minimumLiquidityThreshold.exact,
       minimumVolume24hUsd,
+      minimumVolume24hUsdExact: minimumVolumeThreshold.exact,
+      thresholdComparison: "EXACT_DECIMAL_NO_IEEE754_ROUNDING",
       liquidityVolumeThresholdRequiresBothIndexedSources: true,
       maxPoolAccountsChecked: MAX_POOL_ACCOUNTS,
       raydiumPageSize: RAYDIUM_POOL_PAGE_SIZE,
