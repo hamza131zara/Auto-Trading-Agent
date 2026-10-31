@@ -76,6 +76,114 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
     }
   });
 
+
+  await t.test("production PostgresPgPoolAdapter connects with verified CA and hostname", async () => {
+    const { PostgresPgPoolAdapter } = await import("../packages/market-data/dist/postgres-pg-adapter.js");
+    const adapter = new PostgresPgPoolAdapter({
+      host: "pg-tls.test",
+      port: 55_432,
+      user: "ata_tls_test",
+      password: "ata_local_tls_test_only",
+      database: "ata_tls_test",
+      caCertificate: trustedCa,
+      maxConnections: 2,
+      connectionTimeoutMs: 1_000,
+      acquisitionTimeoutMs: 2_000,
+      idleTimeoutMs: 1_000,
+      maximumConnectionLifetimeSeconds: 600,
+      statementTimeoutMs: 5_000,
+      lockTimeoutMs: 1_000,
+      idleInTransactionTimeoutMs: 5_000,
+      maximumPendingAcquisitions: 2,
+      shutdownDrainTimeoutMs: 2_000,
+      applicationName: "ata-phase6-production-adapter-integration"
+    });
+
+    try {
+      const client = await adapter.connect();
+      try {
+        const result = await client.query(
+          "SELECT ssl, version FROM pg_stat_ssl WHERE pid = pg_backend_pid()"
+        );
+        assert.equal(result.rows.length, 1);
+        assert.equal(result.rows[0].ssl, true);
+        assert.match(result.rows[0].version, /^TLSv1\\.(2|3)$/);
+      } finally {
+        client.release();
+      }
+    } finally {
+      await adapter.close();
+    }
+  });
+
+  await t.test("production adapter rejects an untrusted CA without exposing driver details", async () => {
+    const { PostgresPgPoolAdapter, PostgresPgAdapterError } =
+      await import("../packages/market-data/dist/postgres-pg-adapter.js");
+    const adapter = new PostgresPgPoolAdapter({
+      host: "pg-tls.test",
+      port: 55_432,
+      user: "ata_tls_test",
+      password: "ata_local_tls_test_only",
+      database: "ata_tls_test",
+      caCertificate: untrustedCa,
+      maxConnections: 1,
+      connectionTimeoutMs: 1_000,
+      acquisitionTimeoutMs: 2_000,
+      idleTimeoutMs: 1_000,
+      maximumConnectionLifetimeSeconds: 600,
+      statementTimeoutMs: 5_000,
+      lockTimeoutMs: 1_000,
+      idleInTransactionTimeoutMs: 5_000,
+      maximumPendingAcquisitions: 1,
+      shutdownDrainTimeoutMs: 2_000,
+      applicationName: "ata-phase6-production-adapter-negative-test"
+    });
+    try {
+      await assert.rejects(
+        adapter.connect(),
+        (error) => error instanceof PostgresPgAdapterError &&
+          error.code === "DATABASE_OPERATION_FAILED" &&
+          !/certificate|hostname|pg-tls|ata_tls|password/i.test(error.message)
+      );
+    } finally {
+      await adapter.close();
+    }
+  });
+
+  await t.test("production adapter enforces hostname verification and sanitizes mismatch", async () => {
+    const { PostgresPgPoolAdapter, PostgresPgAdapterError } =
+      await import("../packages/market-data/dist/postgres-pg-adapter.js");
+    const adapter = new PostgresPgPoolAdapter({
+      host: "wrong.pg-tls.test",
+      port: 55_432,
+      user: "ata_tls_test",
+      password: "ata_local_tls_test_only",
+      database: "ata_tls_test",
+      caCertificate: trustedCa,
+      maxConnections: 1,
+      connectionTimeoutMs: 1_000,
+      acquisitionTimeoutMs: 2_000,
+      idleTimeoutMs: 1_000,
+      maximumConnectionLifetimeSeconds: 600,
+      statementTimeoutMs: 5_000,
+      lockTimeoutMs: 1_000,
+      idleInTransactionTimeoutMs: 5_000,
+      maximumPendingAcquisitions: 1,
+      shutdownDrainTimeoutMs: 2_000,
+      applicationName: "ata-phase6-production-adapter-hostname-test"
+    });
+    try {
+      await assert.rejects(
+        adapter.connect(),
+        (error) => error instanceof PostgresPgAdapterError &&
+          error.code === "DATABASE_OPERATION_FAILED" &&
+          !/wrong\\.pg-tls|certificate|hostname/i.test(error.message)
+      );
+    } finally {
+      await adapter.close();
+    }
+  });
+
   await t.test("untrusted CA is rejected", async () => {
     await assertConnectionRejected(
       { ssl: { ...baseConfig.ssl, ca: untrustedCa } },
