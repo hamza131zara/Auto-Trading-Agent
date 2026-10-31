@@ -854,6 +854,7 @@ export async function discoverRaydiumCpmmCandidates({
       now
     );
     dexScreenerEvidence.push({
+      providerId: "dex-screener",
       poolAddress: checked.poolAddress,
       quoteMint: checked.quoteMint,
       requestId: checked.requestId,
