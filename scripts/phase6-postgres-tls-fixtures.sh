@@ -8,7 +8,7 @@ DB_PASSWORD="ata_local_tls_test_only"
 DB_NAME="ata_tls_test"
 
 rm -rf "$CERT_DIR"
-mkdir -p "$CERT_DIR/newcerts" "$CERT_DIR/valid" "$CERT_DIR/expired" "$CERT_DIR/tls12"
+mkdir -p "$CERT_DIR/newcerts" "$CERT_DIR/valid" "$CERT_DIR/expired" "$CERT_DIR/tls12" "$CERT_DIR/rogue"
 : > "$CERT_DIR/index.txt"
 printf '1000\n' > "$CERT_DIR/serial"
 
@@ -27,6 +27,25 @@ openssl req -x509 -newkey rsa:3072 -sha256 -days 2 -nodes \
 openssl req -new -newkey rsa:2048 -nodes \
   -keyout "$CERT_DIR/server.key" -out "$CERT_DIR/server.csr" \
   -subj "/CN=pg-tls.test"
+
+# A second leaf certificate with the expected DNS SAN but a different, untrusted CA.
+openssl req -new -newkey rsa:2048 -nodes \
+  -keyout "$CERT_DIR/rogue/server.key" -out "$CERT_DIR/rogue/server.csr" \
+  -subj "/CN=pg-tls.test"
+
+cat > "$CERT_DIR/rogue-server.ext" <<EOF
+[ server_cert ]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = DNS:pg-tls.test
+EOF
+
+openssl x509 -req -sha256 -days 2 \
+  -in "$CERT_DIR/rogue/server.csr" \
+  -CA "$CERT_DIR/rogue-ca.crt" -CAkey "$CERT_DIR/rogue-ca.key" -CAcreateserial \
+  -out "$CERT_DIR/rogue/server.crt" \
+  -extfile "$CERT_DIR/rogue-server.ext" -extensions server_cert
 
 cat > "$CERT_DIR/ca.cnf" <<EOF
 [ ca ]
@@ -69,6 +88,10 @@ cp "$CERT_DIR/server.key" "$CERT_DIR/valid/server.key"
 cp "$CERT_DIR/server.key" "$CERT_DIR/expired/server.key"
 cp "$CERT_DIR/valid/server.crt" "$CERT_DIR/tls12/server.crt"
 cp "$CERT_DIR/server.key" "$CERT_DIR/tls12/server.key"
+chmod 755 "$CERT_DIR/rogue"
+chmod 644 "$CERT_DIR/rogue/server.crt"
+chmod 600 "$CERT_DIR/rogue/server.key"
+
 for fixture in valid expired tls12; do
   chmod 755 "$CERT_DIR/$fixture"
   chmod 644 "$CERT_DIR/$fixture/server.crt"
