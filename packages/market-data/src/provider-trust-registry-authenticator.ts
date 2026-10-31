@@ -6,9 +6,7 @@
  * registry endpoint, loads credentials, or authorizes provider use by itself.
  */
 import {
-  createHash,
   createPublicKey,
-  timingSafeEqual,
   verify as verifyEd25519Signature
 } from "node:crypto";
 import {
@@ -29,6 +27,10 @@ const SHA256_HEX = /^[a-fA-F0-9]{64}$/;
 const SAFE_REGISTRY_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_KEY_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const MAX_JSON_DEPTH = 32;
+const PUBLIC_KEY_BEGIN = "-----BEGIN PUBLIC KEY-----";
+const PUBLIC_KEY_END = "-----END PUBLIC KEY-----";
+const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const BASE64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /**
  * Production authenticator for exact registry snapshot bytes. Parsing rejects
@@ -67,7 +69,7 @@ implements ProviderTrustSnapshotAuthenticator {
       throw new ProviderTrustRegistryError("TRUST_REGISTRY_ROOT_KEY_MISMATCH");
     }
 
-    const rootPublicKey = loadPinnedRootPublicKey(anchor);
+    const rootPublicKey = await loadPinnedRootPublicKey(anchor);
     const signingPayload = getProviderTrustRegistrySigningPayload({
       schemaVersion: envelope.schemaVersion,
       registryId: envelope.registryId,
@@ -79,7 +81,7 @@ implements ProviderTrustSnapshotAuthenticator {
       keys: envelope.keys
     });
     const signatureBytes = decodeCanonicalSignature(envelope.signature);
-    const payloadBytes = Buffer.from(signingPayload, "utf8");
+    const payloadBytes = new TextEncoder().encode(signingPayload);
 
     let signatureValid = false;
     try {
@@ -109,9 +111,9 @@ implements ProviderTrustSnapshotAuthenticator {
       throw new ProviderTrustRegistryError("TRUST_REGISTRY_SNAPSHOT_STALE");
     }
 
-    const canonicalPayloadSha256 = createHash("sha256")
-      .update(payloadBytes)
-      .digest("hex");
+    const canonicalPayloadSha256 = bytesToHex(
+      new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", payloadBytes))
+    );
     const keys = Object.freeze(envelope.keys.map((key) => {
       let providerDecisionKey: ReturnType<typeof createPublicKey>;
       try {
@@ -172,8 +174,9 @@ function validateTrustAnchor(
 
   if (typeof value.rootPublicKeyPem !== "string" ||
       value.rootPublicKeyPem.length > 4096 ||
-      !value.rootPublicKeyPem.startsWith("-----BEGIN PUBLIC KEY-----") ||
-      !value.rootPublicKeyPem.trimEnd().endsWith("-----END PUBLIC KEY-----")) {
+      !value.rootPublicKeyPem.startsWith(PUBLIC_KEY_BEGIN) ||
+      !value.rootPublicKeyPem.includes(PUBLIC_KEY_END) ||
+      value.rootPublicKeyPem.slice(value.rootPublicKeyPem.lastIndexOf(PUBLIC_KEY_END) + PUBLIC_KEY_END.length).trim() !== "") {
     throw new ProviderTrustRegistryError("TRUST_REGISTRY_ROOT_KEY_MISMATCH");
   }
   if (typeof value.expectedSpkiSha256 !== "string" ||
@@ -183,7 +186,15 @@ function validateTrustAnchor(
   return value;
 }
 
-function loadPinnedRootPublicKey(anchor: ProviderTrustRegistryTrustAnchor) {
+async function loadPinnedRootPublicKey(anchor: ProviderTrustRegistryTrustAnchor) {
+  const body = anchor.rootPublicKeyPem
+    .slice(PUBLIC_KEY_BEGIN.length, anchor.rootPublicKeyPem.lastIndexOf(PUBLIC_KEY_END))
+    .replace(/\s/g, "");
+  const spkiDer = decodeStandardBase64(body);
+  if (spkiDer === null || spkiDer.byteLength === 0) {
+    throw new ProviderTrustRegistryError("TRUST_REGISTRY_ROOT_KEY_MISMATCH");
+  }
+
   let publicKey: ReturnType<typeof createPublicKey>;
   try {
     publicKey = createPublicKey(anchor.rootPublicKeyPem);
@@ -194,11 +205,11 @@ function loadPinnedRootPublicKey(anchor: ProviderTrustRegistryTrustAnchor) {
     throw new ProviderTrustRegistryError("TRUST_REGISTRY_ROOT_KEY_MISMATCH");
   }
 
-  const spkiDer = publicKey.export({ type: "spki", format: "der" });
-  const actualFingerprint = createHash("sha256").update(spkiDer).digest();
-  const expectedFingerprint = Buffer.from(anchor.expectedSpkiSha256, "hex");
-  if (expectedFingerprint.byteLength !== actualFingerprint.byteLength ||
-      !timingSafeEqual(expectedFingerprint, actualFingerprint)) {
+  const actualFingerprint = new Uint8Array(
+    await globalThis.crypto.subtle.digest("SHA-256", spkiDer)
+  );
+  const expectedFingerprint = decodeHex(anchor.expectedSpkiSha256);
+  if (expectedFingerprint === null || !fixedTimeEqual(expectedFingerprint, actualFingerprint)) {
     throw new ProviderTrustRegistryError("TRUST_REGISTRY_ROOT_FINGERPRINT_MISMATCH");
   }
   return publicKey;
@@ -234,12 +245,77 @@ function parseAndValidateEnvelope(bytes: Uint8Array): ProviderTrustRegistrySnaps
   }
 }
 
-function decodeCanonicalSignature(value: string): Buffer {
-  const decoded = Buffer.from(value, "base64url");
-  if (decoded.byteLength !== 64 || decoded.toString("base64url") !== value) {
+function decodeCanonicalSignature(value: string): Uint8Array {
+  const decoded = decodeBase64Url(value);
+  if (decoded === null || decoded.byteLength !== 64) {
     throw new ProviderTrustRegistryError("TRUST_REGISTRY_SNAPSHOT_INVALID");
   }
   return decoded;
+}
+
+function decodeBase64Url(value: string): Uint8Array | null {
+  if (!/^[A-Za-z0-9_-]{86}$/.test(value)) return null;
+  return decodeSixBitCharacters(value, BASE64URL, 64);
+}
+
+function decodeStandardBase64(value: string): Uint8Array | null {
+  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) {
+    return null;
+  }
+  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
+  return decodeSixBitCharacters(value.slice(0, value.length - padding), BASE64, undefined);
+}
+
+function decodeSixBitCharacters(
+  value: string,
+  alphabet: string,
+  expectedLength: number | undefined
+): Uint8Array | null {
+  const outputLength = Math.floor(value.length * 6 / 8);
+  if (expectedLength !== undefined && outputLength !== expectedLength) return null;
+  const output = new Uint8Array(outputLength);
+  let accumulator = 0;
+  let bits = 0;
+  let offset = 0;
+  for (const character of value) {
+    const digit = alphabet.indexOf(character);
+    if (digit < 0) return null;
+    accumulator = (accumulator << 6) | digit;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      if (offset >= output.length) return null;
+      output[offset] = (accumulator >> bits) & 0xff;
+      offset += 1;
+      accumulator &= (1 << bits) - 1;
+    }
+  }
+  if (offset !== output.length || accumulator !== 0) return null;
+  return output;
+}
+
+function decodeHex(value: string): Uint8Array | null {
+  if (!/^[a-fA-F0-9]{64}$/.test(value)) return null;
+  const output = new Uint8Array(32);
+  for (let index = 0; index < output.length; index += 1) {
+    output[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16);
+  }
+  return output;
+}
+
+function fixedTimeEqual(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.byteLength !== right.byteLength) return false;
+  let difference = 0;
+  for (let index = 0; index < left.byteLength; index += 1) {
+    difference |= left[index]! ^ right[index]!;
+  }
+  return difference === 0;
+}
+
+function bytesToHex(value: Uint8Array): string {
+  let result = "";
+  for (const byte of value) result += byte.toString(16).padStart(2, "0");
+  return result;
 }
 
 /**
