@@ -410,3 +410,21 @@ The experiment proves behavior only for the exact test-only driver version and d
 - [ ] Verify expiry monitoring, rotation ownership, effective runtime options and separate production deployment approvals.
 
 The tests use only disposable containers, generated certificates and the transient CI driver. They do not approve a production TLS policy, database, provider or trading runtime. Phase 6 remains ACTIVE. See [Phase 6.40](40-node-postgres-tls-handshake-verification.md).
+
+
+## Phase 6.41 — Production node-postgres adapter
+
+- [x] Owner selected and approved `pg@8.23.1` for implementation/review; dependency pinned in the market-data workspace.
+- [x] Implement strict TLS verification, bounded pool/admission, timeouts, safe client release and graceful shutdown behavior.
+- [x] Merge adapter implementation in [PR #62](https://github.com/hamza131zara/Auto-Trading-Agent/pull/62); required checks and disposable integration/security verification passed before merge.
+- [x] Keep production DB connection, credentials, CA deployment and operational activation separate; none is authorized by driver selection.
+
+## Phase 6.42 — PostgreSQL adapter shutdown lifecycle verification
+
+- [x] Test shutdown admission closure, `POOL_CLOSING`, checked-out client drain, idempotent close and pool end using disposable PostgreSQL.
+- [x] Correct the test's promise-identity assertion in [PR #64](https://github.com/hamza131zara/Auto-Trading-Agent/pull/64); compare subsequent close calls with the raw drain promise.
+- [x] Verify the dedicated integration workflow: [run #41196013163](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41196013163), both jobs green; TLS suite 12 passed, 0 failed.
+- [x] Merge PR #64 into main at `8f9250119c5b90d1e11072177ddbf220b35648ca`.
+- [ ] Verify the post-merge main workflow runs on the merge commit before closing the post-merge CI gate.
+
+Production database deployment, provider activation, wallet signing, orders and trading remain separately unauthorized.
