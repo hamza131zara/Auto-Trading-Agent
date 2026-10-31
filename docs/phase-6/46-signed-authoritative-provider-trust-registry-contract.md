@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Step 1: protocol contract and security boundary.** This defines a provider-neutral, root-authenticated trust-registry protocol. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
+**Step 1: protocol contract and security boundary — complete. Step 2: root snapshot authenticator — implemented on this branch; final CodeQL verification is pending.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
@@ -115,6 +115,21 @@ The protocol is separated from transport. The authenticator consumes exact snaps
 - Never use cached keys as fallback when refresh fails.
 
 No registry vendor, hosting service, origin, account, endpoint, credential, key-management product or availability/cost model is selected here. The owner must approve those items before an adapter is implemented or used.
+
+## Step 2 — root snapshot authenticator
+
+The transport-free implementation is in `packages/market-data/src/provider-trust-registry-authenticator.ts` and is exported from the market-data package.
+
+- Rejects an empty or over-48-KiB body before decoding or parsing.
+- Decodes UTF-8 in fatal mode and uses a bounded JSON parser that rejects duplicate member names at every object depth, including escape-equivalent names.
+- Requires the independently supplied anchor to contain exactly the registry ID, root key ID, SPKI public-key PEM and SHA-256 fingerprint; checks registry/root identity against the signed snapshot.
+- Parses the root as Ed25519, fingerprints the SPKI DER bytes against the independently provisioned SHA-256 value, and rejects a wrong key type or fingerprint.
+- Reconstructs the documented domain-separated canonical payload, accepts only the canonical unpadded 64-byte Ed25519 signature encoding, and verifies the signature with the pinned root.
+- Enforces strict UTC calendar timestamps, rejects future-issued, expired and stale snapshots, and refuses an age bound above five minutes.
+- Parses every delegated provider-decision public key and requires Ed25519 before returning the complete key set.
+- Returns the SHA-256 digest of the canonical unsigned payload and a deeply frozen snapshot/key set.
+
+The authenticator performs no network request and does not implement durable anti-rollback storage. A cryptographically authentic snapshot is not yet usable as a production provider authorization until the later high-water-mark/CAS and owner-approved transport/loader steps are complete.
 
 ## Required adversarial verification for the implementation step
 
