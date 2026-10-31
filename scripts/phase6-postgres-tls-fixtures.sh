@@ -8,7 +8,7 @@ DB_PASSWORD="ata_local_tls_test_only"
 DB_NAME="ata_tls_test"
 
 rm -rf "$CERT_DIR"
-mkdir -p "$CERT_DIR/newcerts" "$CERT_DIR/valid" "$CERT_DIR/expired" "$CERT_DIR/tls12" "$CERT_DIR/rogue"
+mkdir -p "$CERT_DIR/newcerts" "$CERT_DIR/valid" "$CERT_DIR/expired" "$CERT_DIR/tls12" "$CERT_DIR/rogue" "$CERT_DIR/registry-valid"
 : > "$CERT_DIR/index.txt"
 printf '1000\n' > "$CERT_DIR/serial"
 
@@ -91,6 +91,14 @@ cp "$CERT_DIR/server.key" "$CERT_DIR/tls12/server.key"
 chmod 755 "$CERT_DIR/rogue"
 chmod 644 "$CERT_DIR/rogue/server.crt"
 chmod 600 "$CERT_DIR/rogue/server.key"
+
+# Keep a runner-owned copy for the local HTTPS transport tests; PostgreSQL's copy
+# below is chowned to the container UID and remains unreadable to the runner.
+cp "$CERT_DIR/valid/server.crt" "$CERT_DIR/registry-valid/server.crt"
+cp "$CERT_DIR/valid/server.key" "$CERT_DIR/registry-valid/server.key"
+chmod 700 "$CERT_DIR/registry-valid"
+chmod 644 "$CERT_DIR/registry-valid/server.crt"
+chmod 600 "$CERT_DIR/registry-valid/server.key"
 
 for fixture in valid expired tls12; do
   chmod 755 "$CERT_DIR/$fixture"
