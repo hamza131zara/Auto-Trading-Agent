@@ -86,6 +86,9 @@ function validatePreflight() {
     maxReserveReferenceTimestampSkewMs: envInteger(
       "MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS", { min: 0, max: 300_000 }
     ),
+    maxReserveIndexedTimestampSkewMs: envInteger(
+      "MAX_RESERVE_INDEXED_TIMESTAMP_SKEW_MS", { min: 0, max: 300_000 }
+    ),
     maxFutureSkewMs: envInteger("MAX_FUTURE_SKEW_MS", { min: 0, max: 60_000 }),
     maxDeviationBps: envInteger("MAX_DEVIATION_BPS", { min: 0, max: 10_000 }),
     indexedPriceSource
@@ -227,6 +230,7 @@ async function main() {
         maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
         maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
         maxReserveReferenceTimestampSkewMs: target.maxReserveReferenceTimestampSkewMs,
+        maxReserveIndexedTimestampSkewMs: target.maxReserveIndexedTimestampSkewMs,
         maxFutureSkewMs: target.maxFutureSkewMs,
         maxDeviationBps: target.maxDeviationBps,
         approvedProviderId: "pyth-hermes",
@@ -316,6 +320,7 @@ async function main() {
       maxReferenceRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
       maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
       maxReserveReferenceTimestampSkewMs: target.maxReserveReferenceTimestampSkewMs,
+      maxReserveIndexedTimestampSkewMs: target.maxReserveIndexedTimestampSkewMs,
       maxFutureSkewMs: target.maxFutureSkewMs,
       maxDeviationBps: target.maxDeviationBps,
       indexedPriceSource: indexedPriceEvidence.providerId,
