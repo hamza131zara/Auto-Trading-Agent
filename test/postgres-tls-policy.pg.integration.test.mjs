@@ -326,7 +326,8 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
     });
     const held = await adapter.connect();
     let closeResolved = false;
-    const closePromise = adapter.close().then(() => {
+    const drainPromise = adapter.close();
+    const closePromise = drainPromise.then(() => {
       closeResolved = true;
     });
 
@@ -340,8 +341,8 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       await new Promise((resolve) => setTimeout(resolve, 50));
       assert.equal(closeResolved, false,
         "shutdown must wait for a checked-out client rather than terminate it");
-      assert.equal(adapter.close(), closePromise,
-        "repeated close calls must share the same drain operation");
+      assert.equal(adapter.close(), drainPromise,
+        "repeated close calls must return the same drain promise");
       held.release();
       await closePromise;
       assert.equal(closeResolved, true);
