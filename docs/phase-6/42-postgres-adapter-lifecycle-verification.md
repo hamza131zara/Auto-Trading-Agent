@@ -22,4 +22,6 @@ The test is part of `test/postgres-tls-policy.pg.integration.test.mjs`, which is
 
 This is test-only lifecycle verification. It does not deploy or connect to a hosted database, activate a market-data provider, access or sign with a wallet, place orders, or authorize trading.
 
-Status: **IMPLEMENTED — CI VERIFICATION PENDING**.
+Status: **IMPLEMENTED AND VERIFIED**.
+
+Verification evidence: PR #64 corrected the test to compare repeated `close()` calls with the raw drain promise returned by the first call. The dedicated PostgreSQL integration workflow passed on PR head `e07d00b07aabec2320d39e290eafa05a0d9d8e32`: persistence/backup/restore/migration recovery job passed; TLS trust/hostname/downgrade job passed; shutdown drain test passed; test summary was 12 passed, 0 failed. See [workflow run #41196013163](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41196013163) and [PR #64](https://github.com/hamza131zara/Auto-Trading-Agent/pull/64). This verifies the disposable test environment only; production DB deployment remains separately unauthorized.
