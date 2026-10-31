@@ -4,7 +4,7 @@
 
 **Implementation candidate:** an Ed25519 verification primitive and a default-deny resolver are implemented on the review branch. The primitive is not yet wired to the live workflow's trusted bootstrap. No real owner public key, private key, signed decision, provider permission, or production approval has been supplied or configured.
 
-This step closes a software-verification gap in the Phase 6.75 runtime gate: a decision record's shape and a SHA-256 manifest reference are not proof of owner authorization. It does not resolve the commercial-rights or source-lineage evidence questions in Phase 6.27–6.29.
+This step closes a software-verification gap in the PR #75 runtime gate: a decision record's shape and a SHA-256 manifest reference are not proof of owner authorization. It does not resolve the commercial-rights or source-lineage evidence questions in Phase 6.27–6.29.
 
 ## Verification contract
 
