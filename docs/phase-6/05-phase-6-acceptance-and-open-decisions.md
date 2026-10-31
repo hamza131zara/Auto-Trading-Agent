@@ -365,3 +365,18 @@ The preflight evaluates declarations only. It does not create or restore backups
 - [ ] Verify trust-anchor, endpoint identity, expiry monitoring and rotation evidence with the owner/database operator.
 
 The evaluator accepts declarations only; it does not choose a driver, access certificates/secrets, open a socket or connect to PostgreSQL. A successful policy result remains REVIEW_REQUIRED. Phase 6 remains ACTIVE. See [Phase 6.37](37-postgres-client-tls-policy-preflight.md).
+
+
+## Phase 6.38 — PostgreSQL pool lifecycle and timeout policy preflight
+
+- [x] Add an offline driver-neutral evaluator for declared pool timeout, queue and shutdown policy.
+- [x] Check connection/acquisition, lock/statement and shutdown/statement timeout relationships.
+- [x] Require bounded queue overflow rejection and stop-admission-then-drain shutdown semantics.
+- [x] Require an explicit isolated-test matrix for timeout enforcement, cancellation, queue overflow and shutdown.
+- [x] Reject malformed, missing, extra, path/URL-like and credential-shaped inputs; return immutable review-required reports.
+- [ ] Select and pin the production PostgreSQL driver and version.
+- [ ] Verify the actual driver's timeout mapping, cancellation behavior, bounded queue and shutdown lifecycle against disposable PostgreSQL.
+- [ ] Verify effective role/database/session settings and reconcile the selected pool maximum with the approved aggregate capacity plan.
+- [ ] Obtain owner and database-operator approval before any production database deployment.
+
+The evaluator accepts declarations only; it does not create a pool, connect to PostgreSQL, cancel statements or change runtime settings. A technically passing policy remains REVIEW_REQUIRED. Phase 6 remains ACTIVE. See [Phase 6.38](38-postgres-pool-lifecycle-policy-preflight.md).

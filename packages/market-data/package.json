@@ -43,6 +43,10 @@
     "./postgres-client-tls-policy": {
       "types": "./dist/postgres-client-tls-policy.d.ts",
       "import": "./dist/postgres-client-tls-policy.js"
+    },
+    "./postgres-pool-lifecycle-policy": {
+      "types": "./dist/postgres-pool-lifecycle-policy.d.ts",
+      "import": "./dist/postgres-pool-lifecycle-policy.js"
     }
   },
   "scripts": {

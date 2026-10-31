@@ -1,6 +1,6 @@
 # Phase 6 — Market-Data Ingestion and Canonical Data Layer
 
-**Status:** ACTIVE — Phase 6.37 adds an offline PostgreSQL client TLS policy evaluator. The production driver, effective TLS configuration, handshake tests, trust-anchor/endpoint identity, certificate monitoring/rotation, backup/PITR evidence, monitoring and owner approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
+**Status:** ACTIVE — Phase 6.38 adds an offline PostgreSQL pool lifecycle and timeout-policy evaluator. The production driver, effective TLS/pool configuration, timeout/cancellation/shutdown tests, trust-anchor/endpoint identity, backup/PITR evidence, monitoring and owner approvals remain open. Market-data freshness, provider rights/lineage and independent price agreement remain unresolved; production-provider approval and trading authorization remain false.
 
 **Status:** ACTIVE — Phase 6.19/6.20 reproducible reference build and local evidence review completed; Phase 6.18 live Mainnet ProgramData comparison returned exact ELF hash MATCH at finalized slot `463153970`, with upgrade authority still present. Latest live Phase 6.14 candidate-discovery run [#12](https://github.com/hamza131zara/Auto-Trading-Agent/actions/runs/41005895558) completed both SOL/USDC and SOL/USDT pagination, checked 45 returned accounts, decoded 24 CPMM candidates and cross-checked all 24; zero candidates met unchanged USD 100,000 liquidity / USD 10,000 24-hour volume thresholds. Indexed source freshness remains UNKNOWN; independent price agreement, provider selection/terms/fallback, upgrade-authority policy and Phase 7 token safety remain open. Phase 6 stays active; production-provider approval and trading authorization are false.
 **Started:** 29 October 2026.
@@ -49,6 +49,7 @@
 27. [PostgreSQL aggregate connection-budget preflight](35-postgres-aggregate-connection-budget-preflight.md)
 28. [PostgreSQL backup, PITR and recovery-policy preflight](36-postgres-backup-pitr-policy-preflight.md)
 29. [PostgreSQL client TLS policy preflight](37-postgres-client-tls-policy-preflight.md)
+30. [PostgreSQL pool lifecycle and timeout policy preflight](38-postgres-pool-lifecycle-policy-preflight.md)
 
 ## Initial implementation boundary
 
@@ -192,3 +193,8 @@ The evidence manifest is now version 2. Its validator binds Pyth metadata to the
 ## Phase 6.30 — Offline provider-evidence packaging
 
 A local-only v2 manifest packager now computes bounded SHA-256 digests for owner-supplied LOCAL_FILE artifacts, checks supplied digests, and runs the canonical validator before writing. It refuses symlink/traversal paths, repository-local evidence locations, output overwrite and credential-bearing metadata keys. It writes only the manifest metadata, never artifact contents, and has no network, provider, RPC, credential, wallet, or trading path. No owner evidence has been received or approved; all providers remain unapproved and Phase 6 remains ACTIVE. See [Phase 6.30](30-offline-provider-evidence-packaging.md).
+
+
+## Phase 6.38 — PostgreSQL pool lifecycle and timeout policy
+
+An offline driver-neutral preflight now checks explicit pool timeout relationships, a bounded acquisition queue, stop-admission-then-drain shutdown behavior and an isolated evidence matrix for timeout enforcement/cancellation. It complements the aggregate pool arithmetic in Phase 6.35 and the strict client TLS policy in Phase 6.37. No driver is selected or configured; effective runtime mapping and real PostgreSQL behavior still require owner-selected driver evidence. All database deployment, provider activation and trading approvals remain false. See [Phase 6.38](38-postgres-pool-lifecycle-policy-preflight.md).
