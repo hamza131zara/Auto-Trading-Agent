@@ -256,7 +256,13 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   assert.equal(report.rpcEvidence.contextSlot, 462900001);
   assert.equal(report.selectionPolicy.candidateCount, 3);
   assert.equal(report.selectionPolicy.thresholdQualifiedCount, 2);
-  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, HIGH_USDT_CPMM);
+  assert.equal(report.selectionPolicy.freshnessQualifiedCount, 0);
+  assert.equal(report.selectionPolicy.criticalEvidenceGateReadyCount, 0);
+  assert.equal(report.selectionPolicy.thresholdTopCandidatePoolAddress, HIGH_USDT_CPMM);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.equal(report.candidates[0].evidenceReadiness.status, "BLOCKED_SOURCE_FRESHNESS_UNKNOWN");
+  assert.equal(report.candidates[0].evidenceReadiness.canAdvanceToCriticalMarketDataEvidenceGate, false);
+  assert.ok(report.candidates[0].evidenceReadiness.reasonCodes.includes("SOURCE_FRESHNESS_NOT_ESTABLISHED"));
   assert.deepEqual(report.candidates.map((item) => item.poolAddress), [HIGH_USDT_CPMM, HIGH_CPMM, LOW_CPMM]);
   assert.equal(report.candidates[0].quoteMint, USDT);
   assert.equal(report.candidates[0].quoteAssetSymbol, "USDT");
@@ -356,7 +362,14 @@ test("cross-checks every CPMM candidate beyond the former 20-pool cap", async ()
   assert.equal(report.selectionPolicy.unCrossCheckedCpmmCandidateCount, 0);
   assert.equal(report.selectionPolicy.scanIncomplete, false);
   assert.equal(report.selectionPolicy.thresholdQualifiedCount, 22);
-  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, addresses[0]);
+  assert.equal(report.selectionPolicy.freshnessQualifiedCount, 0);
+  assert.equal(report.selectionPolicy.criticalEvidenceGateReadyCount, 0);
+  assert.equal(report.selectionPolicy.thresholdTopCandidatePoolAddress, addresses[0]);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.ok(report.candidates.every((candidate) =>
+    candidate.evidenceReadiness.status === "BLOCKED_SOURCE_FRESHNESS_UNKNOWN" &&
+    candidate.evidenceReadiness.canAdvanceToCriticalMarketDataEvidenceGate === false
+  ));
   assert.equal(report.candidates.length, 22);
   assert.ok(report.candidates.every((candidate) => candidate.dexScreenerPairFound));
   assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds));
@@ -461,7 +474,10 @@ test("uses the documented mint-pair endpoint and treats a short numbered page as
   assert.equal(usdcQuery.paginationTerminal, true);
   assert.equal(usdcQuery.pages[0].paginationSignal, "SHORT_NUMBERED_PAGE_TERMINAL");
   assert.equal(report.selectionPolicy.scanIncomplete, false);
-  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, HIGH_CPMM);
+  assert.equal(report.selectionPolicy.thresholdTopCandidatePoolAddress, HIGH_CPMM);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+  assert.equal(report.selectionPolicy.freshnessQualifiedCount, 0);
+  assert.equal(report.selectionPolicy.criticalEvidenceGateReadyCount, 0);
 });
 
 test("uses nextPageId cursor and refuses to recommend from a partial page", async () => {
