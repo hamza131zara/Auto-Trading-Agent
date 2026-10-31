@@ -215,3 +215,8 @@ The PostgreSQL CI workflow now creates disposable CA/certificate fixtures and te
 ## Phase 6.43 — Signed owner provider-use decisions
 
 A separate Ed25519 verification primitive now checks the full provider-use decision payload against an independently supplied owner-controlled trust-key registry. Key validity/revocation, provider and purpose scope, owner identity, finite decision expiry, ambiguous records and signature integrity are fail-closed. The resolver is not wired into live runtime bootstrap because no real owner public key or signed decision has been supplied and reviewed. Test keys are ephemeral only. A valid signature does not authenticate underlying evidence or grant provider/legal rights. See [Phase 6.43](43-signed-provider-use-decisions.md). The work is under review; no provider activation, production approval, DB deployment, wallet, signer or trading permission is added.
+
+
+## Phase 6.44 — Live owner-key revocation freshness
+
+A reloadable provider-use resolver now re-reads the trusted-key/revocation registry for each provider attempt. It requires a bounded-age snapshot timestamp (maximum five minutes), rejects future/stale/malformed snapshots, and defaults to deny if the registry cannot be read. Tests prove a key revocation blocks the next attempt without a process restart. This still requires a real owner-controlled authoritative registry and does not create or approve a signing key. See [Phase 6.43 revocation-freshness section](43-signed-provider-use-decisions.md). Phase 6 remains ACTIVE and trading remains unauthorized.

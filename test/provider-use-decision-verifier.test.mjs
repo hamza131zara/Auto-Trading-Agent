@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { generateKeyPairSync, sign } from "node:crypto";
 import test from "node:test";
 import {
+  createReloadableSignedProviderUseDecisionResolver,
   createSignedProviderUseDecisionResolver,
   getProviderUseDecisionSigningPayload,
   verifySignedProviderUseDecision
@@ -242,4 +243,69 @@ test("rejects ambiguous trusted key identifiers", () => {
     at: NOW
   });
   assert.deepEqual(result.reasonCodes, ["PROVIDER_DECISION_TRUSTED_KEY_MISSING_OR_AMBIGUOUS"]);
+});
+
+
+test("reloadable resolver observes trusted-key revocation without a process restart", () => {
+  const f = fixtures();
+  const state = {
+    loadedAt: NOW,
+    keys: [structuredClone(f.trustedKey)]
+  };
+  let loadCount = 0;
+  const resolver = createReloadableSignedProviderUseDecisionResolver({
+    envelopes: [f.envelope],
+    loadTrustedKeySnapshot: () => {
+      loadCount += 1;
+      return state;
+    },
+    maxSnapshotAgeMs: 60_000
+  });
+
+  assert.equal(resolver("dex-screener", "DIAGNOSTIC", NOW)?.decisionId, DECISION.decisionId);
+  state.loadedAt = "2026-10-31T13:30:01.000Z";
+  state.keys[0].revokedAt = "2026-10-31T13:30:01.000Z";
+  assert.equal(resolver("dex-screener", "DIAGNOSTIC", "2026-10-31T13:30:02.000Z"), undefined);
+  assert.equal(loadCount, 2);
+});
+
+test("reloadable resolver denies stale, future-dated and unavailable key snapshots", () => {
+  const f = fixtures();
+  const state = {
+    loadedAt: "2026-10-31T13:20:00.000Z",
+    keys: [f.trustedKey]
+  };
+  const resolver = createReloadableSignedProviderUseDecisionResolver({
+    envelopes: [f.envelope],
+    loadTrustedKeySnapshot: () => state,
+    maxSnapshotAgeMs: 60_000
+  });
+  assert.equal(resolver("dex-screener", "DIAGNOSTIC", NOW), undefined);
+
+  state.loadedAt = "2026-10-31T13:31:00.000Z";
+  assert.equal(resolver("dex-screener", "DIAGNOSTIC", NOW), undefined);
+
+  state.loadedAt = NOW;
+  const unavailable = createReloadableSignedProviderUseDecisionResolver({
+    envelopes: [f.envelope],
+    loadTrustedKeySnapshot: () => { throw new Error("revocation store unavailable"); },
+    maxSnapshotAgeMs: 60_000
+  });
+  assert.equal(unavailable("dex-screener", "DIAGNOSTIC", NOW), undefined);
+});
+
+test("reloadable resolver rejects malformed key snapshots and excessive freshness bounds", () => {
+  const f = fixtures();
+  const malformed = createReloadableSignedProviderUseDecisionResolver({
+    envelopes: [f.envelope],
+    loadTrustedKeySnapshot: () => ({ loadedAt: NOW, keys: [f.trustedKey], extra: true }),
+    maxSnapshotAgeMs: 60_000
+  });
+  const excessiveAge = createReloadableSignedProviderUseDecisionResolver({
+    envelopes: [f.envelope],
+    loadTrustedKeySnapshot: () => ({ loadedAt: NOW, keys: [f.trustedKey] }),
+    maxSnapshotAgeMs: 300_001
+  });
+  assert.equal(malformed("dex-screener", "DIAGNOSTIC", NOW), undefined);
+  assert.equal(excessiveAge("dex-screener", "DIAGNOSTIC", NOW), undefined);
 });

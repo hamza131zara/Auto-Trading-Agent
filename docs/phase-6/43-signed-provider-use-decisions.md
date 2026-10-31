@@ -43,3 +43,10 @@ A valid signature proves that the holder of a configured trusted private key sig
 The new tests use ephemeral Ed25519 key pairs generated in the test process and cover valid signatures, payload tampering, unknown/duplicate keys, key validity and revocation, provider/purpose scope, finite decision expiry, production-scope outcomes, ambiguous records, resolver default-deny behavior and malformed envelopes. No persistent key material is generated or committed.
 
 No network/provider/RPC request, secret retrieval, production database connection, wallet operation, transaction signing or order path is added. Frozen roadmap scope, liquidity/volume thresholds and the 10-bps diagnostic tolerance are unchanged. Phase 6 remains ACTIVE.
+
+
+## Revocation freshness
+
+For a long-running process, use `createReloadableSignedProviderUseDecisionResolver` rather than the static resolver. It reads the trusted-key registry on every provider attempt and requires an explicit `loadedAt` timestamp. The configured snapshot-age limit must be between 1 ms and 300,000 ms. A missing, malformed, future-dated, stale or unavailable key snapshot returns no decision. Key revocation therefore takes effect on the next request after the authoritative registry returns the revoked key; if the registry cannot be read within the freshness bound, access is denied.
+
+The loader must read an owner-controlled authoritative source and must not return an indefinitely cached in-process copy. This verifier cannot prove the external registry's authority or freshness beyond the supplied timestamp. The static resolver remains available for short-lived or externally supervised contexts; a long-running production runtime should use the reloadable form.
