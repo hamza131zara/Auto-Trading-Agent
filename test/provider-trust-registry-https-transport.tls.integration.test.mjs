@@ -43,12 +43,16 @@ async function startTlsServer(t, fixture, handler) {
 
 function createOwnerLookup(expectedHostname) {
   const hostnames = [];
-  const lookup = (hostname, _options, callback) => {
+  const lookup = (hostname, options, callback) => {
     hostnames.push(hostname);
     if (hostname !== expectedHostname) {
       const error = new Error("owner DNS policy rejected hostname");
       error.code = "EAI_AGAIN";
       callback(error);
+      return;
+    }
+    if (options?.all === true) {
+      callback(null, [{ address: "127.0.0.1", family: 4 }]);
       return;
     }
     callback(null, "127.0.0.1", 4);
