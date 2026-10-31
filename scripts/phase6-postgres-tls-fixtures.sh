@@ -33,11 +33,11 @@ cat > "$CERT_DIR/ca.cnf" <<EOF
 default_ca = CA_default
 [ CA_default ]
 dir = ${RUNNER_TEMP:-/tmp}/ata-pg-tls
-database = $dir/index.txt
-new_certs_dir = $dir/newcerts
-certificate = $dir/ca.crt
-private_key = $dir/ca.key
-serial = $dir/serial
+database = \$dir/index.txt
+new_certs_dir = \$dir/newcerts
+certificate = \$dir/ca.crt
+private_key = \$dir/ca.key
+serial = \$dir/serial
 default_md = sha256
 policy = policy_any
 unique_subject = no
