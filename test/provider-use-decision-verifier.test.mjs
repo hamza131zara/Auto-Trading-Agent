@@ -78,7 +78,7 @@ test("rejects a decision changed after it was signed", () => {
     at: NOW
   });
   assert.equal(result.authorized, false);
-  assert.ok(result.reasonCodes.includes("PROVIDER_USE_DECISION_INVALID"));
+  assert.deepEqual(result.reasonCodes, ["PROVIDER_USE_DECISION_SIGNATURE_INVALID"]);
 });
 
 test("rejects a valid signature when the key is not in the external trust registry", () => {
