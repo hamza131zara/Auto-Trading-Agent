@@ -55,6 +55,22 @@
     "./provider-use-decision-verifier": {
       "types": "./dist/provider-use-decision-verifier.d.ts",
       "import": "./dist/provider-use-decision-verifier.js"
+    },
+    "./provider-trust-registry": {
+      "types": "./dist/provider-trust-registry.d.ts",
+      "import": "./dist/provider-trust-registry.js"
+    },
+    "./provider-trust-registry-authenticator": {
+      "types": "./dist/provider-trust-registry-authenticator.d.ts",
+      "import": "./dist/provider-trust-registry-authenticator.js"
+    },
+    "./provider-trust-registry-postgres-store": {
+      "types": "./dist/provider-trust-registry-postgres-store.d.ts",
+      "import": "./dist/provider-trust-registry-postgres-store.js"
+    },
+    "./provider-trust-registry-loader": {
+      "types": "./dist/provider-trust-registry-loader.d.ts",
+      "import": "./dist/provider-trust-registry-loader.js"
     }
   },
   "scripts": {

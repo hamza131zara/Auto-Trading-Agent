@@ -102,11 +102,15 @@ function validReleasePacket(migrationSetSha256) {
 test("committed migration inventory matches its SHA-256 manifest", () => {
   assert.equal(repositoryInventory.ok, true, repositoryInventory.errors?.join("; "));
   assert.equal(repositoryInventory.status, "MIGRATION_INTEGRITY_VERIFIED");
-  assert.equal(repositoryInventory.migrationCount, 1);
+  assert.equal(repositoryInventory.migrationCount, 2);
   assert.equal(repositoryInventory.migrations[0].id,
     "20261030_phase6_provider_health_and_recovery_leases");
   assert.equal(repositoryInventory.migrations[0].sha256,
     "e288aad04067efc2abdc9565c3e1095c9823244cedb7d592a155fd50406c21d6");
+  assert.equal(repositoryInventory.migrations[1].id,
+    "20261031_phase6_provider_trust_registry_high_water_marks");
+  assert.equal(repositoryInventory.migrations[1].sha256,
+    "fa0604b2f6a304b14356126843b8f33f8d18546247075fb516aeda5d04f6182b");
   assert.equal(repositoryInventory.migrationExecutionAuthorized, false);
   assert.equal(repositoryInventory.tradingAuthorized, false);
 });

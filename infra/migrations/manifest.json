@@ -7,6 +7,12 @@
       "file": "20261030_phase6_provider_health_and_recovery_leases.sql",
       "sha256": "e288aad04067efc2abdc9565c3e1095c9823244cedb7d592a155fd50406c21d6",
       "executionMode": "transactional"
+    },
+    {
+      "id": "20261031_phase6_provider_trust_registry_high_water_marks",
+      "file": "20261031_phase6_provider_trust_registry_high_water_marks.sql",
+      "sha256": "fa0604b2f6a304b14356126843b8f33f8d18546247075fb516aeda5d04f6182b",
+      "executionMode": "transactional"
     }
   ]
 }

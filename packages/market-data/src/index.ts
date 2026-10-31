@@ -3192,3 +3192,19 @@ export {
 export type {
   TrustedProviderDecisionKeySnapshot
 } from "./provider-use-decision-verifier.js";
+
+export * from "./provider-trust-registry.js";
+
+export {
+  createEd25519ProviderTrustSnapshotAuthenticator,
+  Ed25519ProviderTrustSnapshotAuthenticator
+} from "./provider-trust-registry-authenticator.js";
+
+export {
+  PostgresProviderTrustRegistryHighWaterMarkStore,
+  advanceProviderTrustRegistryHighWaterMark
+} from "./provider-trust-registry-postgres-store.js";
+
+export {
+  AuthenticatedProviderTrustRegistry
+} from "./provider-trust-registry-loader.js";
