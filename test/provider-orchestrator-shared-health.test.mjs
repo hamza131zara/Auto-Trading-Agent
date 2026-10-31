@@ -178,6 +178,19 @@ function makeOrchestrator(adapter, store, clock, ownerId, tokenHash) {
     maxHealthAgeMs: 60_000,
     requestTimeoutMs: 1_000,
     requestId: () => "shared-health-request",
+    usagePurpose: "DIAGNOSTIC",
+    providerUseDecisionResolver: (providerId, purpose, at) => ({
+      providerId,
+      purpose,
+      decisionId: "test-shared-health-decision",
+      owner: "test-only-fixture-owner",
+      outcome: "PROCEED_DIAGNOSTIC_ONLY",
+      scope: "Offline test-only shared health recovery",
+      decidedAt: "2026-10-30T07:59:00.000Z",
+      expiresAt: "2026-10-30T09:00:00.000Z",
+      linkedEvidenceIds: ["test-shared-health-evidence"],
+      evidenceManifestSha256: "c".repeat(64)
+    }),
     providerHealthStore: store,
     recoveryProbeLease: {
       ownerId,
