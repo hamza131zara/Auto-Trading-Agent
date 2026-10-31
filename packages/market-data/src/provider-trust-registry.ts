@@ -47,7 +47,7 @@ const SAFE_REGISTRY_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_KEY_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 const SHA256_HEX = /^[a-fA-F0-9]{64}$/;
-const BASE64URL_SIGNATURE = /^[A-Za-z0-9_-]{86}$/;
+const BASE64URL_SIGNATURE = /^[A-Za-z0-9_-]{85}[AQgw]$/;
 
 /** Exact signed JSON wire payload. The signature is deliberately separate. */
 export interface ProviderTrustRegistrySnapshotPayload {
