@@ -3,7 +3,8 @@ import test from "node:test";
 import {
   UPGRADEABLE_LOADER_PROGRAM_ID,
   inspectUpgradeableProgramAccount,
-  assessUpgradeableProgramDeployment
+  assessUpgradeableProgramDeployment,
+  assessProgramUpgradeAuthorityReview
 } from "../packages/market-data/dist/index.js";
 import { createHash } from "node:crypto";
 
@@ -76,4 +77,99 @@ test("invalid loader state and ProgramData address mismatch fail closed",async()
   const wrong={...f.programData,address:"11111111111111111111111111111111"};
   const result=await assessUpgradeableProgramDeployment({programAccount:f.program,programDataAccount:wrong,expectedProgramId:PROGRAM_ID,expectedElfSha256:f.expected,expectedElfByteLength:f.elfLength,programAccountContextSlot:1,programDataContextSlot:1,synthetic:false});
   assert.equal(result.status,"MISMATCH"); assert.deepEqual(result.reasonCodes,["PROGRAMDATA_ADDRESS_MISMATCH"]);
+});
+
+
+test("a real matching deployment with an upgrade authority remains owner-decision-required", async () => {
+  const f = fixture({ authority: true });
+  const deployment = await assessUpgradeableProgramDeployment({
+    programAccount: f.program,
+    programDataAccount: f.programData,
+    expectedProgramId: PROGRAM_ID,
+    expectedElfSha256: f.expected,
+    expectedElfByteLength: f.elfLength,
+    programAccountContextSlot: 100,
+    programDataContextSlot: 101,
+    synthetic: false
+  });
+  const review = assessProgramUpgradeAuthorityReview(deployment);
+  assert.equal(deployment.status, "MATCH");
+  assert.equal(review.status, "OWNER_DECISION_REQUIRED");
+  assert.equal(review.upgradeAuthorityPresent, true);
+  assert.equal(review.ownerPolicyDecision, null);
+  assert.deepEqual(review.reasonCodes, [
+    "PROGRAM_REMAINS_UPGRADEABLE",
+    "OWNER_UPGRADE_AUTHORITY_POLICY_REQUIRED"
+  ]);
+  assert.equal(review.productionProviderSelectionAllowed, false);
+  assert.equal(review.revalidationRequired, true);
+  assert.equal(review.tradingAuthorized, false);
+});
+
+test("a deployment without an upgrade authority still requires an explicit owner policy decision", async () => {
+  const f = fixture({ authority: false });
+  const deployment = await assessUpgradeableProgramDeployment({
+    programAccount: f.program,
+    programDataAccount: f.programData,
+    expectedProgramId: PROGRAM_ID,
+    expectedElfSha256: f.expected,
+    expectedElfByteLength: f.elfLength,
+    programAccountContextSlot: 100,
+    programDataContextSlot: 101,
+    synthetic: false
+  });
+  const review = assessProgramUpgradeAuthorityReview(deployment);
+  assert.equal(deployment.status, "MATCH");
+  assert.equal(review.status, "OWNER_DECISION_REQUIRED");
+  assert.equal(review.upgradeAuthorityPresent, false);
+  assert.ok(review.reasonCodes.includes("NO_UPGRADE_AUTHORITY_AT_OBSERVED_SLOT"));
+  assert.equal(review.ownerPolicyDecision, null);
+  assert.equal(review.productionProviderSelectionAllowed, false);
+  assert.equal(review.tradingAuthorized, false);
+});
+
+test("synthetic or non-matching deployment evidence cannot satisfy upgrade-authority policy review", () => {
+  const synthetic = assessProgramUpgradeAuthorityReview({
+    status: "SYNTHETIC_MATCH",
+    programId: PROGRAM_ID,
+    loaderProgramId: LOADER,
+    programDataAddress: null,
+    deploymentSlot: null,
+    upgradeAuthorityPresent: true,
+    programAccountContextSlot: 100,
+    programDataContextSlot: 101,
+    expectedElfSha256: "0".repeat(64),
+    expectedElfByteLength: 16,
+    observedElfSha256: "0".repeat(64),
+    elfByteLength: 16,
+    programDataPaddingByteLength: 0,
+    programDataPaddingZeroed: true,
+    synthetic: true,
+    tradingAuthorized: false
+  });
+  assert.equal(synthetic.status, "NOT_ASSESSED");
+  assert.ok(synthetic.reasonCodes.includes("SYNTHETIC_DEPLOYMENT_NOT_ELIGIBLE"));
+  assert.equal(synthetic.productionProviderSelectionAllowed, false);
+
+  const mismatch = assessProgramUpgradeAuthorityReview({
+    status: "HASH_MISMATCH",
+    programId: PROGRAM_ID,
+    loaderProgramId: LOADER,
+    programDataAddress: null,
+    deploymentSlot: null,
+    upgradeAuthorityPresent: true,
+    programAccountContextSlot: 100,
+    programDataContextSlot: 101,
+    expectedElfSha256: "0".repeat(64),
+    expectedElfByteLength: 16,
+    observedElfSha256: "1".repeat(64),
+    elfByteLength: 16,
+    programDataPaddingByteLength: 0,
+    programDataPaddingZeroed: true,
+    synthetic: false,
+    tradingAuthorized: false
+  });
+  assert.equal(mismatch.status, "NOT_ASSESSED");
+  assert.ok(mismatch.reasonCodes.includes("REAL_DEPLOYMENT_HASH_MATCH_REQUIRED"));
+  assert.equal(mismatch.productionProviderSelectionAllowed, false);
 });
