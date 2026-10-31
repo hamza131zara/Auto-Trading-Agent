@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Phase 6.46 Steps 1–6 are merged and verified. Step 7 startup/configuration wiring is implemented on this branch and awaits CI verification.** The trust registry remains disabled by default; no production endpoint, DNS allowlist, root key or credentials are selected.
+**Phase 6.46 Steps 1–7 are implemented and verified on this branch.** The trust registry remains disabled by default; no production endpoint, DNS allowlist, root key or credentials are selected.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
