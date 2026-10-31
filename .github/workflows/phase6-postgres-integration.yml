@@ -14,6 +14,43 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  postgres-tls-integration:
+    name: PostgreSQL TLS trust, hostname and downgrade verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install repository dependencies from the lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Install pinned test-only PostgreSQL driver
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-fund pg@8.23.1
+
+      - name: Create disposable TLS certificates and PostgreSQL fixtures
+        run: bash scripts/phase6-postgres-tls-fixtures.sh
+
+      - name: Verify node-postgres TLS handshake policy
+        env:
+          REQUIRE_PG_TLS_INTEGRATION: "true"
+          PG_TLS_CERT_DIR: ${{ runner.temp }}/ata-pg-tls
+        run: npm run test:postgres:tls
+
+      - name: Remove disposable PostgreSQL TLS fixtures and test keys
+        if: always()
+        run: |
+          docker rm --force ata-pg-tls-valid ata-pg-tls-expired ata-pg-tls12-only ata-pg-plaintext >/dev/null 2>&1 || true
+          rm -rf "${RUNNER_TEMP}/ata-pg-tls"
+
   postgres-integration:
     name: PostgreSQL persistence, backup/restore and migration recovery
     runs-on: ubuntu-latest

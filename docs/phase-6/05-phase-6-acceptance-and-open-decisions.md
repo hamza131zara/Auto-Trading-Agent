@@ -395,3 +395,18 @@ The evaluator accepts declarations only; it does not create a pool, connect to P
 - [ ] Obtain separate database deployment, backup/PITR, monitoring, provider and trading approvals.
 
 The experiment proves behavior only for the exact test-only driver version and disposable PostgreSQL CI environment. It does not select a production driver, add production connectivity or authorize deployment, provider activation or trading. Phase 6 remains ACTIVE. See [Phase 6.39](39-node-postgres-pool-lifecycle-experiment.md).
+
+
+## Phase 6.40 — node-postgres TLS handshake verification experiment
+
+- [x] Add CI-generated disposable CA, rogue CA, valid, expired and TLS-version-restricted PostgreSQL server fixtures.
+- [x] Require exact test-only `pg@8.23.1` at runtime and configure TLS through explicit client options, not connection-string SSL overrides.
+- [x] Verify trusted CA acceptance and confirm the resulting database session is encrypted.
+- [x] Verify untrusted CA, hostname mismatch, expired certificate and plaintext endpoint rejection.
+- [x] Verify protocol negotiation rejects a server below an explicitly configured client minimum.
+- [x] Keep all listeners loopback-only and remove containers/private test keys after CI.
+- [ ] Owner selects/pins the production PostgreSQL driver and approves the real production CA, endpoint/SNI identity and certificate-rotation model.
+- [ ] Repeat the complete handshake matrix with the owner-selected production driver and actual target certificate chain.
+- [ ] Verify expiry monitoring, rotation ownership, effective runtime options and separate production deployment approvals.
+
+The tests use only disposable containers, generated certificates and the transient CI driver. They do not approve a production TLS policy, database, provider or trading runtime. Phase 6 remains ACTIVE. See [Phase 6.40](40-node-postgres-tls-handshake-verification.md).
