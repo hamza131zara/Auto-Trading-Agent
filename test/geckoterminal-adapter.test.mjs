@@ -125,6 +125,34 @@ test("OHLCV adapter extracts newest candle close and explicitly reports candle-s
   assert.equal(result.observation.poolAddress, TARGET.poolAddress);
 });
 
+test("OHLCV fetch preserves exact high-precision and exponent-form JSON close decimals", async () => {
+  const rawBody = [
+    "{",
+    '"data":{"attributes":{"ohlcv_list":[',
+    '[1793275200,99.8,100.2,99.7,100.00000000000000001,1234.5],',
+    '[1793275260,100.1,100.5,100.0,1.0000000000000000001e2,987.6]',
+    '] }},',
+    '"meta":{"base":{"address":"' + TARGET.baseMint + '"},"quote":{"address":"' + TARGET.quoteMint + '"}}',
+    "}"
+  ].join("");
+  const adapter = new GeckoTerminalOhlcvPriceAdapter(async () =>
+    new Response(rawBody, { status: 200, headers: { "content-type": "application/json" } })
+  );
+  const raw = await adapter.fetchRaw(TARGET, new AbortController().signal);
+  const result = adapter.normalize(raw, {
+    requestedAt: TARGET.requestedAt,
+    retrievedAt: "2026-10-29T12:01:02.000Z",
+    requestId: "geckoterminal-exact-decimal"
+  });
+
+  assert.deepEqual(result.errors, []);
+  assert.ok(result.observation);
+  assert.equal(result.observation.priceUsdPerBase, "100.00000000000000001");
+  assert.equal(result.observation.candleStartAt, new Date(1793275260 * 1000).toISOString());
+  assert.equal(result.observation.synthetic, true);
+  assert.match(result.observation.rawPayloadSha256, /^[a-f0-9]{64}$/);
+});
+
 test("OHLCV adapter rejects mismatched base/quote metadata", () => {
   const adapter = new GeckoTerminalOhlcvPriceAdapter();
   const result = adapter.normalize({
@@ -212,6 +240,32 @@ test("normalizes exact pool and explicit market measures without inventing snaps
   assert.equal(snapshot.sourceEventAt, null);
   assert.equal(snapshot.provenance.synthetic, false);
   assert.equal(snapshot.provenance.sourceKind, "INDEXED_API");
+});
+
+test("pool adapter preserves exact numeric JSON measures and integer transaction counts", async () => {
+  const rawBody = JSON.stringify(payload()).replace(
+    '"base_token_price_usd":"100.123456"',
+    '"base_token_price_usd":100.00000000000000001'
+  ).replace(
+    '"reserve_in_usd":"543210.987"',
+    '"reserve_in_usd":543210.00000000000000001'
+  ).replace(
+    '"h24":"123456.789"',
+    '"h24":123456.00000000000000001'
+  );
+  const adapter = new GeckoTerminalPoolAdapter(async () =>
+    new Response(rawBody, { status: 200, headers: { "content-type": "application/json" } })
+  );
+  const raw = await adapter.fetchRaw(TARGET, new AbortController().signal);
+  const result = adapter.normalize(raw, CONTEXT);
+
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.observations.length, 1);
+  assert.equal(result.observations[0].price.value, "100.00000000000000001");
+  assert.equal(result.observations[0].liquidity.value, "543210.00000000000000001");
+  assert.equal(result.observations[0].volume24h.value, "123456.00000000000000001");
+  assert.equal(result.observations[0].buys24h, 123);
+  assert.equal(result.observations[0].sells24h, 98);
 });
 
 test("pool creation time is never used as a current source-event timestamp", () => {
