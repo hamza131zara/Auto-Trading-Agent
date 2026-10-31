@@ -290,6 +290,27 @@ test("combines official Raydium pool discovery, on-chain CPMM decode and exact D
   assert.equal(report.candidates[0].quoteAssetSymbol, "USDT");
   assert.equal(report.candidates[0].onChainProgram, "RAYDIUM_CPMM");
   assert.equal(report.candidates[0].dexScreenerPairFound, true);
+  const raydiumProvenance = report.candidates[0].raydiumSourceProvenance;
+  assert.equal(raydiumProvenance.providerId, "raydium-api-v3");
+  assert.match(raydiumProvenance.requestId, /^cpmm-discovery-.*-raydium-usdt-1$/);
+  assert.equal(raydiumProvenance.retrievedAt, "2026-10-29T09:00:00.000Z");
+  assert.match(raydiumProvenance.rawPayloadSha256, /^[a-f0-9]{64}$/);
+  assert.equal(raydiumProvenance.sourceEventAt, null);
+  assert.equal(raydiumProvenance.sourceObservedAt, null);
+  assert.equal(raydiumProvenance.timestampKind, "MISSING");
+  const dexProvenance = report.candidates[0].dexScreenerMetrics.provenance;
+  assert.equal(dexProvenance.providerId, "dex-screener");
+  assert.equal(dexProvenance.retrievedAt, "2026-10-29T09:00:00.000Z");
+  assert.match(dexProvenance.requestId, /^cpmm-discovery-.*-dex-1$/);
+  assert.match(dexProvenance.rawPayloadSha256, /^[a-f0-9]{64}$/);
+  assert.equal(dexProvenance.sourceEventAt, null);
+  assert.equal(dexProvenance.sourceObservedAt, null);
+  assert.equal(report.candidates[0].sourceFreshness, "UNKNOWN");
+  assert.ok(report.sources.dexScreener.evidence.every((item) =>
+    item.providerId === "dex-screener" &&
+    item.retrievedAt === "2026-10-29T09:00:00.000Z" &&
+    /^[a-f0-9]{64}$/.test(item.rawPayloadSha256)
+  ));
   assert.equal(report.candidates[0].meetsRaydiumThresholds, true);
   assert.equal(report.candidates[0].meetsDexScreenerThresholds, true);
   assert.equal(report.candidates[0].meetsLiquidityAndVolumeThresholds, true);
