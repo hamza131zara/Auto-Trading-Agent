@@ -10,6 +10,9 @@ import {
 const ORIGIN = "https://trust.example";
 const ENDPOINT = ORIGIN + "/v1/signed-snapshot?registry=owner-provider-trust";
 const MAX_BYTES = 48 * 1024;
+const approvedLookup = (_hostname, _options, callback) => {
+  callback(null, "203.0.113.10", 4);
+};
 
 function makeRequest(overrides = {}) {
   return {
@@ -89,6 +92,7 @@ test("uses one fixed HTTPS endpoint and a dedicated verified direct-TLS agent", 
   const fake = makeRequester();
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   const request = makeRequest();
@@ -103,6 +107,7 @@ test("uses one fixed HTTPS endpoint and a dedicated verified direct-TLS agent", 
   assert.equal(options.servername, "trust.example");
   assert.equal(options.minVersion, "TLSv1.2");
   assert.equal(options.signal, request.signal);
+  assert.equal(options.lookup, approvedLookup);
   assert.equal(fake.calls.timeoutMs, request.timeoutMs);
   assert.deepEqual(options.headers, {
     Accept: "application/json",
@@ -139,6 +144,7 @@ test("rejects HTTP, userinfo, fragments, non-canonical endpoints and origin mism
 
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   await expectCode(
@@ -148,10 +154,23 @@ test("rejects HTTP, userinfo, fragments, non-canonical endpoints and origin mism
   assert.equal(fake.calls.count, 0);
 });
 
+test("requires an explicit owner-supplied DNS lookup policy", async () => {
+  const fake = makeRequester();
+  await expectCode(
+    Promise.resolve().then(() => new NodeHttpsProviderTrustRegistryTransport({
+      endpointUrl: ENDPOINT,
+      requester: fake.requester
+    })),
+    "TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID"
+  );
+  assert.equal(fake.calls.count, 0);
+});
+
 test("refuses non-HTTPS or unbounded transport request policies before I/O", async () => {
   const fake = makeRequester();
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   await expectCode(
@@ -179,6 +198,7 @@ test("does not follow a redirect or contact the Location host", async () => {
   });
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   const response = await transport.readSnapshot(makeRequest());
@@ -195,6 +215,7 @@ test("accepts exactly 48 KiB when streamed in multiple chunks", async () => {
   const fake = makeRequester({ chunks: [first, second] });
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   const response = await transport.readSnapshot(makeRequest());
@@ -208,6 +229,7 @@ test("aborts and rejects a body that exceeds 48 KiB while streaming", async () =
   });
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   await expectCode(
@@ -228,6 +250,7 @@ test("rejects an oversized Content-Length before consuming the response body", a
   });
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   await expectCode(
@@ -294,6 +317,7 @@ test("honors a pre-aborted caller signal without creating a request", async () =
   const fake = makeRequester();
   const transport = new NodeHttpsProviderTrustRegistryTransport({
     endpointUrl: ENDPOINT,
+    lookup: approvedLookup,
     requester: fake.requester
   });
   const controller = new AbortController();
