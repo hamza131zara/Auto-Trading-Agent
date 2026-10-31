@@ -253,3 +253,112 @@ test("timeout and caller cancellation remain distinguishable", async () => {
       (error.code === "ABORTED" || error.code === "TIMEOUT")
   );
 });
+
+test("getBlockTime requests the exact finalized account context slot and retains estimate semantics", async () => {
+  let calls = 0;
+  const slot = 500;
+  const requestId = "block-time-test-001";
+  const blockTime = 1_798_765_432;
+  const client = reader(async (input, init) => {
+    calls += 1;
+    assert.equal(String(input), endpoint);
+    assert.equal(init?.method, "POST");
+    assert.equal(init?.redirect, "error");
+    assert.equal(new Headers(init?.headers).get("authorization"), null);
+    const body = JSON.parse(String(init?.body));
+    assert.deepEqual(body, {
+      jsonrpc: "2.0",
+      id: requestId,
+      method: "getBlockTime",
+      params: [slot]
+    });
+    return new Response(JSON.stringify({
+      jsonrpc: "2.0",
+      id: requestId,
+      result: blockTime
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  });
+
+  const evidence = await client.getBlockTime(slot, requestId);
+  assert.equal(calls, 1);
+  assert.equal(evidence.providerId, "test-rpc");
+  assert.equal(evidence.slot, slot);
+  assert.equal(evidence.state, "AVAILABLE");
+  assert.equal(evidence.blockTimeUnixSeconds, blockTime);
+  assert.equal(evidence.observedAt, new Date(blockTime * 1_000).toISOString());
+  assert.equal(evidence.timestampKind, "SLOT_BLOCK_TIME_ESTIMATE");
+  assert.equal(evidence.retrievedAt, clock());
+  assert.equal(evidence.requestId, requestId);
+  assert.match(evidence.rawPayloadSha256, /^[a-f0-9]{64}$/);
+  assert.equal(evidence.synthetic, true);
+});
+
+test("getBlockTime preserves null as unavailable and does not synthesize a timestamp", async () => {
+  const requestId = "block-time-null-001";
+  const client = reader(async () => new Response(JSON.stringify({
+    jsonrpc: "2.0",
+    id: requestId,
+    result: null
+  }), { status: 200 }));
+  const evidence = await client.getBlockTime(500, requestId);
+  assert.equal(evidence.state, "UNAVAILABLE");
+  assert.equal(evidence.blockTimeUnixSeconds, null);
+  assert.equal(evidence.observedAt, null);
+  assert.equal(evidence.timestampKind, "MISSING");
+});
+
+test("getBlockTime rejects invalid slots, mismatched IDs and malformed timestamps", async () => {
+  let calls = 0;
+  const client = reader(async () => {
+    calls += 1;
+    return new Response(JSON.stringify({
+      jsonrpc: "2.0", id: "different-id", result: 1_798_765_432
+    }), { status: 200 });
+  });
+  await assert.rejects(
+    client.getBlockTime(-1, "block-time-invalid-001"),
+    (error) => error instanceof SolanaRpcReaderError && error.code === "INVALID_REQUEST"
+  );
+  await assert.rejects(
+    client.getBlockTime(1.5, "block-time-invalid-002"),
+    (error) => error instanceof SolanaRpcReaderError && error.code === "INVALID_REQUEST"
+  );
+  await assert.rejects(
+    client.getBlockTime(500, "block-time-invalid-003"),
+    (error) => error instanceof SolanaRpcReaderError && error.code === "PARSE"
+  );
+  assert.equal(calls, 1);
+
+  const malformed = reader(async (_input, init) => {
+    const body = JSON.parse(String(init?.body));
+    return new Response(JSON.stringify({
+      jsonrpc: "2.0", id: body.id, result: "1798765432"
+    }), { status: 200 });
+  });
+  await assert.rejects(
+    malformed.getBlockTime(500, "block-time-malformed-001"),
+    (error) => error instanceof SolanaRpcReaderError && error.code === "PARSE"
+  );
+});
+
+test("getBlockTime sanitizes provider failures and enforces response bounds", async () => {
+  const failed = reader(async () => new Response(JSON.stringify({
+    jsonrpc: "2.0",
+    id: "block-time-error-001",
+    error: { code: -32000, message: "sensitive provider endpoint detail" }
+  }), { status: 200 }));
+  await assert.rejects(
+    failed.getBlockTime(500, "block-time-error-001"),
+    (error) => error instanceof SolanaRpcReaderError &&
+      error.code === "RPC" &&
+      !String(error).includes("sensitive provider endpoint detail")
+  );
+
+  const oversized = reader(async () => new Response(" ".repeat(1_025), {
+    headers: { "content-length": "1025" }
+  }), { maxResponseBytes: 1_024 });
+  await assert.rejects(
+    oversized.getBlockTime(500, "block-time-large-001"),
+    (error) => error instanceof SolanaRpcReaderError && error.code === "RESPONSE_TOO_LARGE"
+  );
+});

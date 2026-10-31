@@ -64,6 +64,10 @@ on:
         description: Owner-reviewed maximum time difference allowed between SOL/USD and USDC/USD feed timestamps; no default is supplied
         required: true
         type: string
+      max_reserve_reference_timestamp_skew_ms:
+        description: Owner-reviewed maximum time difference allowed between the finalized reserve-slot block-time estimate and both Pyth feed publication timestamps; no default is supplied
+        required: true
+        type: string
       max_future_skew_ms:
         description: Owner-reviewed allowed future timestamp skew; no default is supplied
         required: true
@@ -105,7 +109,7 @@ on:
           - "yes"
         default: "no"
       confirm_comparison_policy_review:
-        description: I approved all five freshness, time-alignment and deviation values for this run, including freshness checks for the selected indexed-price source
+        description: I approved all six freshness, time-alignment and deviation values for this run, including reserve-slot/Pyth timestamp alignment
         required: true
         type: choice
         options:
@@ -157,6 +161,7 @@ jobs:
           MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
           MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
           MAX_REFERENCE_TIMESTAMP_SKEW_MS: ${{ inputs.max_reference_timestamp_skew_ms }}
+          MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS: ${{ inputs.max_reserve_reference_timestamp_skew_ms }}
           MAX_FUTURE_SKEW_MS: ${{ inputs.max_future_skew_ms }}
           MAX_DEVIATION_BPS: ${{ inputs.max_deviation_bps }}
         run: |
@@ -182,7 +187,7 @@ jobs:
             echo "::error::Repository secret PYTH_API_KEY is missing; no provider requests were made."
             exit 2
           fi
-          for field in MAX_REFERENCE_SOURCE_AGE_MS MAX_REFERENCE_RETRIEVAL_AGE_MS MAX_FUTURE_SKEW_MS MAX_DEVIATION_BPS; do
+          for field in MAX_REFERENCE_SOURCE_AGE_MS MAX_REFERENCE_RETRIEVAL_AGE_MS MAX_REFERENCE_TIMESTAMP_SKEW_MS MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS MAX_FUTURE_SKEW_MS MAX_DEVIATION_BPS; do
             if [[ ! "${!field}" =~ ^(0|[1-9][0-9]*)$ ]]; then
               echo "::error::Invalid comparison-policy input: $field"
               exit 2
@@ -198,6 +203,10 @@ jobs:
           fi
           if (( MAX_REFERENCE_TIMESTAMP_SKEW_MS > 300000 )); then
             echo "::error::MAX_REFERENCE_TIMESTAMP_SKEW_MS must be 0..300000."
+            exit 2
+          fi
+          if (( MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS > 300000 )); then
+            echo "::error::MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS must be 0..300000."
             exit 2
           fi
           if (( MAX_FUTURE_SKEW_MS > 60000 )); then
@@ -220,6 +229,7 @@ jobs:
           MAX_REFERENCE_SOURCE_AGE_MS: ${{ inputs.max_reference_source_age_ms }}
           MAX_REFERENCE_RETRIEVAL_AGE_MS: ${{ inputs.max_reference_retrieval_age_ms }}
           MAX_REFERENCE_TIMESTAMP_SKEW_MS: ${{ inputs.max_reference_timestamp_skew_ms }}
+          MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS: ${{ inputs.max_reserve_reference_timestamp_skew_ms }}
           MAX_FUTURE_SKEW_MS: ${{ inputs.max_future_skew_ms }}
           MAX_DEVIATION_BPS: ${{ inputs.max_deviation_bps }}
           CONFIRM_READ_ONLY_RPC: ${{ inputs.confirm_read_only_rpc }}

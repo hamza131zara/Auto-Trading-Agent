@@ -325,10 +325,87 @@ function formatReserveRatioQuotePerBase(baseRaw, quoteRaw, baseDecimals, quoteDe
   return fractional.length === 0 ? whole : whole + "." + fractional;
 }
 
-export function buildOnChainReserveEvidence(target, bundle, pool) {
+export async function readSlotBlockTimeEvidence(reader, bundle, requestId) {
+  const slot = bundle?.source?.contextSlot;
+  const providerId = bundle?.source?.providerId ?? null;
+  const commitment = bundle?.source?.commitment ?? null;
+  const synthetic = bundle?.source?.synthetic === true;
+  const request = requestId + "-block-time";
+  const unavailable = (reasonCode) => ({
+    providerId,
+    slot: Number.isSafeInteger(slot) && slot >= 0 ? slot : null,
+    contextSlot: Number.isSafeInteger(slot) && slot >= 0 ? slot : null,
+    accountCommitment: commitment,
+    state: "UNAVAILABLE",
+    blockTimeUnixSeconds: null,
+    observedAt: null,
+    timestampKind: "MISSING",
+    retrievedAt: null,
+    requestId: request,
+    rawPayloadSha256: null,
+    synthetic,
+    reasonCodes: [reasonCode]
+  });
+
+  if (!isRecord(bundle?.source) ||
+      !Number.isSafeInteger(slot) || slot < 0 ||
+      typeof requestId !== "string" || !/^[A-Za-z0-9._:-]{1,110}$/.test(requestId) ||
+      typeof reader?.getBlockTime !== "function") {
+    return unavailable("SOLANA_BLOCK_TIME_INPUT_INVALID");
+  }
+
+  try {
+    const evidence = await reader.getBlockTime(slot, request);
+    if (!isRecord(evidence) ||
+        evidence.slot !== slot ||
+        evidence.providerId !== providerId ||
+        evidence.requestId !== request ||
+        typeof evidence.synthetic !== "boolean" ||
+        typeof evidence.retrievedAt !== "string" ||
+        !Number.isFinite(Date.parse(evidence.retrievedAt)) ||
+        typeof evidence.rawPayloadSha256 !== "string" ||
+        !/^[a-f0-9]{64}$/.test(evidence.rawPayloadSha256)) {
+      return unavailable("SOLANA_BLOCK_TIME_EVIDENCE_INVALID");
+    }
+
+    if (evidence.state === "UNAVAILABLE" &&
+        evidence.blockTimeUnixSeconds === null &&
+        evidence.observedAt === null &&
+        evidence.timestampKind === "MISSING") {
+      return {
+        ...evidence,
+        contextSlot: slot,
+        accountCommitment: commitment,
+        reasonCodes: ["SOLANA_BLOCK_TIME_NOT_AVAILABLE"]
+      };
+    }
+
+    if (evidence.state !== "AVAILABLE" ||
+        !Number.isSafeInteger(evidence.blockTimeUnixSeconds) ||
+        evidence.blockTimeUnixSeconds < 0 ||
+        evidence.observedAt !== new Date(evidence.blockTimeUnixSeconds * 1_000).toISOString() ||
+        evidence.timestampKind !== "SLOT_BLOCK_TIME_ESTIMATE") {
+      return unavailable("SOLANA_BLOCK_TIME_EVIDENCE_INVALID");
+    }
+    return {
+      ...evidence,
+      contextSlot: slot,
+      accountCommitment: commitment,
+      reasonCodes: []
+    };
+  } catch (error) {
+    const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,80}$/.test(error.code)
+      ? "SOLANA_BLOCK_TIME_" + error.code
+      : "SOLANA_BLOCK_TIME_REQUEST_FAILED";
+    return unavailable(code);
+  }
+}
+
+export function buildOnChainReserveEvidence(target, bundle, pool, slotBlockTimeEvidence = null) {
   const unavailable = (state, reasonCodes) => ({
     state,
     reasonCodes,
+    slotBlockTimeEvidence,
     contextSlot: isRecord(bundle?.source) ? bundle.source.contextSlot ?? null : null,
     baseMint: target?.baseMint ?? null,
     quoteMint: target?.quoteMint ?? null,
@@ -433,6 +510,7 @@ export function buildOnChainReserveEvidence(target, bundle, pool) {
   return {
     state: baseAmountIsZero || quoteAmountIsZero ? "EMPTY_RESERVE_SIDE" : "DECODED",
     reasonCodes: baseAmountIsZero || quoteAmountIsZero ? ["ONE_OR_MORE_VAULT_RESERVES_ZERO"] : [],
+    slotBlockTimeEvidence,
     providerId: bundle.source.providerId,
     commitment: bundle.source.commitment,
     contextSlot: bundle.source.contextSlot,
@@ -570,7 +648,7 @@ async function buildProgramDeploymentVerification(reader, bundle, config, reques
   };
 }
 
-function buildReport({ target, bundle, assessment, config, generatedAt, programDeploymentVerification = null }) {
+function buildReport({ target, bundle, assessment, config, generatedAt, slotBlockTimeEvidence = null, programDeploymentVerification = null }) {
   const pool = assessment.pool;
   const deploymentVerification = programDeploymentVerification ?? {
     status: "NOT_ASSESSED",
@@ -628,7 +706,7 @@ function buildReport({ target, bundle, assessment, config, generatedAt, programD
       indexedDexProgramAddress: target.dexProgramAddress
     },
     marketData: buildMarketDataReportSection(target),
-    onChainReserves: buildOnChainReserveEvidence(target, bundle, pool),
+    onChainReserves: buildOnChainReserveEvidence(target, bundle, pool, slotBlockTimeEvidence),
     programDeploymentVerification: deploymentVerification,
     rpcEvidence: {
       providerId: bundle.source.providerId,
@@ -730,6 +808,7 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     minContextSlot: config.minContextSlot,
     requestId
   });
+  const slotBlockTimeEvidence = await readSlotBlockTimeEvidence(reader, bundle, requestId);
   const assessment = await assessRaydiumCpmmIdentityEvidence(target, bundle, {
     nowAt: new Date().toISOString(),
     maxRetrievalAgeMs: config.maxRetrievalAgeMs,
@@ -745,7 +824,9 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     allowedLoaderProgramIds: [UPGRADEABLE_LOADER_PROGRAM_ID]
   });
   const programDeploymentVerification = await buildProgramDeploymentVerification(reader, bundle, config, requestId);
-  const report = buildReport({ target, bundle, assessment, config, generatedAt, programDeploymentVerification });
+  const report = buildReport({
+    target, bundle, assessment, config, generatedAt, slotBlockTimeEvidence, programDeploymentVerification
+  });
   const output = JSON.stringify(report, null, 2) + "\n";
 
   if (args.output !== null) {

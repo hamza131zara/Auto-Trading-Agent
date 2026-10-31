@@ -85,6 +85,20 @@ export interface SolanaRpcAccountBundle {
   readonly accounts: readonly SolanaRpcRawAccount[];
 }
 
+export interface SolanaRpcBlockTimeEvidence {
+  readonly providerId: string;
+  readonly slot: number;
+  readonly state: "AVAILABLE" | "UNAVAILABLE";
+  readonly blockTimeUnixSeconds: number | null;
+  /** Estimated block-production time from validator vote timestamps; not an exact event time. */
+  readonly observedAt: string | null;
+  readonly timestampKind: "SLOT_BLOCK_TIME_ESTIMATE" | "MISSING";
+  readonly retrievedAt: string;
+  readonly requestId: string;
+  readonly rawPayloadSha256: string;
+  readonly synthetic: boolean;
+}
+
 interface ParsedRpcAccount {
   readonly data: readonly [string, "base64"];
   readonly executable: boolean;
@@ -429,6 +443,118 @@ export class SolanaRpcAccountReader {
         synthetic: this.synthetic
       },
       accounts
+    };
+  }
+
+  /**
+   * Read the estimated production time for a slot returned by a finalized
+   * account read. Solana's getBlockTime result is an estimate derived from
+   * validator vote timestamps; null is a valid "unavailable" response.
+   */
+  async getBlockTime(
+    slot: number,
+    requestId: string,
+    signal?: AbortSignal
+  ): Promise<SolanaRpcBlockTimeEvidence> {
+    if (!Number.isSafeInteger(slot) || slot < 0 || !isValidRequestId(requestId) ||
+        (signal !== undefined &&
+          (typeof signal !== "object" || signal === null || typeof signal.aborted !== "boolean"))) {
+      throw new SolanaRpcReaderError("INVALID_REQUEST", false);
+    }
+
+    const callerSignal = signal ?? new AbortController().signal;
+    const timeoutSignal = AbortSignal.timeout(this.timeoutMs);
+    const combinedSignal = AbortSignal.any([callerSignal, timeoutSignal]);
+    let response: Response;
+    try {
+      response = await this.fetchImpl(this.endpoint, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: requestId,
+          method: "getBlockTime",
+          params: [slot]
+        }),
+        redirect: "error",
+        signal: combinedSignal
+      });
+    } catch {
+      if (timeoutSignal.aborted) throw new SolanaRpcReaderError("TIMEOUT", true);
+      if (callerSignal.aborted) throw new SolanaRpcReaderError("ABORTED", false);
+      throw new SolanaRpcReaderError("NETWORK", true);
+    }
+
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      if (response.status === 429) throw new SolanaRpcReaderError("RATE_LIMIT", true, 429);
+      if (response.status === 408 || response.status === 504) {
+        throw new SolanaRpcReaderError("TIMEOUT", true, response.status);
+      }
+      throw new SolanaRpcReaderError("HTTP", response.status >= 500, response.status);
+    }
+
+    let text: string;
+    try {
+      text = await readBoundedResponseText(response, this.maxResponseBytes);
+    } catch (error) {
+      if (error instanceof SolanaRpcReaderError) throw error;
+      if (timeoutSignal.aborted) throw new SolanaRpcReaderError("TIMEOUT", true);
+      if (callerSignal.aborted) throw new SolanaRpcReaderError("ABORTED", false);
+      throw new SolanaRpcReaderError("NETWORK", true);
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(text) as unknown;
+    } catch {
+      throw new SolanaRpcReaderError("PARSE", false);
+    }
+    if (!isRecord(payload) || payload.jsonrpc !== "2.0" || payload.id !== requestId) {
+      throw new SolanaRpcReaderError("PARSE", false);
+    }
+    if ("error" in payload) throw new SolanaRpcReaderError("RPC", false);
+    if (!("result" in payload)) throw new SolanaRpcReaderError("PARSE", false);
+
+    const blockTime = payload.result;
+    if (blockTime !== null &&
+        (!Number.isSafeInteger(blockTime) || (blockTime as number) < 0 ||
+         (blockTime as number) > 253_402_300_799)) {
+      throw new SolanaRpcReaderError("PARSE", false);
+    }
+
+    let retrievedAt: string;
+    try {
+      retrievedAt = this.clock();
+    } catch {
+      throw new SolanaRpcReaderError("INVALID_REQUEST", false);
+    }
+    if (!isUtcTimestamp(retrievedAt)) throw new SolanaRpcReaderError("INVALID_REQUEST", false);
+
+    let rawPayloadSha256: string;
+    try {
+      rawPayloadSha256 = await sha256Hex(text);
+    } catch {
+      throw new SolanaRpcReaderError("PARSE", false);
+    }
+
+    const observedAt = blockTime === null
+      ? null
+      : new Date((blockTime as number) * 1_000).toISOString();
+    return {
+      providerId: this.providerId,
+      slot,
+      state: observedAt === null ? "UNAVAILABLE" : "AVAILABLE",
+      blockTimeUnixSeconds: blockTime as number | null,
+      observedAt,
+      timestampKind: observedAt === null ? "MISSING" : "SLOT_BLOCK_TIME_ESTIMATE",
+      retrievedAt,
+      requestId,
+      rawPayloadSha256,
+      synthetic: this.synthetic
     };
   }
 }

@@ -112,6 +112,8 @@ export interface IndependentReservePriceComparisonPolicy {
   readonly maxSourceAgeMs: number;
   readonly maxRetrievalAgeMs: number;
   readonly maxReferenceTimestampSkewMs: number;
+  /** Optional explicit bound for finalized-slot time versus both USD reference publication times. */
+  readonly maxReserveReferenceTimestampSkewMs?: number;
   readonly maxFutureSkewMs: number;
   readonly maxDeviationBps: number;
   readonly approvedProviderId: string;
@@ -144,6 +146,10 @@ export interface IndependentReservePriceComparisonInput {
   readonly indexedSourceObservedAt?: string | null;
   readonly indexedRetrievedAt: string;
   readonly indexedSynthetic: boolean;
+  /** Estimated production time of the finalized slot used for the on-chain reserve snapshot. */
+  readonly reserveSlotBlockTimeAt?: string | null;
+  readonly reserveSlotBlockTimeRetrievedAt?: string | null;
+  readonly reserveSlotBlockTimeSynthetic?: boolean;
   readonly baseUsd: IndependentUsdPriceObservation;
   readonly quoteUsd: IndependentUsdPriceObservation;
   readonly policy: IndependentReservePriceComparisonPolicy;
@@ -170,6 +176,10 @@ export interface IndependentReservePriceComparisonResult {
   readonly sourceFreshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID";
   readonly maxReferenceTimestampSkewMs: number;
   readonly referenceTimestampSkewMs: number | null;
+  readonly reserveSlotTimestampKind: "SLOT_BLOCK_TIME_ESTIMATE" | "MISSING";
+  readonly reserveTimestampAlignmentStatus: "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED";
+  readonly maxReserveReferenceTimestampSkewMs: number | null;
+  readonly reserveReferenceTimestampSkewMs: number | null;
   readonly comparisonEvidenceComplete: boolean;
   /** This comparator only assesses evidence quality; it never authorizes a trade. */
   readonly tradingAuthorized: false;
@@ -589,6 +599,10 @@ function validComparisonPolicy(policy: IndependentReservePriceComparisonPolicy):
     Number.isSafeInteger(policy.maxRetrievalAgeMs) && policy.maxRetrievalAgeMs > 0 &&
     Number.isSafeInteger(policy.maxReferenceTimestampSkewMs) &&
     policy.maxReferenceTimestampSkewMs >= 0 && policy.maxReferenceTimestampSkewMs <= 300_000 &&
+    (policy.maxReserveReferenceTimestampSkewMs === undefined ||
+      (Number.isSafeInteger(policy.maxReserveReferenceTimestampSkewMs) &&
+       policy.maxReserveReferenceTimestampSkewMs >= 0 &&
+       policy.maxReserveReferenceTimestampSkewMs <= 300_000)) &&
     Number.isSafeInteger(policy.maxFutureSkewMs) && policy.maxFutureSkewMs >= 0 &&
     Number.isSafeInteger(policy.maxDeviationBps) &&
     policy.maxDeviationBps >= 0 && policy.maxDeviationBps <= 10_000 &&
@@ -667,7 +681,9 @@ export function assessIndependentReservePriceAgreement(
     indexedDeviationBpsRounded: string | null = null,
     freshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID" = "UNKNOWN",
     evidenceComplete = false,
-    referenceTimestampSkewMs: number | null = null
+    referenceTimestampSkewMs: number | null = null,
+    reserveTimestampAlignmentStatus: "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED" = "NOT_ASSESSED",
+    reserveReferenceTimestampSkewMs: number | null = null
   ): IndependentReservePriceComparisonResult => ({
     status,
     reasonCodes: [...new Set(reasonCodes)],
@@ -694,6 +710,13 @@ export function assessIndependentReservePriceAgreement(
     sourceFreshness: freshness,
     maxReferenceTimestampSkewMs: input?.policy?.maxReferenceTimestampSkewMs ?? -1,
     referenceTimestampSkewMs,
+    reserveSlotTimestampKind:
+      input?.reserveSlotBlockTimeAt !== null && input?.reserveSlotBlockTimeAt !== undefined
+        ? "SLOT_BLOCK_TIME_ESTIMATE"
+        : "MISSING",
+    reserveTimestampAlignmentStatus,
+    maxReserveReferenceTimestampSkewMs: input?.policy?.maxReserveReferenceTimestampSkewMs ?? null,
+    reserveReferenceTimestampSkewMs,
     comparisonEvidenceComplete: evidenceComplete,
     tradingAuthorized: false
   });
@@ -709,6 +732,16 @@ export function assessIndependentReservePriceAgreement(
       !isSafeSlug(input.indexedIndependenceGroupId) ||
       typeof input.indexedRetrievedAt !== "string" ||
       !isUtcTimestamp(input.indexedRetrievedAt) ||
+      (input.policy.maxReserveReferenceTimestampSkewMs === undefined
+        ? input.reserveSlotBlockTimeAt !== undefined ||
+          input.reserveSlotBlockTimeRetrievedAt !== undefined ||
+          input.reserveSlotBlockTimeSynthetic !== undefined
+        : input.reserveSlotBlockTimeAt === undefined ||
+          (input.reserveSlotBlockTimeAt !== null && !isUtcTimestamp(input.reserveSlotBlockTimeAt)) ||
+          input.reserveSlotBlockTimeRetrievedAt === undefined ||
+          (input.reserveSlotBlockTimeRetrievedAt !== null &&
+            !isUtcTimestamp(input.reserveSlotBlockTimeRetrievedAt)) ||
+          typeof input.reserveSlotBlockTimeSynthetic !== "boolean") ||
       (input.indexedSourceEventAt !== null && !isUtcTimestamp(input.indexedSourceEventAt)) ||
       (input.indexedSourceObservedAt !== undefined &&
        input.indexedSourceObservedAt !== null &&
@@ -765,9 +798,72 @@ export function assessIndependentReservePriceAgreement(
     );
   }
 
-  const hasSyntheticReference = input.baseUsd.synthetic || input.quoteUsd.synthetic || input.indexedSynthetic;
+  let reserveTimestampAlignmentStatus:
+    "AGREED" | "INSUFFICIENT_EVIDENCE" | "INVALID_INPUT" | "NOT_ASSESSED" = "NOT_ASSESSED";
+  let reserveReferenceTimestampSkewMs: number | null = null;
+  let comparisonFreshness: "FRESH" | "STALE" | "UNKNOWN" | "INVALID" = "FRESH";
+  const reserveTimestampReasonCodes: string[] = [];
+  if (input.policy.maxReserveReferenceTimestampSkewMs !== undefined) {
+    const reserveObservedAt = input.reserveSlotBlockTimeAt ?? null;
+    const reserveRetrievedAt = input.reserveSlotBlockTimeRetrievedAt ?? null;
+    if (reserveObservedAt === null) {
+      reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+      comparisonFreshness = "UNKNOWN";
+      reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_MISSING");
+    } else if (reserveRetrievedAt === null) {
+      reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+      comparisonFreshness = "UNKNOWN";
+      reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_RETRIEVAL_MISSING");
+    } else {
+      const nowMs = timestampMs(input.policy.nowAt);
+      const reserveObservedMs = timestampMs(reserveObservedAt);
+      const reserveRetrievedMs = timestampMs(reserveRetrievedAt);
+      if (reserveObservedMs > nowMs + input.policy.maxFutureSkewMs ||
+          reserveRetrievedMs > nowMs + input.policy.maxFutureSkewMs) {
+        reserveTimestampAlignmentStatus = "INVALID_INPUT";
+        comparisonFreshness = "INVALID";
+        reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_IN_FUTURE");
+      } else if (Math.max(0, nowMs - reserveObservedMs) > input.policy.maxSourceAgeMs) {
+        reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+        comparisonFreshness = "STALE";
+        reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_STALE");
+      } else if (Math.max(0, nowMs - reserveRetrievedMs) > input.policy.maxRetrievalAgeMs) {
+        reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+        comparisonFreshness = "STALE";
+        reserveTimestampReasonCodes.push("RESERVE_SLOT_BLOCK_TIME_RETRIEVAL_STALE");
+      } else {
+        reserveReferenceTimestampSkewMs = Math.max(
+          Math.abs(reserveObservedMs - timestampMs(input.baseUsd.publishedAt)),
+          Math.abs(reserveObservedMs - timestampMs(input.quoteUsd.publishedAt))
+        );
+        if (reserveReferenceTimestampSkewMs > input.policy.maxReserveReferenceTimestampSkewMs) {
+          reserveTimestampAlignmentStatus = "INSUFFICIENT_EVIDENCE";
+          reserveTimestampReasonCodes.push("RESERVE_REFERENCE_TIMES_UNALIGNED");
+        } else {
+          reserveTimestampAlignmentStatus = "AGREED";
+        }
+      }
+    }
+  }
+
+  const hasSyntheticReference = input.baseUsd.synthetic || input.quoteUsd.synthetic ||
+    input.indexedSynthetic ||
+    (input.policy.maxReserveReferenceTimestampSkewMs !== undefined &&
+      input.reserveSlotBlockTimeSynthetic === true);
   if (hasSyntheticReference && input.policy.allowSyntheticForTests !== true) {
-    return result("INSUFFICIENT_EVIDENCE", ["SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"], "INSUFFICIENT_EVIDENCE", "INSUFFICIENT_EVIDENCE", null, null, "FRESH", false);
+    return result(
+      "INSUFFICIENT_EVIDENCE",
+      [...reserveTimestampReasonCodes, "SYNTHETIC_OBSERVATION_NOT_ELIGIBLE"],
+      "INSUFFICIENT_EVIDENCE",
+      "INSUFFICIENT_EVIDENCE",
+      null,
+      null,
+      comparisonFreshness,
+      false,
+      referenceTimestampSkewMs,
+      reserveTimestampAlignmentStatus,
+      reserveReferenceTimestampSkewMs
+    );
   }
 
   const baseUsd = parseExactPriceDecimal(input.baseUsd.priceUsd)!;
@@ -781,7 +877,7 @@ export function assessIndependentReservePriceAgreement(
 
   let indexedStatus: IndependentPriceComparisonStatus = "NOT_ASSESSED";
   let indexedDeviation: string | null = null;
-  const reasonCodes: string[] = [];
+  const reasonCodes: string[] = [...reserveTimestampReasonCodes];
   const indexedSourceTimestamp = input.indexedSourceEventAt ?? input.indexedSourceObservedAt ?? null;
   const usesObservationTimestamp =
     input.indexedSourceEventAt === null && input.indexedSourceObservedAt !== undefined &&
@@ -826,11 +922,13 @@ export function assessIndependentReservePriceAgreement(
   const status: IndependentPriceComparisonStatus =
     reserveStatus === "DISAGREEMENT" || indexedStatus === "DISAGREEMENT"
       ? "DISAGREEMENT"
-      : indexedStatus === "INVALID_INPUT"
+      : indexedStatus === "INVALID_INPUT" || reserveTimestampAlignmentStatus === "INVALID_INPUT"
         ? "INVALID_INPUT"
-        : reserveStatus === "AGREED" && indexedStatus === "AGREED"
-          ? "AGREED"
-          : "INSUFFICIENT_EVIDENCE";
+        : reserveTimestampAlignmentStatus === "INSUFFICIENT_EVIDENCE"
+          ? "INSUFFICIENT_EVIDENCE"
+          : reserveStatus === "AGREED" && indexedStatus === "AGREED"
+            ? "AGREED"
+            : "INSUFFICIENT_EVIDENCE";
   const evidenceComplete = status === "AGREED" && !hasSyntheticReference;
   return result(
     status,
@@ -839,9 +937,11 @@ export function assessIndependentReservePriceAgreement(
     indexedStatus,
     reserveComparison.deviationBpsRounded,
     indexedDeviation,
-    "FRESH",
+    comparisonFreshness,
     evidenceComplete,
-    referenceTimestampSkewMs
+    referenceTimestampSkewMs,
+    reserveTimestampAlignmentStatus,
+    reserveReferenceTimestampSkewMs
   );
 }
 

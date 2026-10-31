@@ -83,6 +83,9 @@ function validatePreflight() {
     maxReferenceSourceAgeMs: envInteger("MAX_REFERENCE_SOURCE_AGE_MS", { min: 1, max: 86_400_000 }),
     maxReferenceRetrievalAgeMs: envInteger("MAX_REFERENCE_RETRIEVAL_AGE_MS", { min: 1, max: 300_000 }),
     maxReferenceTimestampSkewMs: envInteger("MAX_REFERENCE_TIMESTAMP_SKEW_MS", { min: 0, max: 300_000 }),
+    maxReserveReferenceTimestampSkewMs: envInteger(
+      "MAX_RESERVE_REFERENCE_TIMESTAMP_SKEW_MS", { min: 0, max: 300_000 }
+    ),
     maxFutureSkewMs: envInteger("MAX_FUTURE_SKEW_MS", { min: 0, max: 60_000 }),
     maxDeviationBps: envInteger("MAX_DEVIATION_BPS", { min: 0, max: 10_000 }),
     indexedPriceSource
@@ -192,7 +195,14 @@ async function main() {
     return;
   }
   if (indexedPriceEvidence.synthetic) { emitFailure("INDEXED_PRICE_EVIDENCE_SYNTHETIC", 1); return; }
-  const nowAt = [baseUsd.retrievedAt, quoteUsd.retrievedAt, indexedPriceEvidence.retrievedAt]
+  const slotBlockTimeEvidence = identityReport.onChainReserves.slotBlockTimeEvidence ?? null;
+  const retrievalTimes = [
+    baseUsd.retrievedAt,
+    quoteUsd.retrievedAt,
+    indexedPriceEvidence.retrievedAt,
+    slotBlockTimeEvidence?.retrievedAt ?? null
+  ].filter((value) => typeof value === "string");
+  const nowAt = retrievalTimes
     .sort((left, right) => Date.parse(right) - Date.parse(left))[0];
   const reviewedComparison = assessIndependentReservePriceAgreementWithReviewedLineage({
     comparisonInput: {
@@ -206,6 +216,9 @@ async function main() {
       indexedSourceObservedAt: indexedPriceEvidence.sourceObservedAt,
       indexedRetrievedAt: indexedPriceEvidence.retrievedAt,
       indexedSynthetic: indexedPriceEvidence.synthetic,
+      reserveSlotBlockTimeAt: slotBlockTimeEvidence?.observedAt ?? null,
+      reserveSlotBlockTimeRetrievedAt: slotBlockTimeEvidence?.retrievedAt ?? null,
+      reserveSlotBlockTimeSynthetic: slotBlockTimeEvidence?.synthetic === true,
       baseUsd,
       quoteUsd,
       policy: {
@@ -213,6 +226,7 @@ async function main() {
         maxSourceAgeMs: target.maxReferenceSourceAgeMs,
         maxRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
         maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
+        maxReserveReferenceTimestampSkewMs: target.maxReserveReferenceTimestampSkewMs,
         maxFutureSkewMs: target.maxFutureSkewMs,
         maxDeviationBps: target.maxDeviationBps,
         approvedProviderId: "pyth-hermes",
@@ -301,6 +315,7 @@ async function main() {
       maxReferenceSourceAgeMs: target.maxReferenceSourceAgeMs,
       maxReferenceRetrievalAgeMs: target.maxReferenceRetrievalAgeMs,
       maxReferenceTimestampSkewMs: target.maxReferenceTimestampSkewMs,
+      maxReserveReferenceTimestampSkewMs: target.maxReserveReferenceTimestampSkewMs,
       maxFutureSkewMs: target.maxFutureSkewMs,
       maxDeviationBps: target.maxDeviationBps,
       indexedPriceSource: indexedPriceEvidence.providerId,
