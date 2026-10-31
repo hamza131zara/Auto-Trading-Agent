@@ -3172,3 +3172,16 @@ export type {
   ProgramUpgradeAuthorityReviewStatus,
   ProgramUpgradeAuthorityReviewResult
 } from "./program-deployment-verification.js";
+
+export {
+  PROVIDER_USE_DECISION_ENVELOPE_VERSION,
+  PROVIDER_USE_DECISION_SIGNATURE_ALGORITHM,
+  createSignedProviderUseDecisionResolver,
+  getProviderUseDecisionSigningPayload,
+  verifySignedProviderUseDecision
+} from "./provider-use-decision-verifier.js";
+export type {
+  ProviderUseDecisionVerificationResult,
+  SignedProviderUseDecisionEnvelope,
+  TrustedProviderDecisionSigningKey
+} from "./provider-use-decision-verifier.js";
