@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   buildMarketDataReportSection,
   buildOnChainReserveEvidence,
+  buildReport,
   buildTargetSnapshotFromDexScreener,
   parseArgs,
   readOperatorConfiguration,
@@ -122,6 +123,62 @@ test("on-chain reserve report derives exact vault amounts and quote-per-base rat
   assert.equal(report.quoteVaultAmountRaw, "12345678900");
   assert.equal(report.reserveRatioQuotePerBase, "100");
   assert.equal(report.independentComparisonStatus, "NOT_ASSESSED");
+});
+
+test("live validation report does not treat an ELF hash match as upgrade-authority policy approval", () => {
+  const report = buildReport({
+    target: baseTarget,
+    bundle: {
+      source: {
+        providerId: "solana-public-shared",
+        commitment: "finalized",
+        retrievedAt: "2026-10-31T10:00:00.000Z",
+        contextSlot: 462900001,
+        requestedMinContextSlot: 462900000,
+        requestId: "authority-policy-report-001",
+        rawPayloadSha256: "e".repeat(64),
+        synthetic: false
+      },
+      accounts: []
+    },
+    assessment: {
+      status: "MATCH",
+      reasonCodes: [],
+      mismatchFields: [],
+      canProceedToIndependentSafetyReview: true,
+      pool: null
+    },
+    config: { minContextSlot: 462900000, maxRetrievalAgeMs: 30_000 },
+    generatedAt: "2026-10-31T10:00:00.000Z",
+    programDeploymentVerification: {
+      status: "MATCH",
+      reasonCodes: ["DEPLOYED_ELF_HASH_MATCH", "PROGRAM_REMAINS_UPGRADEABLE"],
+      programId: "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
+      programDataAddress: "11111111111111111111111111111111",
+      loaderProgramId: "BPFLoaderUpgradeab1e11111111111111111111111",
+      deploymentSlot: "452376460",
+      upgradeAuthorityPresent: true,
+      programAccountContextSlot: 462900001,
+      programDataContextSlot: 462900001,
+      expectedElfSha256: "a".repeat(64),
+      expectedElfByteLength: 722_632,
+      observedElfSha256: "a".repeat(64),
+      elfByteLength: 722_632,
+      programDataPaddingByteLength: 0,
+      programDataPaddingZeroed: true,
+      synthetic: false,
+      tradingAuthorized: false
+    }
+  });
+
+  assert.equal(report.programDeploymentVerification.status, "MATCH");
+  assert.equal(report.result.programDeploymentVerificationPassed, true);
+  assert.equal(report.programUpgradeAuthorityReview.status, "OWNER_DECISION_REQUIRED");
+  assert.equal(report.programUpgradeAuthorityReview.upgradeAuthorityPresent, true);
+  assert.equal(report.programUpgradeAuthorityReview.ownerPolicyDecision, null);
+  assert.equal(report.programUpgradeAuthorityReview.productionProviderSelectionAllowed, false);
+  assert.equal(report.result.productionProviderApprovedByThisReport, false);
+  assert.equal(report.result.tradingAuthorized, false);
 });
 
 test("slot block-time evidence is bound to the exact finalized account context slot", async () => {
