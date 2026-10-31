@@ -320,7 +320,7 @@ test("missing measures stay null; malformed decimal/count values fail closed", (
   assert.equal(normalized.observations[0].volume24h, null);
   assert.equal(normalized.observations[0].buys24h, null);
 
-  const malformed = payload({ attributes: { base_token_price_usd: "1e-8" } });
+  const malformed = payload({ attributes: { base_token_price_usd: "1e-999" } });
   assert.deepEqual(adapter.normalize(envelope(malformed), CONTEXT).errors, ["INVALID_MARKET_MEASURE"]);
   const badCount = payload({ attributes: { transactions: { h24: { buys: 1.5, sells: 1 } } } });
   assert.deepEqual(adapter.normalize(envelope(badCount), CONTEXT).errors, ["INVALID_MARKET_MEASURE"]);
