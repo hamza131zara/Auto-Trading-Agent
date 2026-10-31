@@ -217,10 +217,12 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
         }
 
         try {
-          validateContentLength(
-            readSingleHeader(response.headers["content-length"]),
-            request.maxResponseBytes
-          );
+          const rawContentLength = response.headers["content-length"];
+          const contentLength = readSingleHeader(rawContentLength);
+          if (rawContentLength !== undefined && contentLength === null) {
+            fail("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
+          }
+          validateContentLength(contentLength, request.maxResponseBytes);
         } catch (error) {
           response.destroy();
           if (error instanceof ProviderTrustRegistryError) {
