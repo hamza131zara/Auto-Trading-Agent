@@ -101,7 +101,7 @@ test("NodeHttpsProviderTrustRegistryTransport real TLS handshake and rejection m
 
   await t.test("trusted CA and matching DNS hostname establish HTTPS and return exact bytes", async (subtest) => {
     let requests = 0;
-    const fixture = await startTlsServer(subtest, "valid", (request, response) => {
+    const fixture = await startTlsServer(subtest, "registry-valid", (request, response) => {
       requests += 1;
       assert.equal(request.method, "GET");
       assert.equal(request.url, "/v1/signed-snapshot?registry=local-fixture");
@@ -131,7 +131,7 @@ test("NodeHttpsProviderTrustRegistryTransport real TLS handshake and rejection m
 
   await t.test("trusted CA does not override hostname verification", async (subtest) => {
     let requests = 0;
-    const fixture = await startTlsServer(subtest, "valid", (_request, response) => {
+    const fixture = await startTlsServer(subtest, "registry-valid", (_request, response) => {
       requests += 1;
       response.writeHead(200, { "content-type": "application/json" });
       response.end("{}");
@@ -168,7 +168,7 @@ test("NodeHttpsProviderTrustRegistryTransport real TLS handshake and rejection m
 
   await t.test("HTTP redirect is returned as a non-success response and never followed", async (subtest) => {
     let requests = 0;
-    const fixture = await startTlsServer(subtest, "valid", (_request, response) => {
+    const fixture = await startTlsServer(subtest, "registry-valid", (_request, response) => {
       requests += 1;
       response.writeHead(302, {
         "content-type": "application/json",
@@ -193,7 +193,7 @@ test("NodeHttpsProviderTrustRegistryTransport real TLS handshake and rejection m
 
   await t.test("socket inactivity timeout rejects and sanitizes a stalled response", async (subtest) => {
     let requests = 0;
-    const fixture = await startTlsServer(subtest, "valid", (_request, _response) => {
+    const fixture = await startTlsServer(subtest, "registry-valid", (_request, _response) => {
       requests += 1;
       // Intentionally hold the response open without sending headers or bytes.
     });
@@ -215,7 +215,7 @@ test("NodeHttpsProviderTrustRegistryTransport real TLS handshake and rejection m
     const requestSeen = new Promise((resolve) => {
       notifyRequest = resolve;
     });
-    const fixture = await startTlsServer(subtest, "valid", (_request, _response) => {
+    const fixture = await startTlsServer(subtest, "registry-valid", (_request, _response) => {
       requests += 1;
       notifyRequest();
       // Deliberately do not answer; the test aborts after the request arrives.
