@@ -14,7 +14,7 @@ on:
         type: string
         default: "10000"
       confirm_read_only_rpc:
-        description: I approve a one-off read-only lookup against Solana's shared Mainnet RPC
+        description: I approve bounded read-only Solana Mainnet RPC calls for finalized pool-account identity and that exact slot's estimated block time
         required: true
         type: choice
         options:
@@ -74,7 +74,7 @@ jobs:
           CONFIRM_DEXSCREENER_TERMS_BUDGET: ${{ inputs.confirm_dexscreener_terms_budget }}
         run: |
           if [[ "$CONFIRM_READ_ONLY_RPC" != "yes" ]]; then
-            echo "::error::Read-only mainnet RPC approval was not confirmed."
+            echo "::error::Read-only mainnet account and slot-time RPC approval was not confirmed."
             exit 2
           fi
           if [[ "$CONFIRM_RAYDIUM_API_USAGE" != "yes" ]]; then
