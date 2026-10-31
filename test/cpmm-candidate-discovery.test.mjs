@@ -375,6 +375,57 @@ test("cross-checks every CPMM candidate beyond the former 20-pool cap", async ()
   assert.ok(report.candidates.every((candidate) => candidate.meetsLiquidityAndVolumeThresholds));
 });
 
+test("compares indexed liquidity and volume thresholds with exact source decimals", async () => {
+  const { fetchImpl: baseFetch } = mockFetchFactory();
+  const belowThreshold = "99999.999999999999999";
+  const aboveThreshold = "100000.000000000000001";
+  const exactVolume = "10000.000000000000000";
+  const exactFetch = async (input, init = {}) => {
+    const url = String(input);
+    if (poolApiUrl(url)) {
+      const quoteMint = new URL(url).searchParams.get("mint2");
+      const pools = quoteMint === USDC
+        ? [makeRaydiumPool(HIGH_CPMM, CPMM, belowThreshold, exactVolume)]
+        : [];
+      return new Response(JSON.stringify(raydiumResponse(pools, { hasNextPage: false })), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    if (url.startsWith("https://api.dexscreener.com/latest/dex/pairs/solana/")) {
+      const address = url.split("/").at(-1);
+      const pairs = address === HIGH_CPMM
+        ? [makePair(HIGH_CPMM, aboveThreshold, exactVolume)]
+        : [];
+      return new Response(JSON.stringify(pairResponse(pairs.length > 0 ? pairs : null)), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return baseFetch(input, init);
+  };
+
+  const report = await discoverRaydiumCpmmCandidates({
+    env: approvals,
+    fetchImpl: exactFetch,
+    now: () => "2026-10-29T09:00:00.000Z"
+  });
+
+  assert.equal(report.selectionPolicy.minimumLiquidityUsdExact, "100000");
+  assert.equal(report.selectionPolicy.minimumVolume24hUsdExact, "10000");
+  assert.equal(report.selectionPolicy.thresholdComparison, "EXACT_DECIMAL_NO_IEEE754_ROUNDING");
+  assert.equal(report.selectionPolicy.candidateCount, 1);
+  assert.equal(report.selectionPolicy.thresholdQualifiedCount, 0);
+  assert.equal(report.candidates[0].raydiumLiquidityUsdExact, belowThreshold);
+  assert.equal(report.candidates[0].dexScreenerMetrics.liquidityUsdExact, aboveThreshold);
+  assert.equal(report.candidates[0].raydiumVolume24hUsdExact, exactVolume);
+  assert.equal(report.candidates[0].dexScreenerMetrics.volume24hUsdExact, exactVolume);
+  assert.equal(report.candidates[0].meetsRaydiumThresholds, false);
+  assert.equal(report.candidates[0].meetsDexScreenerThresholds, true);
+  assert.equal(report.candidates[0].meetsLiquidityAndVolumeThresholds, false);
+  assert.equal(report.selectionPolicy.recommendedFollowUpPoolAddress, null);
+});
+
 test("continues to reject malformed or missing DEX Screener pairs fields", async () => {
   for (const body of [
     { schemaVersion: "1.0.0", pairs: "unexpected" },
