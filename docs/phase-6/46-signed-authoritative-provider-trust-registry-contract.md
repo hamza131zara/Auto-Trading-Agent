@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Phase 6.46 Steps 1–5 are implemented and verified. Step 6 local HTTPS/TLS integration tests have been added and are awaiting CI verification.** The concrete transport remains generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
+**Phase 6.46 Steps 1–6 are implemented and verified on this branch.** The concrete transport remains generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
