@@ -149,6 +149,18 @@ implements ProviderTrustSnapshotAuthenticator {
   }
 }
 
+/**
+ * Validate the deployment-pinned Ed25519 SPKI root and independently supplied
+ * fingerprint before an application enables the registry-backed resolver.
+ * This performs no network or database operation and returns no key material.
+ */
+export async function validateProviderTrustRegistryTrustAnchor(
+  value: ProviderTrustRegistryTrustAnchor
+): Promise<void> {
+  const anchor = validateTrustAnchor(value);
+  await loadPinnedRootPublicKey(anchor);
+}
+
 /** Factory for dependency injection; no network or key bootstrap is performed. */
 export function createEd25519ProviderTrustSnapshotAuthenticator():
 ProviderTrustSnapshotAuthenticator {

@@ -3212,3 +3212,18 @@ export {
 export {
   NodeHttpsProviderTrustRegistryTransport
 } from "./provider-trust-registry-https-transport.js";
+
+export {
+  validateProviderTrustRegistryTrustAnchor
+} from "./provider-trust-registry-authenticator.js";
+
+export {
+  createOwnerPinnedProviderTrustRegistryLookup,
+  createProviderTrustRegistryAuthorizationRuntime
+} from "./provider-trust-registry-runtime.js";
+export type {
+  DisabledProviderTrustRegistryBootstrapConfig,
+  EnabledProviderTrustRegistryBootstrapConfig,
+  ProviderTrustRegistryBootstrapConfig,
+  ProviderTrustRegistryAuthorizationRuntime
+} from "./provider-trust-registry-runtime.js";

@@ -2,10 +2,26 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createServer } from "node:https";
+import { createHash, generateKeyPairSync, sign } from "node:crypto";
 import test from "node:test";
 import {
   NodeHttpsProviderTrustRegistryTransport
 } from "../packages/market-data/dist/provider-trust-registry-https-transport.js";
+import {
+  parseProviderTrustRegistryConfig
+} from "../packages/config/dist/index.js";
+import {
+  getProviderTrustRegistrySigningPayload,
+  PROVIDER_TRUST_REGISTRY_SNAPSHOT_VERSION
+} from "../packages/market-data/dist/provider-trust-registry.js";
+import {
+  getProviderUseDecisionSigningPayload,
+  PROVIDER_USE_DECISION_ENVELOPE_VERSION,
+  PROVIDER_USE_DECISION_SIGNATURE_ALGORITHM
+} from "../packages/market-data/dist/provider-use-decision-verifier.js";
+import {
+  createProviderTrustRegistryAuthorizationRuntime
+} from "../packages/market-data/dist/provider-trust-registry-runtime.js";
 
 const REQUIRED = process.env.REQUIRE_PROVIDER_TRUST_REGISTRY_HTTPS_TLS_INTEGRATION === "true";
 const certificateDirectory = process.env.PG_TLS_CERT_DIR;
@@ -239,4 +255,150 @@ test("NodeHttpsProviderTrustRegistryTransport real TLS handshake and rejection m
     await expectUnavailable(pending, "in-flight cancellation must reject with a sanitized reason");
     assert.equal(requests, 1);
   });
+
+  await t.test("startup bootstrap refreshes signed registry keys before authorizing an owner decision", async (subtest) => {
+    const rootPair = generateKeyPairSync("ed25519");
+    const providerPair = generateKeyPairSync("ed25519");
+    const rootPublicKeyPem = rootPair.publicKey.export({
+      type: "spki",
+      format: "pem"
+    }).toString();
+    const rootFingerprint = createHash("sha256")
+      .update(rootPair.publicKey.export({ type: "spki", format: "der" }))
+      .digest("hex");
+    const providerPublicKeyPem = providerPair.publicKey.export({
+      type: "spki",
+      format: "pem"
+    }).toString();
+
+    const at = new Date(Date.now() - 1_000).toISOString();
+    const issuedAt = at;
+    const expiresAt = new Date(Date.parse(at) + 180_000).toISOString();
+    const trustedKeys = [{
+      keyId: "provider-decision-key-01",
+      owner: "test-owner",
+      publicKeyPem: providerPublicKeyPem,
+      notBefore: new Date(Date.parse(at) - 60_000).toISOString(),
+      expiresAt: new Date(Date.parse(at) + 600_000).toISOString(),
+      revokedAt: null,
+      allowedProviderIds: ["dex-screener"],
+      allowedPurposes: ["DIAGNOSTIC"]
+    }];
+    const unsignedSnapshot = {
+      schemaVersion: PROVIDER_TRUST_REGISTRY_SNAPSHOT_VERSION,
+      registryId: "owner-provider-trust",
+      rootKeyId: "owner-root-01",
+      algorithm: "Ed25519",
+      version: 1,
+      issuedAt,
+      expiresAt,
+      keys: trustedKeys
+    };
+    const snapshotPayload = getProviderTrustRegistrySigningPayload(unsignedSnapshot);
+    const snapshotSignature = sign(
+      null,
+      Buffer.from(snapshotPayload, "utf8"),
+      rootPair.privateKey
+    ).toString("base64url");
+    const snapshotBody = Buffer.from(JSON.stringify({
+      ...unsignedSnapshot,
+      signature: snapshotSignature
+    }), "utf8");
+
+    const decision = {
+      providerId: "dex-screener",
+      purpose: "DIAGNOSTIC",
+      decisionId: "owner-diagnostic-decision-01",
+      owner: "test-owner",
+      outcome: "PROCEED_DIAGNOSTIC_ONLY",
+      scope: "Test-only read-only diagnostic request for dex-screener",
+      decidedAt: new Date(Date.parse(at) - 30_000).toISOString(),
+      expiresAt: new Date(Date.parse(at) + 120_000).toISOString(),
+      linkedEvidenceIds: ["provider-rights-review-test"],
+      evidenceManifestSha256: "c".repeat(64)
+    };
+    const unsignedDecision = {
+      schemaVersion: PROVIDER_USE_DECISION_ENVELOPE_VERSION,
+      keyId: "provider-decision-key-01",
+      algorithm: PROVIDER_USE_DECISION_SIGNATURE_ALGORITHM,
+      decision
+    };
+    const decisionSignature = sign(
+      null,
+      Buffer.from(getProviderUseDecisionSigningPayload(unsignedDecision), "utf8"),
+      providerPair.privateKey
+    ).toString("base64url");
+    const signedDecision = { ...unsignedDecision, signature: decisionSignature };
+
+    let httpRequests = 0;
+    const fixture = await startTlsServer(subtest, "registry-valid", (request, response) => {
+      httpRequests += 1;
+      assert.equal(request.method, "GET");
+      assert.equal(request.url, "/v1/signed-snapshot?registry=owner-provider-trust");
+      response.writeHead(200, {
+        "content-type": "application/json; charset=utf-8",
+        "content-length": String(snapshotBody.byteLength)
+      });
+      response.end(snapshotBody);
+    });
+
+    const config = parseProviderTrustRegistryConfig({
+      ATA_PROVIDER_TRUST_REGISTRY_ENABLED: "true",
+      ATA_PROVIDER_TRUST_REGISTRY_ENDPOINT_URL:
+        "https://" + EXPECTED_HOST + ":" + fixture.port +
+        "/v1/signed-snapshot?registry=owner-provider-trust",
+      ATA_PROVIDER_TRUST_REGISTRY_REGISTRY_ID: "owner-provider-trust",
+      ATA_PROVIDER_TRUST_REGISTRY_ROOT_KEY_ID: "owner-root-01",
+      ATA_PROVIDER_TRUST_REGISTRY_ROOT_PUBLIC_KEY_PEM: rootPublicKeyPem,
+      ATA_PROVIDER_TRUST_REGISTRY_ROOT_SPKI_SHA256: rootFingerprint,
+      ATA_PROVIDER_TRUST_REGISTRY_DNS_ALLOWED_IPS: "127.0.0.1"
+    });
+
+    let persisted = null;
+    let databaseCalls = 0;
+    const queryClient = {
+      async query(sql, parameters = []) {
+        databaseCalls += 1;
+        if (sql.includes("provider_trust_registry_high_water_mark:read")) {
+          return { rows: persisted === null ? [] : [persisted] };
+        }
+        if (sql.includes("provider_trust_registry_high_water_mark:insert_cas")) {
+          if (persisted !== null) return { rows: [] };
+          persisted = {
+            registry_id: parameters[0],
+            version: String(parameters[1]),
+            canonical_payload_sha256: parameters[2]
+          };
+          return { rows: [persisted] };
+        }
+        throw new Error("unexpected test SQL operation");
+      }
+    };
+
+    const runtime = await createProviderTrustRegistryAuthorizationRuntime({
+      config,
+      envelopes: [signedDecision],
+      queryClient
+    });
+
+    assert.equal(runtime.enabled, true);
+    assert.equal(httpRequests, 0, "startup must not fetch the registry eagerly");
+    assert.equal(databaseCalls, 0, "startup must not query the database eagerly");
+
+    const authorized = await runtime.resolveProviderUseDecision(
+      "dex-screener",
+      "DIAGNOSTIC",
+      at
+    );
+
+    assert.equal(httpRequests, 1);
+    assert.equal(databaseCalls, 2, "the snapshot must pass durable read + initial CAS before keys are used");
+    assert.equal(persisted.registry_id, "owner-provider-trust");
+    assert.equal(persisted.version, "1");
+    assert.match(persisted.canonical_payload_sha256, /^[a-f0-9]{64}$/);
+    assert.equal(authorized?.decisionId, "owner-diagnostic-decision-01");
+    assert.equal(authorized?.providerId, "dex-screener");
+    assert.equal(authorized?.purpose, "DIAGNOSTIC");
+  });
+
 });

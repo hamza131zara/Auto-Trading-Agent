@@ -269,6 +269,55 @@ test("provider use decision resolver exceptions block without invoking providers
   assert.equal(JSON.stringify(result).includes("sensitive manifest lookup details"), false);
 });
 
+test("orchestrator awaits an online provider-use resolver before making a provider request", async () => {
+  const primary = adapter("provider-primary");
+  let resolverCompleted = false;
+  const orchestrator = new ReadOnlyMarketDataOrchestrator(
+    [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+    {
+      now: () => NOW,
+      healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+      maxHealthAgeMs: 60_000,
+      requestTimeoutMs: 2_000,
+      usagePurpose: "DIAGNOSTIC",
+      providerUseDecisionResolver: async (providerId, purpose, at) => {
+        await new Promise((resolve) => setImmediate(resolve));
+        resolverCompleted = true;
+        return testUseDecision(providerId, purpose, at);
+      }
+    }
+  );
+
+  const result = await orchestrator.collect(TARGET);
+  assert.equal(resolverCompleted, true);
+  assert.equal(primary.calls, 1);
+  assert.equal(result.attempts[0].outcome, "OBSERVATION_NORMALIZED");
+});
+
+test("rejected asynchronous provider-use resolver denies before any provider request", async () => {
+  const primary = adapter("provider-primary");
+  const orchestrator = new ReadOnlyMarketDataOrchestrator(
+    [{ adapter: primary, independenceGroupId: "primary-family", priority: 0 }],
+    {
+      now: () => NOW,
+      healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
+      maxHealthAgeMs: 60_000,
+      requestTimeoutMs: 2_000,
+      usagePurpose: "DIAGNOSTIC",
+      providerUseDecisionResolver: async () => {
+        await Promise.resolve();
+        throw new Error("private registry response details");
+      }
+    }
+  );
+
+  const result = await orchestrator.collect(TARGET);
+  assert.equal(primary.calls, 0);
+  assert.equal(result.attempts[0].permissionStatus, "BLOCK_PROVIDER_USE_NOT_APPROVED");
+  assert.deepEqual(result.attempts[0].reasonCodes, ["PROVIDER_USE_DECISION_RESOLVER_FAILED"]);
+  assert.equal(JSON.stringify(result).includes("private registry response details"), false);
+});
+
 test("orchestrator collects agreeing independent providers without synthetic promotion", async () => {
   const primary = adapter("provider-primary");
   const fallback = adapter("provider-fallback");
