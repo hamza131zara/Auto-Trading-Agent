@@ -17,22 +17,15 @@ import type {
   ProviderTrustRegistryTransportResponse
 } from "./provider-trust-registry.js";
 
-type ProviderTrustRegistryLoadInput =
-  Parameters<ProviderTrustRegistry["loadCurrentSnapshot"]>[0];
 import {
   advanceProviderTrustRegistryHighWaterMark
 } from "./provider-trust-registry-postgres-store.js";
 
+type ProviderTrustRegistryLoadInput =
+  Parameters<ProviderTrustRegistry["loadCurrentSnapshot"]>[0];
+
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 const MAX_ORIGIN_LENGTH = 512;
-
-interface RegistryTransportResponseRecord extends Record<string, unknown> {
-  status: unknown;
-  contentType: unknown;
-  finalOrigin: unknown;
-  redirected: unknown;
-  bytes: unknown;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -150,10 +143,8 @@ export class AuthenticatedProviderTrustRegistry implements ProviderTrustRegistry
 
     const controller = new AbortController();
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-    let timedOut = false;
     const timeout = new Promise<never>((_resolve, reject) => {
       timeoutHandle = setTimeout(() => {
-        timedOut = true;
         controller.abort();
         reject(new ProviderTrustRegistryError("TRUST_REGISTRY_UNAVAILABLE"));
       }, timeoutMs);
@@ -174,8 +165,9 @@ export class AuthenticatedProviderTrustRegistry implements ProviderTrustRegistry
         timeout
       ]);
     } catch (error) {
-      if (timedOut) {
-        throw new ProviderTrustRegistryError("TRUST_REGISTRY_UNAVAILABLE");
+      if (error instanceof ProviderTrustRegistryError &&
+          error.code === "TRUST_REGISTRY_UNAVAILABLE") {
+        throw error;
       }
       throw new ProviderTrustRegistryError("TRUST_REGISTRY_UNAVAILABLE");
     } finally {
