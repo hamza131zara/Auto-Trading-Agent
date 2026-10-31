@@ -63,29 +63,6 @@ function isUtf8JsonContentType(value: string): boolean {
   return true;
 }
 
-function parseEndpoint(value: unknown, expectedOrigin: string): URL {
-  if (typeof value !== "string" ||
-      value.length === 0 ||
-      value.length > MAX_ENDPOINT_LENGTH) {
-    return fail("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
-  }
-  try {
-    const endpoint = new URL(value);
-    if (endpoint.protocol !== "https:" ||
-        endpoint.href !== value ||
-        endpoint.origin !== expectedOrigin ||
-        endpoint.username !== "" ||
-        endpoint.password !== "" ||
-        endpoint.hash !== "" ||
-        endpoint.hostname.length === 0) {
-      return fail("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
-    }
-    return endpoint;
-  } catch {
-    return fail("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
-  }
-}
-
 function readSingleHeader(value: string | string[] | undefined): string | null {
   return typeof value === "string" ? value : null;
 }
@@ -230,9 +207,10 @@ export class NodeHttpsProviderTrustRegistryTransport implements ProviderTrustReg
           return;
         }
 
-        const contentEncoding = readSingleHeader(response.headers["content-encoding"]);
-        if (contentEncoding !== null &&
-            contentEncoding.trim().toLowerCase() !== "identity") {
+        const rawContentEncoding = response.headers["content-encoding"];
+        const contentEncoding = readSingleHeader(rawContentEncoding);
+        if (rawContentEncoding !== undefined &&
+            (contentEncoding === null || contentEncoding.trim().toLowerCase() !== "identity")) {
           response.destroy();
           rejectWith("TRUST_REGISTRY_TRANSPORT_RESPONSE_INVALID");
           return;
