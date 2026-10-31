@@ -67,6 +67,10 @@
     "./provider-trust-registry-postgres-store": {
       "types": "./dist/provider-trust-registry-postgres-store.d.ts",
       "import": "./dist/provider-trust-registry-postgres-store.js"
+    },
+    "./provider-trust-registry-loader": {
+      "types": "./dist/provider-trust-registry-loader.d.ts",
+      "import": "./dist/provider-trust-registry-loader.js"
     }
   },
   "scripts": {
