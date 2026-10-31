@@ -80,6 +80,22 @@ function adapter(providerId, behavior = {}) {
   return new StubAdapter(providerId, behavior);
 }
 
+function testUseDecision(providerId, purpose, at, overrides = {}) {
+  return {
+    providerId,
+    purpose,
+    decisionId: "test-owner-decision-" + providerId,
+    owner: "test-only-fixture-owner",
+    outcome: "PROCEED_DIAGNOSTIC_ONLY",
+    scope: "Test-only read-only market-data collection for provider " + providerId,
+    decidedAt: "2026-10-29T11:00:00.000Z",
+    expiresAt: "2026-11-01T00:00:00.000Z",
+    linkedEvidenceIds: ["test-evidence-" + providerId],
+    evidenceManifestSha256: "a".repeat(64),
+    ...overrides
+  };
+}
+
 function createOrchestrator(registered, state = { now: NOW }, policyOverrides = {}) {
   return new ReadOnlyMarketDataOrchestrator(
     registered,
@@ -89,6 +105,9 @@ function createOrchestrator(registered, state = { now: NOW }, policyOverrides = 
       maxHealthAgeMs: 60_000,
       requestTimeoutMs: 2_000,
       requestId: (providerId) => providerId + "-request",
+      usagePurpose: "DIAGNOSTIC",
+      providerUseDecisionResolver: (providerId, purpose, at) =>
+        testUseDecision(providerId, purpose, at),
       ...policyOverrides
     }
   );
