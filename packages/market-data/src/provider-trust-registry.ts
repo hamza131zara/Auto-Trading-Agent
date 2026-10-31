@@ -90,7 +90,8 @@ export function validateProviderTrustRegistrySnapshotEnvelope(
       !BASE64URL_SIGNATURE.test(value.signature)) {
     throw new TypeError("TRUST_REGISTRY_SNAPSHOT_INVALID");
   }
-  const { signature: _signature, ...payload } = value;
+  const payload: Record<string, unknown> = {};
+  for (const key of SNAPSHOT_PAYLOAD_KEYS) payload[key] = value[key];
   getProviderTrustRegistrySigningPayload(payload as ProviderTrustRegistrySnapshotPayload);
   return value as unknown as ProviderTrustRegistrySnapshotEnvelope;
 }
