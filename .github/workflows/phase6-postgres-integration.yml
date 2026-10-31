@@ -49,7 +49,7 @@ jobs:
         if: always()
         run: |
           docker rm --force ata-pg-tls-valid ata-pg-tls-expired ata-pg-tls12-only ata-pg-plaintext >/dev/null 2>&1 || true
-          rm -rf "${RUNNER_TEMP}/ata-pg-tls"
+          sudo rm -rf "${RUNNER_TEMP}/ata-pg-tls"
 
   postgres-integration:
     name: PostgreSQL persistence, backup/restore and migration recovery

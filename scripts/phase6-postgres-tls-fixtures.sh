@@ -76,9 +76,7 @@ for fixture in valid expired tls12; do
 done
 sudo chown -R 999:999 "$CERT_DIR/valid" "$CERT_DIR/expired" "$CERT_DIR/tls12"
 
-if ! grep -qE '(^|[[:space:]])pg-tls\.test([[:space:]]|$)' /etc/hosts; then
-  printf '127.0.0.1 pg-tls.test\n' | sudo tee -a /etc/hosts >/dev/null
-fi
+printf '127.0.0.1 pg-tls.test wrong.pg-tls.test\n' | sudo tee -a /etc/hosts >/dev/null
 
 docker run --detach --name ata-pg-tls-valid --publish 127.0.0.1:55432:5432 \
   --mount "type=bind,src=$CERT_DIR/valid,dst=/tls,readonly" \

@@ -17,7 +17,7 @@ All PostgreSQL ports are published on loopback only. The client runs on the same
 1. The exact installed driver version is \`pg@8.23.1\`.
 2. A valid chain for the requested \`pg-tls.test\` endpoint is accepted; PostgreSQL \`pg_stat_ssl\` confirms an encrypted session and negotiated TLS 1.2 or 1.3.
 3. A certificate chain signed by the rogue CA is rejected.
-4. A valid certificate presented for an IP address not present in its SAN is rejected for hostname mismatch.
+4. A valid certificate presented for an alternate DNS alias not present in its SAN is rejected for hostname mismatch.
 5. A CA-signed but expired certificate is rejected.
 6. A TLS-required client rejects the PostgreSQL endpoint with server-side TLS disabled; it must not fall back to plaintext.
 7. A client explicitly configured for a TLS 1.3 minimum rejects a server that supports only TLS 1.2, proving the driver's TLS minimum option affects negotiation. The regular positive case separately proves that the policy floor TLS 1.2 succeeds against a TLS 1.2+ server.

@@ -91,8 +91,8 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
   await t.test("certificate hostname mismatch is rejected", async () => {
     await assertConnectionRejected(
       {
-        host: "127.0.0.1",
-        ssl: { ...baseConfig.ssl, servername: "127.0.0.1" }
+        host: "wrong.pg-tls.test",
+        ssl: { ...baseConfig.ssl, servername: "wrong.pg-tls.test" }
       },
       (error) => error.code === "ERR_TLS_CERT_ALTNAME_INVALID",
       "hostname mismatch"
