@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+import { parseJsonPreservingNumericLexemes } from "../packages/market-data/dist/providers/dex-screener.js";
 import {
   decodeRaydiumCpmmPool,
   isSolanaPublicKey,
@@ -87,7 +88,7 @@ function readThreshold(env, name, fallback) {
   if (!Number.isFinite(value) || value < 0 || value > 1_000_000_000_000) {
     throw codedError("DISCOVERY_THRESHOLD_OUT_OF_RANGE");
   }
-  return value;
+  return { value, exact: input };
 }
 
 async function readBoundedText(response, errorPrefix) {
@@ -132,7 +133,7 @@ async function readBoundedText(response, errorPrefix) {
   return chunks.join("");
 }
 
-async function fetchJson(fetchImpl, url, init, errorPrefix) {
+async function fetchJson(fetchImpl, url, init, errorPrefix, preserveNumericLexemes = false) {
   let response;
   try {
     response = await fetchImpl(url, {
@@ -146,23 +147,81 @@ async function fetchJson(fetchImpl, url, init, errorPrefix) {
   const rawText = await readBoundedText(response, errorPrefix);
   let payload;
   try {
-    payload = JSON.parse(rawText);
+    payload = preserveNumericLexemes
+      ? parseJsonPreservingNumericLexemes(rawText)
+      : JSON.parse(rawText);
   } catch {
     throw codedError(errorPrefix + "_JSON_INVALID");
   }
   return { payload, rawText };
 }
 
-function asNonNegativeMetric(value) {
+function exactNonNegativeDecimal(value) {
+  let text;
   if (typeof value === "number") {
-    return Number.isFinite(value) && value >= 0 ? value : null;
+    if (!Number.isFinite(value) || value < 0) return null;
+    text = String(value);
+  } else if (typeof value === "string" && value.length <= 128) {
+    text = value;
+  } else {
+    return null;
   }
-  if (typeof value === "string" && value.length <= 64 &&
-      /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value)) {
-    const number = Number(value);
-    return Number.isFinite(number) && number >= 0 ? number : null;
+
+  if (/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(text)) return text;
+
+  const match = text.match(/^(0|[1-9][0-9]*)(?:\.([0-9]+))?[eE]([+-]?[0-9]+)$/);
+  if (match === null) return null;
+  const integerPart = match[1];
+  const exponentText = match[3];
+  if (integerPart === undefined || exponentText === undefined) return null;
+  const exponent = Number(exponentText);
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 64) return null;
+  const digits = integerPart + (match[2] ?? "");
+  const decimalPosition = integerPart.length + exponent;
+  let expanded;
+  if (decimalPosition <= 0) {
+    expanded = "0." + "0".repeat(-decimalPosition) + digits;
+  } else if (decimalPosition >= digits.length) {
+    expanded = digits + "0".repeat(decimalPosition - digits.length);
+  } else {
+    expanded = digits.slice(0, decimalPosition) + "." + digits.slice(decimalPosition);
   }
-  return null;
+  const [whole = "0", fraction] = expanded.split(".");
+  const normalizedWhole = whole.replace(/^0+(?=[0-9])/, "");
+  const normalized = fraction === undefined
+    ? normalizedWhole
+    : normalizedWhole + "." + fraction;
+  return normalized.length <= 128 && /^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(normalized)
+    ? normalized
+    : null;
+}
+
+function compareNonNegativeDecimals(left, right) {
+  const leftDecimal = exactNonNegativeDecimal(left);
+  const rightDecimal = exactNonNegativeDecimal(right);
+  if (leftDecimal === null || rightDecimal === null) return null;
+  const [leftWhole = "0", leftFraction = ""] = leftDecimal.split(".");
+  const [rightWhole = "0", rightFraction = ""] = rightDecimal.split(".");
+  const scale = Math.max(leftFraction.length, rightFraction.length);
+  const leftScaled = BigInt(leftWhole + leftFraction.padEnd(scale, "0"));
+  const rightScaled = BigInt(rightWhole + rightFraction.padEnd(scale, "0"));
+  return leftScaled < rightScaled ? -1 : leftScaled > rightScaled ? 1 : 0;
+}
+
+function asNonNegativeMetric(value) {
+  const decimal = exactNonNegativeDecimal(value);
+  if (decimal === null) return null;
+  const number = Number(decimal);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function asSafeNonNegativeInteger(value) {
+  if (typeof value === "number") {
+    return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  }
+  if (typeof value !== "string" || !/^(?:0|[1-9][0-9]*)$/.test(value)) return null;
+  const number = Number(value);
+  return Number.isSafeInteger(number) ? number : null;
 }
 
 function isRecord(value) {
@@ -187,6 +246,8 @@ function normalizeExactPair(pair) {
   if (pairMints === null) return null;
   const quoteAsset = quoteAssetForMint(pairMints.quoteMint);
   const solIsBaseToken = pair.baseToken.address === SOL_MINT;
+  const liquidityUsdExact = exactNonNegativeDecimal(pair.liquidity?.usd);
+  const volume24hUsdExact = exactNonNegativeDecimal(pair.volume?.h24);
   const liquidity = asNonNegativeMetric(pair.liquidity?.usd);
   const volume24h = asNonNegativeMetric(pair.volume?.h24);
   const priceUsd = asNonNegativeMetric(pair.priceUsd);
@@ -208,13 +269,15 @@ function normalizeExactPair(pair) {
       ? (typeof pair.quoteToken.symbol === "string" ? pair.quoteToken.symbol : null)
       : (typeof pair.baseToken.symbol === "string" ? pair.baseToken.symbol : null),
     liquidityUsd: liquidity,
+    liquidityUsdExact,
     volume24hUsd: volume24h,
+    volume24hUsdExact,
     // priceUsd is the USD price of the source's base token, so keep its mint explicit.
     priceUsd,
     priceUsdMint: pair.baseToken.address,
     buys24h: buys24h !== null && Number.isSafeInteger(buys24h) ? buys24h : null,
     sells24h: sells24h !== null && Number.isSafeInteger(sells24h) ? sells24h : null,
-    pairCreatedAt: Number.isSafeInteger(pair.pairCreatedAt) ? pair.pairCreatedAt : null,
+    pairCreatedAt: asSafeNonNegativeInteger(pair.pairCreatedAt),
     sourceObservedAt: null
   };
 }
@@ -237,6 +300,8 @@ function normalizeRaydiumPool(pool) {
   const pairMints = isApprovedSolQuotePair(mintA, mintB);
   if (pairMints === null) return null;
   const quoteAsset = quoteAssetForMint(pairMints.quoteMint);
+  const liquidityUsdExact = exactNonNegativeDecimal(pool.tvl);
+  const volume24hUsdExact = exactNonNegativeDecimal(pool.day?.volume);
   const liquidityUsd = asNonNegativeMetric(pool.tvl);
   const volume24hUsd = asNonNegativeMetric(pool.day?.volume);
   return {
@@ -249,7 +314,9 @@ function normalizeRaydiumPool(pool) {
     baseSymbol: mintA === SOL_MINT ? pool.mintA.symbol ?? null : pool.mintB.symbol ?? null,
     quoteSymbol: mintA === SOL_MINT ? pool.mintB.symbol ?? null : pool.mintA.symbol ?? null,
     raydiumLiquidityUsd: liquidityUsd,
+    raydiumLiquidityUsdExact: liquidityUsdExact,
     raydiumVolume24hUsd: volume24hUsd,
+    raydiumVolume24hUsdExact: volume24hUsdExact,
     raydiumPrice: asNonNegativeMetric(pool.price),
     raydiumMintAmountA: asNonNegativeMetric(pool.mintAmountA),
     raydiumMintAmountB: asNonNegativeMetric(pool.mintAmountB),
@@ -362,7 +429,7 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expected
   const response = await fetchJson(fetchImpl, url, {
     method: "GET",
     headers: { accept: "application/json" }
-  }, "DEX_SCREENER_PAIR");
+  }, "DEX_SCREENER_PAIR", true);
   if (!isRecord(response.payload) ||
       !(Array.isArray(response.payload.pairs) || response.payload.pairs === null)) {
     throw codedError("DEX_SCREENER_PAIR_RESPONSE_SHAPE_INVALID");
@@ -466,8 +533,10 @@ export async function discoverRaydiumCpmmCandidates({
   now = () => new Date().toISOString()
 } = {}) {
   approvalGate(env);
-  const minimumLiquidityUsd = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_LIQUIDITY_USD", "100000");
-  const minimumVolume24hUsd = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_VOLUME_24H_USD", "10000");
+  const minimumLiquidityThreshold = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_LIQUIDITY_USD", "100000");
+  const minimumVolumeThreshold = readThreshold(env, "ATA_CPMM_DISCOVERY_MIN_VOLUME_24H_USD", "10000");
+  const minimumLiquidityUsd = minimumLiquidityThreshold.value;
+  const minimumVolume24hUsd = minimumVolumeThreshold.value;
   const clientRequestId = "cpmm-discovery-" + Date.now().toString(36);
   if (!RPC_REQUEST_ID_PATTERN.test(clientRequestId + "-rpc")) {
     throw codedError("DISCOVERY_REQUEST_ID_INVALID");
@@ -492,7 +561,8 @@ export async function discoverRaydiumCpmmCandidates({
         fetchImpl,
         buildRaydiumPoolQueryUrl(quoteAsset.mint, pageNumber),
         { method: "GET", headers: { accept: "application/json" } },
-        "RAYDIUM_API"
+        "RAYDIUM_API",
+        true
       );
       const retrievedAt = now();
       const page = normalizeRaydiumPage(raydium.payload, {
@@ -609,11 +679,15 @@ export async function discoverRaydiumCpmmCandidates({
       ownerProgramId: null,
       classification: "NOT_CHECKED_ACCOUNT_CAP"
     };
+    const liquidityComparison = compareNonNegativeDecimals(
+      candidate.raydiumLiquidityUsdExact, minimumLiquidityThreshold.exact
+    );
+    const volumeComparison = compareNonNegativeDecimals(
+      candidate.raydiumVolume24hUsdExact, minimumVolumeThreshold.exact
+    );
     const meetsRaydiumThresholds =
-      candidate.raydiumLiquidityUsd !== null &&
-      candidate.raydiumVolume24hUsd !== null &&
-      candidate.raydiumLiquidityUsd >= minimumLiquidityUsd &&
-      candidate.raydiumVolume24hUsd >= minimumVolume24hUsd;
+      liquidityComparison !== null && liquidityComparison >= 0 &&
+      volumeComparison !== null && volumeComparison >= 0;
     return {
       ...candidate,
       onChainProgram: onChain.classification,
@@ -629,7 +703,12 @@ export async function discoverRaydiumCpmmCandidates({
 
   const cpmmCandidates = decodedCpmmCandidates
     .filter((candidate) => candidate.onChainProgram === "RAYDIUM_CPMM")
-    .sort((a, b) => (b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
+    .sort((a, b) => {
+      const exactOrder = compareNonNegativeDecimals(
+        b.raydiumLiquidityUsdExact, a.raydiumLiquidityUsdExact
+      );
+      return exactOrder ?? ((b.raydiumLiquidityUsd ?? -1) - (a.raydiumLiquidityUsd ?? -1));
+    });
   const candidatesToCrossCheck = cpmmCandidates.slice(0, MAX_CROSS_CHECK_CANDIDATES);
   const dexScreenerEvidence = [];
   const dexByAddress = new Map();
@@ -654,12 +733,16 @@ export async function discoverRaydiumCpmmCandidates({
 
   const enrichedCandidates = cpmmCandidates.map((candidate) => {
     const dexPair = dexByAddress.get(candidate.poolAddress) ?? null;
+    const dexLiquidityComparison = dexPair === null ? null : compareNonNegativeDecimals(
+      dexPair.liquidityUsdExact, minimumLiquidityThreshold.exact
+    );
+    const dexVolumeComparison = dexPair === null ? null : compareNonNegativeDecimals(
+      dexPair.volume24hUsdExact, minimumVolumeThreshold.exact
+    );
     const dexMeetsThresholds = dexPair !== null &&
       dexPair.quoteMint === candidate.quoteMint &&
-      dexPair.liquidityUsd !== null &&
-      dexPair.volume24hUsd !== null &&
-      dexPair.liquidityUsd >= minimumLiquidityUsd &&
-      dexPair.volume24hUsd >= minimumVolume24hUsd;
+      dexLiquidityComparison !== null && dexLiquidityComparison >= 0 &&
+      dexVolumeComparison !== null && dexVolumeComparison >= 0;
     const meetsLiquidityAndVolumeThresholds = candidate.meetsRaydiumThresholds && dexMeetsThresholds;
     const sourceFreshness = "UNKNOWN";
     const evidenceReadinessReasonCodes = [];
@@ -679,7 +762,9 @@ export async function discoverRaydiumCpmmCandidates({
       dexScreenerPairFound: dexPair !== null,
       dexScreenerMetrics: dexPair === null ? null : {
         liquidityUsd: dexPair.liquidityUsd,
+        liquidityUsdExact: dexPair.liquidityUsdExact,
         volume24hUsd: dexPair.volume24hUsd,
+        volume24hUsdExact: dexPair.volume24hUsdExact,
         priceUsd: dexPair.priceUsd,
         priceUsdMint: dexPair.priceUsdMint,
         buys24h: dexPair.buys24h,
@@ -744,7 +829,10 @@ export async function discoverRaydiumCpmmCandidates({
       approvedQuoteAssets: APPROVED_QUOTE_ASSETS,
       requiredOnChainPoolOwner: RAYDIUM_CPMM_PROGRAM_ID,
       minimumLiquidityUsd,
+      minimumLiquidityUsdExact: minimumLiquidityThreshold.exact,
       minimumVolume24hUsd,
+      minimumVolume24hUsdExact: minimumVolumeThreshold.exact,
+      thresholdComparison: "EXACT_DECIMAL_NO_IEEE754_ROUNDING",
       liquidityVolumeThresholdRequiresBothIndexedSources: true,
       maxPoolAccountsChecked: MAX_POOL_ACCOUNTS,
       raydiumPageSize: RAYDIUM_POOL_PAGE_SIZE,
