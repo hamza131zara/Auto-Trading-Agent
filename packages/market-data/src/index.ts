@@ -3199,3 +3199,8 @@ export {
   createEd25519ProviderTrustSnapshotAuthenticator,
   Ed25519ProviderTrustSnapshotAuthenticator
 } from "./provider-trust-registry-authenticator.js";
+
+export {
+  PostgresProviderTrustRegistryHighWaterMarkStore,
+  advanceProviderTrustRegistryHighWaterMark
+} from "./provider-trust-registry-postgres-store.js";
