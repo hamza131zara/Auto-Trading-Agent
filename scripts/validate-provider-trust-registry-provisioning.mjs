@@ -40,15 +40,27 @@ function readPrivatePacket(pathValue) {
   if (entry.size < 1 || entry.size > MAX_PACKET_BYTES) {
     throw new Error("Provisioning packet must be between 1 byte and 64 KiB.");
   }
+  const beforeRead = lstatSync(actual);
+  if (beforeRead.isSymbolicLink() || !beforeRead.isFile() ||
+      beforeRead.size !== entry.size) {
+    throw new Error("Provisioning packet changed before it could be read.");
+  }
   const bytes = readFileSync(actual);
-  if (bytes.byteLength !== entry.size || bytes.byteLength > MAX_PACKET_BYTES) {
-    throw new Error("Provisioning packet size changed or exceeds the 64 KiB limit.");
+  const afterRead = lstatSync(actual);
+  if (bytes.byteLength !== beforeRead.size ||
+      bytes.byteLength > MAX_PACKET_BYTES ||
+      afterRead.isSymbolicLink() ||
+      !afterRead.isFile() ||
+      afterRead.size !== beforeRead.size ||
+      afterRead.mtimeMs !== beforeRead.mtimeMs) {
+    throw new Error("Provisioning packet changed during reading or exceeds the 64 KiB limit.");
   }
   let packet;
   try {
-    packet = JSON.parse(bytes.toString("utf8"));
+    const json = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    packet = JSON.parse(json);
   } catch {
-    throw new Error("Provisioning packet is not valid JSON.");
+    throw new Error("Provisioning packet is not valid UTF-8 JSON.");
   }
   return packet;
 }
