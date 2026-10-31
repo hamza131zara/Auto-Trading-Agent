@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Phase 6.46 Steps 1–4 are implemented and verified on this branch.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
+**Phase 6.46 Steps 1–5 are implemented and verified on this branch.** The concrete transport is generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
@@ -121,18 +121,17 @@ The PostgreSQL integration tests exercise idempotent schema creation, persistenc
 
 The protocol remains separated from transport. Step 4 adds `AuthenticatedProviderTrustRegistry` in `packages/market-data/src/provider-trust-registry-loader.ts`. It orchestrates one injected transport read, the existing Ed25519 authenticator, and the durable high-water mark gate. It requires an explicit canonical HTTPS origin from the owner and validates response status, content type, final origin, redirect metadata and byte length before authenticating. It creates a bounded cancellation signal, sanitizes transport errors and does not return keys until the high-water mark operation succeeds.
 
-The concrete transport remains a separately injected, owner-approved implementation. It must:
+The concrete transport implementation is `NodeHttpsProviderTrustRegistryTransport` in `packages/market-data/src/provider-trust-registry-https-transport.ts`. It remains inert until an application constructs it with an owner-approved endpoint and lookup policy, then injects it into the loader. It:
 
-- Use one fixed owner-approved HTTPS origin and endpoint path; configure redirects as `error` and do not follow redirects to another origin.
-- Preserve normal certificate-chain and hostname validation; no plaintext fallback.
-- Apply cancellation and a timeout no greater than five seconds.
-- Enforce the 48 KiB decoded body limit while streaming, before JSON parsing (including compressed response expansion).
-- Require the expected JSON content type and reject non-success status, malformed UTF-8/JSON, duplicate/unknown fields and schema drift.
-- Parse the exact received envelope bytes with duplicate-key rejection, reconstruct only the documented canonical payload, and verify its signature with the independently pinned root key.
-- Return retrieval metadata separately; it is not signature-covered evidence.
-- Never use cached keys as fallback when refresh fails.
+- Requires one canonical absolute HTTPS endpoint URL at construction and requires its origin to exactly match the separately supplied loader origin on every read. The endpoint has no userinfo or fragment; its path and query are fixed at construction.
+- Uses Node's direct `node:https` client with a dedicated non-keepalive agent, not the global Fetch dispatcher or a proxy agent. It does not consult ambient proxy configuration.
+- Requires an explicit owner-supplied DNS lookup callback. There is no fallback to Node's ambient lookup. The supplied callback must enforce the deployment's approved hostname-to-address policy; TLS SNI and certificate hostname verification continue to use the configured endpoint hostname.
+- Enables normal certificate-chain verification (`rejectUnauthorized: true`), hostname verification, and a TLS 1.2 minimum. It does not install a custom CA, disable verification, retry another host, or follow redirects. A 3xx is returned to the loader as a non-success status and is rejected there.
+- Sends only a GET with `Accept: application/json` and `Accept-Encoding: identity`. Any non-identity content encoding is rejected, so streamed received bytes are also decoded bytes and compression expansion cannot bypass the 48 KiB limit.
+- Counts streamed body bytes before concatenating them, checks a valid Content-Length early when supplied, and destroys the response/request on overflow. It applies the caller's AbortSignal and a socket inactivity timeout bounded by the five-second protocol maximum; the loader independently enforces its overall request timeout.
+- Returns observed status, content type, configured final origin, redirect=false (Node does not follow redirects), and the bounded exact bytes. The loader independently validates that metadata, authenticates the bytes and advances the durable high-water mark before returning keys.
 
-The loader never supplies a default origin or endpoint path. No registry vendor, hosting service, account, endpoint path, credential, key-management product or availability/cost model is selected here. The caller must pass the owner-approved canonical HTTPS origin and inject a concrete transport with the owner-approved fixed path before any request can be made. Response metadata is a contract with that trusted adapter, not a substitute for real TLS certificate-chain and hostname verification. No concrete network client is included in this step.
+The owner must still provision the exact endpoint URL, approved origin, DNS/IP lookup policy, trust-anchor public key/fingerprint and a registry publication process through a separately controlled deployment channel. No vendor, live URL, credentials, private key, production root key, resolver implementation or endpoint is selected in this step. The optional request-function injection exists only as a unit-test seam and is not needed by production callers. No live network request is made by the test suite.
 
 ## Step 4 — authenticated loader orchestration
 
@@ -147,6 +146,23 @@ The transport-independent implementation is in `packages/market-data/src/provide
 - Authentication failure prevents any high-water store read; a storage outage or CAS conflict prevents snapshot/key return. There is no stale-key fallback or process-local trust cache.
 
 The loader is intentionally not a concrete HTTP implementation. The injected transport must use a fixed owner-approved endpoint path, preserve certificate-chain and hostname verification, reject redirects, avoid ambient proxy/DNS/host discovery behavior, enforce the 48 KiB decoded-body limit while streaming (including compressed expansion), and report truthful response metadata. The actual TLS/HTTP behavior must be independently tested when the owner selects an endpoint and adapter. This step does not make a live network request.
+
+## Step 5 — owner-configured direct HTTPS transport
+
+The reusable adapter is exported as `NodeHttpsProviderTrustRegistryTransport` and from the package subpath `@ata/market-data/provider-trust-registry-https-transport`. Its constructor requires:
+
+- `endpointUrl`: one canonical absolute HTTPS URL including the owner-selected fixed path and optional static query. It rejects HTTP, userinfo, fragments, non-canonical URLs and overlong input.
+- `lookup`: a mandatory owner-supplied Node DNS lookup function. This allows deployment configuration to enforce the approved hostname-to-address policy explicitly; the adapter never falls back to ambient Node lookup.
+
+For each loader request, the adapter requires a canonical matching `expectedOrigin`, redirect mode `error`, JSON accept type, a valid AbortSignal, a timeout no greater than 5,000 ms and a response bound no greater than 49,152 bytes. The request uses the fixed configured URL and makes one GET. It does not read a host, path, credential, redirect target or retry destination from response data.
+
+TLS uses a dedicated HTTPS Agent with certificate-chain and hostname verification enabled, explicit SNI for the configured hostname and a TLS 1.2 minimum. There is no proxy agent, ambient fetch dispatcher, custom CA override or insecure TLS switch. The owner-provided lookup callback is a security-sensitive deployment dependency and must enforce the approved address policy; the adapter cannot infer or approve that policy on the owner's behalf.
+
+The adapter requests identity encoding and rejects any non-identity Content-Encoding rather than decompressing untrusted content. It validates Content-Length when present and independently counts every streamed body chunk before buffering; a body above the configured maximum is destroyed immediately with `TRUST_REGISTRY_RESPONSE_TOO_LARGE`. Transport failures are mapped to sanitized stable errors. The loader preserves the transport's size/metadata failure codes and still performs its own response validation, Ed25519 authentication and durable anti-rollback gate.
+
+Adversarial tests in `test/provider-trust-registry-https-transport.test.mjs` use an in-process injected request seam and local byte streams only. They cover fixed-origin enforcement, required DNS lookup injection, TLS request options, no redirect following, JSON/content-encoding handling, exact 48 KiB acceptance, streamed overflow and Content-Length rejection, cancellation/timeout and sanitized socket failures. They do not contact an external endpoint.
+
+This completes the generic transport implementation only. It does not mean a production registry endpoint, DNS resolver policy, root key, provider vendor or registry hosting service has been approved or configured. Production use remains unavailable until those owner-controlled values are separately provisioned and reviewed.
 
 ## Step 2 — root snapshot authenticator
 

@@ -3208,3 +3208,7 @@ export {
 export {
   AuthenticatedProviderTrustRegistry
 } from "./provider-trust-registry-loader.js";
+
+export {
+  NodeHttpsProviderTrustRegistryTransport
+} from "./provider-trust-registry-https-transport.js";

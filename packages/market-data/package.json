@@ -71,6 +71,10 @@
     "./provider-trust-registry-loader": {
       "types": "./dist/provider-trust-registry-loader.d.ts",
       "import": "./dist/provider-trust-registry-loader.js"
+    },
+    "./provider-trust-registry-https-transport": {
+      "types": "./dist/provider-trust-registry-https-transport.d.ts",
+      "import": "./dist/provider-trust-registry-https-transport.js"
     }
   },
   "scripts": {
