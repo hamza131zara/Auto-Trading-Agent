@@ -246,6 +246,8 @@ function normalizeExactPair(pair) {
   if (pairMints === null) return null;
   const quoteAsset = quoteAssetForMint(pairMints.quoteMint);
   const solIsBaseToken = pair.baseToken.address === SOL_MINT;
+  const liquidityUsdExact = exactNonNegativeDecimal(pair.liquidity?.usd);
+  const volume24hUsdExact = exactNonNegativeDecimal(pair.volume?.h24);
   const liquidity = asNonNegativeMetric(pair.liquidity?.usd);
   const volume24h = asNonNegativeMetric(pair.volume?.h24);
   const priceUsd = asNonNegativeMetric(pair.priceUsd);
@@ -267,13 +269,15 @@ function normalizeExactPair(pair) {
       ? (typeof pair.quoteToken.symbol === "string" ? pair.quoteToken.symbol : null)
       : (typeof pair.baseToken.symbol === "string" ? pair.baseToken.symbol : null),
     liquidityUsd: liquidity,
+    liquidityUsdExact,
     volume24hUsd: volume24h,
+    volume24hUsdExact,
     // priceUsd is the USD price of the source's base token, so keep its mint explicit.
     priceUsd,
     priceUsdMint: pair.baseToken.address,
     buys24h: buys24h !== null && Number.isSafeInteger(buys24h) ? buys24h : null,
     sells24h: sells24h !== null && Number.isSafeInteger(sells24h) ? sells24h : null,
-    pairCreatedAt: Number.isSafeInteger(pair.pairCreatedAt) ? pair.pairCreatedAt : null,
+    pairCreatedAt: asSafeNonNegativeInteger(pair.pairCreatedAt),
     sourceObservedAt: null
   };
 }
@@ -296,6 +300,8 @@ function normalizeRaydiumPool(pool) {
   const pairMints = isApprovedSolQuotePair(mintA, mintB);
   if (pairMints === null) return null;
   const quoteAsset = quoteAssetForMint(pairMints.quoteMint);
+  const liquidityUsdExact = exactNonNegativeDecimal(pool.tvl);
+  const volume24hUsdExact = exactNonNegativeDecimal(pool.day?.volume);
   const liquidityUsd = asNonNegativeMetric(pool.tvl);
   const volume24hUsd = asNonNegativeMetric(pool.day?.volume);
   return {
@@ -308,7 +314,9 @@ function normalizeRaydiumPool(pool) {
     baseSymbol: mintA === SOL_MINT ? pool.mintA.symbol ?? null : pool.mintB.symbol ?? null,
     quoteSymbol: mintA === SOL_MINT ? pool.mintB.symbol ?? null : pool.mintA.symbol ?? null,
     raydiumLiquidityUsd: liquidityUsd,
+    raydiumLiquidityUsdExact: liquidityUsdExact,
     raydiumVolume24hUsd: volume24hUsd,
+    raydiumVolume24hUsdExact: volume24hUsdExact,
     raydiumPrice: asNonNegativeMetric(pool.price),
     raydiumMintAmountA: asNonNegativeMetric(pool.mintAmountA),
     raydiumMintAmountB: asNonNegativeMetric(pool.mintAmountB),
