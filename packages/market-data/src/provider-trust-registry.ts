@@ -5,10 +5,8 @@
  * It does not replace the existing ata.provider-use-decision.v1 signatures.
  * This module has no network client, credentials, or implicit trust bootstrap.
  */
-import type {
-  ProviderUsePurpose,
-  TrustedProviderDecisionSigningKey
-} from "./provider-use-decision-verifier.js";
+import type { TrustedProviderDecisionSigningKey } from "./provider-use-decision-verifier.js";
+import type { ProviderUsePurpose } from "./provider-orchestrator.js";
 
 export const PROVIDER_TRUST_REGISTRY_SNAPSHOT_VERSION =
   "ata.provider-trust-registry-snapshot.v1" as const;
