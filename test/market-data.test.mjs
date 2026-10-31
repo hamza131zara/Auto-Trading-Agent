@@ -520,6 +520,96 @@ test("stale, future or synthetic slot block-time evidence cannot become eligible
   assert.equal(synthetic.comparisonEvidenceComplete, false);
 });
 
+test("finalized reserve time must align with the indexed price event timestamp when required", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: {
+      maxReserveReferenceTimestampSkewMs: 5_000,
+      maxReserveIndexedTimestampSkewMs: 5_000
+    }
+  }));
+  assert.equal(result.status, "AGREED");
+  assert.equal(result.reserveTimestampAlignmentStatus, "AGREED");
+  assert.equal(result.reserveIndexedTimestampAlignmentStatus, "AGREED");
+  assert.equal(result.maxReserveIndexedTimestampSkewMs, 5_000);
+  assert.equal(result.reserveIndexedTimestampSkewMs, 1_000);
+  assert.equal(result.indexedSourceTimestampKind, "EVENT");
+  assert.equal(result.comparisonEvidenceComplete, true);
+});
+
+test("finalized reserve time must align with an explicitly approved OHLCV observation timestamp", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    indexedSourceEventAt: null,
+    indexedSourceObservedAt: "2026-10-29T12:44:50.000Z",
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: {
+      maxReserveReferenceTimestampSkewMs: 5_000,
+      maxReserveIndexedTimestampSkewMs: 5_000,
+      approvedIndexedProviderId: "dex-screener",
+      approvedIndexedIndependenceGroupId: "dex-screener-family"
+    }
+  }));
+  assert.equal(result.status, "AGREED");
+  assert.equal(result.indexedSourceTimestampKind, "OBSERVATION");
+  assert.equal(result.reserveIndexedTimestampAlignmentStatus, "AGREED");
+  assert.equal(result.reserveIndexedTimestampSkewMs, 1_000);
+  assert.equal(result.comparisonEvidenceComplete, true);
+});
+
+test("reserve-to-indexed alignment blocks missing or misaligned indexed timestamps", () => {
+  const missing = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    indexedSourceEventAt: null,
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: {
+      maxReserveReferenceTimestampSkewMs: 5_000,
+      maxReserveIndexedTimestampSkewMs: 5_000
+    }
+  }));
+  assert.equal(missing.indexedPriceComparison.status, "NOT_ASSESSED");
+  assert.equal(missing.reserveIndexedTimestampAlignmentStatus, "INSUFFICIENT_EVIDENCE");
+  assert.ok(missing.reasonCodes.includes("INDEXED_SOURCE_TIMESTAMP_MISSING"));
+  assert.equal(missing.status, "INSUFFICIENT_EVIDENCE");
+
+  const misaligned = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    indexedSourceEventAt: "2026-10-29T12:44:30.000Z",
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: {
+      maxReserveReferenceTimestampSkewMs: 25_000,
+      maxReserveIndexedTimestampSkewMs: 5_000
+    }
+  }));
+  assert.equal(misaligned.reserveIndexedTimestampAlignmentStatus, "INSUFFICIENT_EVIDENCE");
+  assert.equal(misaligned.reserveIndexedTimestampSkewMs, 19_000);
+  assert.ok(misaligned.reasonCodes.includes("RESERVE_INDEXED_TIMES_UNALIGNED"));
+  assert.equal(misaligned.status, "INSUFFICIENT_EVIDENCE");
+  assert.equal(misaligned.comparisonEvidenceComplete, false);
+});
+
+test("future indexed timestamp cannot pass reserve-to-indexed time alignment", () => {
+  const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
+    indexedSourceEventAt: "2026-10-29T12:45:10.000Z",
+    reserveSlotBlockTimeAt: "2026-10-29T12:44:49.000Z",
+    reserveSlotBlockTimeRetrievedAt: "2026-10-29T12:44:59.000Z",
+    reserveSlotBlockTimeSynthetic: false,
+    policy: {
+      maxReserveReferenceTimestampSkewMs: 5_000,
+      maxReserveIndexedTimestampSkewMs: 5_000
+    }
+  }));
+  assert.equal(result.reserveIndexedTimestampAlignmentStatus, "INVALID_INPUT");
+  assert.ok(result.reasonCodes.includes("RESERVE_OR_INDEXED_TIMESTAMP_IN_FUTURE"));
+  assert.equal(result.status, "INVALID_INPUT");
+  assert.equal(result.comparisonEvidenceComplete, false);
+});
+
 test("independent base/USD and quote/USD feeds must be timestamp-aligned within the explicit policy", () => {
   const result = assessIndependentReservePriceAgreement(independentComparisonFixture({
     quoteUsd: { publishedAt: "2026-10-29T12:44:59.000Z", retrievedAt: "2026-10-29T12:44:55.000Z" },
