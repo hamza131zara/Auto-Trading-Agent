@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Step 1: protocol contract — complete. Step 2: root snapshot authenticator — implemented and verified. Step 3: durable high-water mark/CAS — implemented on this branch; CI verification is pending.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
+**Step 1: protocol contract, Step 2: root snapshot authenticator, and Step 3: durable high-water mark/CAS are implemented and verified on this branch.** The implementation remains provider-neutral and transport-free. It does not select or connect an external service, add credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
