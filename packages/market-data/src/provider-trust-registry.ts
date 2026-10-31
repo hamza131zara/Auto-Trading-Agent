@@ -32,7 +32,6 @@ const SNAPSHOT_PAYLOAD_KEYS = [
   "keys"
 ] as const;
 const SNAPSHOT_ENVELOPE_KEYS = [...SNAPSHOT_PAYLOAD_KEYS, "signature"] as const;
-const SNAPSHOT_ENVELOPE_KEYS = [...SNAPSHOT_PAYLOAD_KEYS, "signature"] as const;
 const TRUSTED_KEY_KEYS = [
   "keyId",
   "owner",
