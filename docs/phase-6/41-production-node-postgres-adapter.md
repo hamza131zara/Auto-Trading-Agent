@@ -16,7 +16,7 @@ The adapter accepts exact, explicit connection fields. It does not accept a conn
 - Physical connection, acquisition, idle, statement, lock, idle-in-transaction and shutdown-drain timeouts.
 - A bounded connection lifetime and an application name.
 
-The adapter maps TLS to the requested DNS hostname, CA bundle, `rejectUnauthorized: true`, and TLS 1.2 minimum. It deliberately omits `connectionString`, because node-postgres documents that SSL parameters in a connection string can replace the supplied SSL object. The six isolated TLS handshake checks from Phase 6.40 remain evidence for the driver's TLS implementation; they do not verify any future production CA or endpoint.
+The adapter maps TLS to the requested DNS hostname, CA bundle, `rejectUnauthorized: true`, and TLS 1.2 minimum. Its adapter-level acquisition deadline must be no greater than the driver's physical connection timeout, so a waiting caller can receive the adapter's stable timeout code before the underlying pool's own timeout. It deliberately omits `connectionString`, because node-postgres documents that SSL parameters in a connection string can replace the supplied SSL object. The six isolated TLS handshake checks from Phase 6.40 remain evidence for the driver's TLS implementation; they do not verify any future production CA or endpoint.
 
 Session timeouts are sent using PostgreSQL's `options` parameter. The configuration values are numeric, validated, and serialized without interpolating user-controlled SQL.
 
@@ -24,7 +24,7 @@ Session timeouts are sent using PostgreSQL's `options` parameter. The configurat
 
 - New acquisition requests are rejected after shutdown begins.
 - The adapter rejects callers once its configured pending-acquisition admission bound is reached.
-- Acquisition timeout is enforced at the adapter boundary. A timed-out underlying pool request continues to occupy an admission slot until the driver settles it; if a client arrives late, it is immediately released.
+- Acquisition timeout is enforced at the adapter boundary and is configured to fire before the driver's connection timeout. A timed-out underlying pool request continues to occupy an admission slot until the driver settles it; if a client arrives late, it is immediately released.
 - Checked-out clients expose idempotent release.
 - Query/driver errors are mapped to stable codes and raw driver messages are not returned.
 - Shutdown calls `pool.end()`, waits up to the configured drain deadline, and reports a sanitized drain-timeout error. It does not forcibly terminate in-flight SQL at the adapter boundary.
