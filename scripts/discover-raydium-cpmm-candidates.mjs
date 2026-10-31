@@ -231,7 +231,7 @@ function isRecord(value) {
 
 function isUtcTimestamp(value) {
   return typeof value === "string" &&
-    /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(value) &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value) &&
     Number.isFinite(Date.parse(value));
 }
 
