@@ -39,11 +39,16 @@ jobs:
       - name: Create disposable TLS certificates and PostgreSQL fixtures
         run: bash scripts/phase6-postgres-tls-fixtures.sh
 
-      - name: Verify node-postgres TLS handshake policy
+      - name: Verify PostgreSQL and provider trust-registry HTTPS TLS handshakes
         env:
           REQUIRE_PG_TLS_INTEGRATION: "true"
+          REQUIRE_PROVIDER_TRUST_REGISTRY_HTTPS_TLS_INTEGRATION: "true"
           PG_TLS_CERT_DIR: ${{ runner.temp }}/ata-pg-tls
-        run: npm run build && npm run test:postgres:tls
+          NODE_EXTRA_CA_CERTS: ${{ runner.temp }}/ata-pg-tls/ca.crt
+        run: |
+          npm run build
+          npm run test:postgres:tls
+          node --test test/provider-trust-registry-https-transport.tls.integration.test.mjs
 
       - name: Remove disposable PostgreSQL TLS fixtures and test keys
         if: always()

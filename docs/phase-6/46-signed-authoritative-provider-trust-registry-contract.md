@@ -2,7 +2,7 @@
 
 ## Status and boundary
 
-**Phase 6.46 Steps 1–5 are implemented and verified on this branch.** The concrete transport is generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
+**Phase 6.46 Steps 1–6 are implemented and verified on this branch.** The concrete transport remains generic and owner-configured: it does not select a registry vendor, endpoint, credentials or production keys, activate providers, or authorize trading.
 
 The existing `ata.provider-use-decision.v1` Ed25519 envelope and canonical signing payload are unchanged. The registry snapshot authenticates the complete provider-decision signing-key/revocation set; it does not replace or sign individual provider-use decisions.
 
@@ -163,6 +163,23 @@ The adapter requests identity encoding and rejects any non-identity Content-Enco
 Adversarial tests in `test/provider-trust-registry-https-transport.test.mjs` use an in-process injected request seam and local byte streams only. They cover fixed-origin enforcement, required DNS lookup injection, TLS request options, no redirect following, JSON/content-encoding handling, exact 48 KiB acceptance, streamed overflow and Content-Length rejection, cancellation/timeout and sanitized socket failures. They do not contact an external endpoint.
 
 This completes the generic transport implementation only. It does not mean a production registry endpoint, DNS resolver policy, root key, provider vendor or registry hosting service has been approved or configured. Production use remains unavailable until those owner-controlled values are separately provisioned and reviewed.
+
+## Step 6 — real local HTTPS/TLS verification
+
+The production transport is now exercised without its injected request-function test seam by `test/provider-trust-registry-https-transport.tls.integration.test.mjs`. The test starts actual Node HTTPS servers bound only to `127.0.0.1`, uses the adapter's default `node:https` requester and an explicit test-only lookup callback, and never contacts an external or production endpoint.
+
+The existing disposable certificate-fixture script additionally creates a rogue CA and a separate leaf certificate with the correct `pg-tls.test` DNS SAN but a chain that is not trusted. The dedicated PostgreSQL TLS CI job sets `NODE_EXTRA_CA_CERTS` to the disposable trusted root before Node starts, then runs this transport suite alongside the existing PostgreSQL TLS handshake tests. The fixture directory and private test keys are removed by the job's existing always-run cleanup step.
+
+The real-handshake matrix verifies:
+
+- A leaf signed by the trusted disposable CA and matching the URL hostname completes the TLS handshake and returns the exact response bytes.
+- A CA-trusted leaf presented through a different URL hostname is rejected before the HTTP handler runs; hostname verification is not bypassed by the owner-supplied loopback lookup.
+- A leaf with a matching DNS SAN but signed by the rogue CA is rejected before the HTTP handler runs.
+- A 302 response is returned as non-success metadata; the adapter does not resolve or contact the redirect target.
+- A server that accepts the connection but stalls without response bytes is stopped by the request inactivity timeout.
+- An AbortSignal cancels an in-flight TLS request and returns only the sanitized `TRUST_REGISTRY_UNAVAILABLE` reason.
+
+All certificates, keys, HTTP listeners and DNS mappings are disposable test fixtures. The test does not add a CA to production configuration, does not weaken certificate verification, and does not select a registry endpoint or resolver policy. Production DNS/origin/trust-anchor provisioning remains an owner decision. This test step verifies the generic transport's TLS behavior; it does not activate the trust registry or any provider.
 
 ## Step 2 — root snapshot authenticator
 
