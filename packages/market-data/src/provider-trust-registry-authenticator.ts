@@ -24,7 +24,7 @@ import type {
   ProviderTrustSnapshotAuthenticator
 } from "./provider-trust-registry.js";
 
-const UTC_TIMESTAMP = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/;
+const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 const SHA256_HEX = /^[a-fA-F0-9]{64}$/;
 const SAFE_REGISTRY_ID = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const SAFE_KEY_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -173,7 +173,7 @@ function validateTrustAnchor(
 }
 
 function loadPinnedRootPublicKey(anchor: ProviderTrustRegistryTrustAnchor) {
-  let publicKey;
+  let publicKey: ReturnType<typeof createPublicKey>;
   try {
     publicKey = createPublicKey(anchor.rootPublicKeyPem);
   } catch {
@@ -243,8 +243,8 @@ function parseJsonRejectingDuplicateKeys(source: string): unknown {
   };
   const skipWhitespace = (): void => {
     while (offset < source.length &&
-      (source[offset] === " " || source[offset] === "\\n" ||
-       source[offset] === "\\r" || source[offset] === "\\t")) {
+      (source[offset] === " " || source[offset] === "\n" ||
+       source[offset] === "\r" || source[offset] === "\t")) {
       offset += 1;
     }
   };
@@ -291,7 +291,7 @@ function parseJsonRejectingDuplicateKeys(source: string): unknown {
       offset += 4;
       return null;
     }
-    const numberMatch = /^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?/.exec(
+    const numberMatch = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(
       source.slice(offset)
     );
     if (numberMatch !== null) {
@@ -379,7 +379,7 @@ function isValidUtcTimestamp(value: unknown): value is string {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) return false;
   const normalized = value.replace(
-    /(?:\\.(\\d{1,3}))?Z$/,
+    /(?:\.(\d{1,3}))?Z$/,
     (_match, fraction: string | undefined) => `.\${(fraction ?? "").padEnd(3, "0")}Z`
   );
   return new Date(timestamp).toISOString() === normalized;
