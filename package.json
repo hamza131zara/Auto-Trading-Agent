@@ -23,7 +23,8 @@
     "check": "npm run validate:repo && npm run typecheck && npm test",
     "validate:phase6-live-source": "npm run build && node scripts/validate-raydium-live-source.mjs",
     "test:postgres:recovery": "npm run build && node --test test/phase6-postgres-recovery.integration.test.mjs",
-    "migrations:verify": "node scripts/verify-migrations.mjs"
+    "migrations:verify": "node scripts/verify-migrations.mjs",
+    "trust-registry:preflight": "node scripts/validate-provider-trust-registry-provisioning.mjs"
   },
   "devDependencies": {
     "typescript": "7.0.2"
