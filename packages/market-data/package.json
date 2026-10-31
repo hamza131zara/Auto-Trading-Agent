@@ -47,10 +47,17 @@
     "./postgres-pool-lifecycle-policy": {
       "types": "./dist/postgres-pool-lifecycle-policy.d.ts",
       "import": "./dist/postgres-pool-lifecycle-policy.js"
+    },
+    "./postgres-pg-adapter": {
+      "types": "./dist/postgres-pg-adapter.d.ts",
+      "import": "./dist/postgres-pg-adapter.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
   }
 }
