@@ -185,7 +185,8 @@ export async function buildTargetSnapshotFromDexScreener({
   rpcProviderId,
   adapter = new DexScreenerPairsAdapter(),
   now = () => new Date().toISOString(),
-  requestId = INDEXER_REQUEST_PREFIX + "-" + Date.now().toString(36)
+  requestId = INDEXER_REQUEST_PREFIX + "-" + Date.now().toString(36),
+  providerUseDecisionResolver
 }) {
   // Single-source identity diagnostic only: this does not establish provider consensus or candidate eligibility.
   // The generic orchestrator supports multiple registrations, but no second indexed production provider
@@ -199,7 +200,9 @@ export async function buildTargetSnapshotFromDexScreener({
     requestTimeoutMs: 5_000,
     maxHealthAgeMs: 30_000,
     healthPolicy: { failureThreshold: 2, cooldownMs: 30_000 },
-    requestId: () => requestId
+    requestId: () => requestId,
+    usagePurpose: "DIAGNOSTIC",
+    ...(providerUseDecisionResolver === undefined ? {} : { providerUseDecisionResolver })
   });
   const collection = await orchestrator.collect({
     cluster: "mainnet-beta",
