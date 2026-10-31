@@ -229,6 +229,23 @@ function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isUtcTimestamp(value) {
+  return typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value) &&
+    Number.isFinite(Date.parse(value));
+}
+
+function readRetrievalTimestamp(now) {
+  let value;
+  try {
+    value = now();
+  } catch {
+    throw codedError("SOURCE_RETRIEVAL_TIMESTAMP_INVALID");
+  }
+  if (!isUtcTimestamp(value)) throw codedError("SOURCE_RETRIEVAL_TIMESTAMP_INVALID");
+  return value;
+}
+
 function normalizeExactPair(pair) {
   if (!isRecord(pair) ||
       pair.chainId !== "solana" ||
@@ -283,7 +300,7 @@ function normalizeExactPair(pair) {
   };
 }
 
-function normalizeRaydiumPool(pool) {
+function normalizeRaydiumPool(pool, provenance) {
   if (!isRecord(pool) ||
       pool.type !== "Standard" ||
       typeof pool.id !== "string" ||
@@ -322,6 +339,15 @@ function normalizeRaydiumPool(pool) {
     raydiumMintAmountA: asNonNegativeMetric(pool.mintAmountA),
     raydiumMintAmountB: asNonNegativeMetric(pool.mintAmountB),
     raydiumPoolCreatedAt: typeof pool.openTime === "string" ? pool.openTime : null,
+    raydiumSourceProvenance: {
+      providerId: RAYDIUM_API_PROVIDER_ID,
+      requestId: provenance.requestId,
+      retrievedAt: provenance.retrievedAt,
+      rawPayloadSha256: provenance.rawPayloadSha256,
+      sourceEventAt: null,
+      sourceObservedAt: null,
+      timestampKind: "MISSING"
+    },
     raydiumData: {
       liquidityUsd,
       volume24hUsd,
@@ -425,7 +451,7 @@ function normalizeRaydiumPage(payload, { pageNumber = 1, pageSize = RAYDIUM_POOL
   };
 }
 
-async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expectedQuoteMint) {
+async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expectedQuoteMint, now) {
   const url = DEX_SCREENER_PAIR_URL_BASE + encodeURIComponent(poolAddress);
   const response = await fetchJson(fetchImpl, url, {
     method: "GET",
@@ -439,6 +465,8 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expected
   // A nullable pair list means this address is not indexed; it can never qualify.
   // An omitted or malformed field still fails closed as a response-shape error.
   const indexedPairs = Array.isArray(response.payload.pairs) ? response.payload.pairs : [];
+  const retrievedAt = readRetrievalTimestamp(now);
+  const rawPayloadSha256 = sha256(response.rawText);
   const found = indexedPairs
     .map(normalizeExactPair)
     .find((pair) => pair !== null &&
@@ -448,9 +476,21 @@ async function lookupDexScreenerPair(fetchImpl, poolAddress, requestId, expected
     poolAddress,
     quoteMint: expectedQuoteMint,
     requestId,
-    rawPayloadSha256: sha256(response.rawText),
+    retrievedAt,
+    rawPayloadSha256,
     found: found !== null,
-    pair: found
+    pair: found === null ? null : {
+      ...found,
+      sourceProvenance: {
+        providerId: "dex-screener",
+        requestId,
+        retrievedAt,
+        rawPayloadSha256,
+        sourceEventAt: null,
+        sourceObservedAt: null,
+        timestampKind: "MISSING"
+      }
+    }
   };
 }
 
@@ -625,7 +665,10 @@ export async function discoverRaydiumCpmmCandidates({
         "RAYDIUM_API",
         true
       );
-      const retrievedAt = now();
+      const retrievedAt = readRetrievalTimestamp(now);
+      const raydiumRequestId = clientRequestId + "-raydium-" +
+        quoteAsset.symbol.toLowerCase() + "-" + String(pageNumber);
+      const raydiumRawPayloadSha256 = sha256(raydium.rawText);
       const page = normalizeRaydiumPage(raydium.payload, {
         pageNumber,
         pageSize: RAYDIUM_POOL_PAGE_SIZE
@@ -636,8 +679,9 @@ export async function discoverRaydiumCpmmCandidates({
       }
       pairResult.pages.push({
         pageNumber,
+        requestId: raydiumRequestId,
         responseShape: page.responseShape,
-        rawPayloadSha256: sha256(raydium.rawText),
+        rawPayloadSha256: raydiumRawPayloadSha256,
         retrievedAt,
         resultCount: page.count,
         hasNextPage: page.hasNextPage,
@@ -647,7 +691,11 @@ export async function discoverRaydiumCpmmCandidates({
       });
 
       for (const pool of page.pools) {
-        const normalized = normalizeRaydiumPool(pool);
+        const normalized = normalizeRaydiumPool(pool, {
+          requestId: raydiumRequestId,
+          retrievedAt,
+          rawPayloadSha256: raydiumRawPayloadSha256
+        });
         if (normalized === null || normalized.quoteMint !== quoteAsset.mint) continue;
         const previous = byAddress.get(normalized.poolAddress);
         if (!previous || (normalized.raydiumLiquidityUsd ?? -1) > (previous.raydiumLiquidityUsd ?? -1)) {
@@ -802,12 +850,15 @@ export async function discoverRaydiumCpmmCandidates({
       fetchImpl,
       candidate.poolAddress,
       dexRequestId,
-      candidate.quoteMint
+      candidate.quoteMint,
+      now
     );
     dexScreenerEvidence.push({
+      providerId: "dex-screener",
       poolAddress: checked.poolAddress,
       quoteMint: checked.quoteMint,
       requestId: checked.requestId,
+      retrievedAt: checked.retrievedAt,
       rawPayloadSha256: checked.rawPayloadSha256,
       found: checked.found
     });
@@ -852,7 +903,8 @@ export async function discoverRaydiumCpmmCandidates({
         priceUsdMint: dexPair.priceUsdMint,
         buys24h: dexPair.buys24h,
         sells24h: dexPair.sells24h,
-        dexId: dexPair.dexId
+        dexId: dexPair.dexId,
+        provenance: dexPair.sourceProvenance
       },
       meetsDexScreenerThresholds: dexMeetsThresholds,
       meetsLiquidityAndVolumeThresholds,
