@@ -91,7 +91,7 @@ export function validateProviderTrustRegistrySnapshotEnvelope(
   }
   const payload: Record<string, unknown> = {};
   for (const key of SNAPSHOT_PAYLOAD_KEYS) payload[key] = value[key];
-  getProviderTrustRegistrySigningPayload(payload as ProviderTrustRegistrySnapshotPayload);
+  getProviderTrustRegistrySigningPayload(payload as unknown as ProviderTrustRegistrySnapshotPayload);
   return value as unknown as ProviderTrustRegistrySnapshotEnvelope;
 }
 
