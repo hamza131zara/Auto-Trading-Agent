@@ -660,6 +660,20 @@ export async function discoverRaydiumCpmmCandidates({
       dexPair.volume24hUsd !== null &&
       dexPair.liquidityUsd >= minimumLiquidityUsd &&
       dexPair.volume24hUsd >= minimumVolume24hUsd;
+    const meetsLiquidityAndVolumeThresholds = candidate.meetsRaydiumThresholds && dexMeetsThresholds;
+    const sourceFreshness = "UNKNOWN";
+    const evidenceReadinessReasonCodes = [];
+    if (!meetsLiquidityAndVolumeThresholds) {
+      evidenceReadinessReasonCodes.push("LIQUIDITY_VOLUME_THRESHOLDS_NOT_MET");
+    }
+    if (dexPair === null) {
+      evidenceReadinessReasonCodes.push("EXACT_INDEXED_PAIR_CROSS_CHECK_MISSING");
+    }
+    if (sourceFreshness !== "FRESH") {
+      evidenceReadinessReasonCodes.push("SOURCE_FRESHNESS_NOT_ESTABLISHED");
+    }
+    evidenceReadinessReasonCodes.push("INDEPENDENT_PROVIDER_AGREEMENT_NOT_ASSESSED");
+    evidenceReadinessReasonCodes.push("INDEPENDENT_RESERVE_PRICE_COMPARISON_NOT_ASSESSED");
     return {
       ...candidate,
       dexScreenerPairFound: dexPair !== null,
@@ -673,13 +687,25 @@ export async function discoverRaydiumCpmmCandidates({
         dexId: dexPair.dexId
       },
       meetsDexScreenerThresholds: dexMeetsThresholds,
-      meetsLiquidityAndVolumeThresholds: candidate.meetsRaydiumThresholds && dexMeetsThresholds,
-      sourceFreshness: "UNKNOWN",
-      freshnessReason: "No trustworthy source-event timestamp was provided by the pool API or pair lookup."
+      meetsLiquidityAndVolumeThresholds,
+      sourceFreshness,
+      freshnessReason: "No trustworthy source-event timestamp was provided by the pool API or pair lookup.",
+      evidenceReadiness: {
+        status: sourceFreshness === "FRESH"
+          ? "FRESHNESS_VERIFIED_PENDING_CRITICAL_EVIDENCE_GATE"
+          : sourceFreshness === "STALE"
+            ? "BLOCKED_SOURCE_FRESHNESS_STALE"
+            : "BLOCKED_SOURCE_FRESHNESS_UNKNOWN",
+        reasonCodes: evidenceReadinessReasonCodes,
+        canAdvanceToCriticalMarketDataEvidenceGate: false
+      }
     };
   });
   const qualifying = enrichedCandidates.filter((candidate) =>
     candidate.meetsLiquidityAndVolumeThresholds && candidate.dexScreenerPairFound);
+  const freshnessQualified = qualifying.filter((candidate) => candidate.sourceFreshness === "FRESH");
+  const evidenceGateReady = enrichedCandidates.filter((candidate) =>
+    candidate.evidenceReadiness.canAdvanceToCriticalMarketDataEvidenceGate);
   const scanIncomplete =
     raydiumScanIncomplete ||
     selected.length < exactPairs.length ||
@@ -732,11 +758,15 @@ export async function discoverRaydiumCpmmCandidates({
       dexScreenerCrossCheckedCount: dexScreenerEvidence.length,
       unCrossCheckedCpmmCandidateCount: cpmmCandidates.length - dexScreenerEvidence.length,
       thresholdQualifiedCount: qualifying.length,
+      freshnessQualifiedCount: freshnessQualified.length,
+      criticalEvidenceGateReadyCount: evidenceGateReady.length,
+      sourceFreshnessRequiredForFollowUpRecommendation: "FRESH",
       poolClassificationSummary: classifications.reduce((summary, item) => {
         summary[item.classification] = (summary[item.classification] ?? 0) + 1;
         return summary;
       }, {}),
-      recommendedFollowUpPoolAddress: !scanIncomplete ? qualifying[0]?.poolAddress ?? null : null
+      thresholdTopCandidatePoolAddress: !scanIncomplete ? qualifying[0]?.poolAddress ?? null : null,
+      recommendedFollowUpPoolAddress: !scanIncomplete ? freshnessQualified[0]?.poolAddress ?? null : null
     },
     candidates: displayCandidates,
     operatorAcknowledgements: {
@@ -748,7 +778,8 @@ export async function discoverRaydiumCpmmCandidates({
       "This report is a discovery shortlist, not a trading recommendation or token-safety approval.",
       "Raydium API liquidity/volume and DEX Screener liquidity/volume are both indexed observations, not independent on-chain reserve verification.",
       "The report requires a matching exact pool/approved quote mint identity from DEX Screener and on-chain CPMM PoolState decoding before recommending a follow-up.",
-      "Source freshness remains UNKNOWN because neither indexed mapping provides an approved market-event freshness signal here.",
+      "Source freshness remains UNKNOWN because neither indexed mapping provides an approved market-event freshness signal here; threshold matches are not freshness-qualified candidates.",
+      "A follow-up recommendation is emitted only for a candidate with FRESH source time; independent provider agreement and reserve/reference comparison remain separate critical gates.",
       "Liquidity and volume thresholds are triage settings, not an approved trading policy.",
       "USDC and USDT are a research-only allowlist; this report does not approve their use as production quote assets.",
       "A CPMM candidate must pass the full identity workflow, same-slot reserve reconciliation, independent market-data review, token-safety review, and fallback gates before any later decision."
