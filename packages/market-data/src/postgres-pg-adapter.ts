@@ -6,7 +6,6 @@
  * shutdown boundary. It does not create credentials, choose a host, activate a
  * provider, or authorize database deployment or trading.
  */
-import { isIP } from "node:net";
 import { Pool } from "pg";
 import type {
   PostgresPoolLike,
@@ -100,7 +99,7 @@ function validateConfig(value: unknown): asserts value is PostgresPgAdapterConfi
   }
   const host = value.host;
   if (typeof host !== "string" || host.length > 253 ||
-      host !== host.trim() || isIP(host) !== 0 ||
+      host !== host.trim() || host.includes(":") || /^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(host) ||
       !/^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*$/.test(host) ||
       !positiveInteger(value.port, 65_535) ||
       typeof value.database !== "string" || !/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,62}$/.test(value.database) ||
