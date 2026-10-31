@@ -527,6 +527,102 @@ function checkRpcAccounts(payload, requestId, expectedAddresses, expectedPoolMet
   return { contextSlot, classified };
 }
 
+async function readSlotBlockTimeEvidence(fetchImpl, contextSlot, requestId, now) {
+  const synthetic = fetchImpl !== globalThis.fetch;
+  const blockTimeRequestId = requestId + "-block-time";
+  const base = {
+    providerId: RPC_PROVIDER_ID,
+    contextSlot,
+    slot: contextSlot,
+    state: "UNAVAILABLE",
+    blockTimeUnixSeconds: null,
+    observedAt: null,
+    timestampKind: "MISSING",
+    retrievedAt: null,
+    requestId: blockTimeRequestId,
+    rawPayloadSha256: null,
+    synthetic,
+    reasonCodes: []
+  };
+  const unavailable = (reasonCode) => ({ ...base, reasonCodes: [reasonCode] });
+
+  if (!Number.isSafeInteger(contextSlot) || contextSlot < 0 ||
+      !RPC_REQUEST_ID_PATTERN.test(blockTimeRequestId)) {
+    return unavailable("RPC_BLOCK_TIME_INPUT_INVALID");
+  }
+
+  try {
+    const body = JSON.stringify({
+      jsonrpc: "2.0",
+      id: blockTimeRequestId,
+      method: "getBlockTime",
+      params: [contextSlot]
+    });
+    const response = await fetchJson(fetchImpl, RPC_URL, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json"
+      },
+      body
+    }, "RPC_BLOCK_TIME");
+
+    if (!isRecord(response.payload) ||
+        response.payload.jsonrpc !== "2.0" ||
+        response.payload.id !== blockTimeRequestId ||
+        !Object.prototype.hasOwnProperty.call(response.payload, "result") ||
+        Object.prototype.hasOwnProperty.call(response.payload, "error")) {
+      return unavailable("RPC_BLOCK_TIME_RESPONSE_INVALID");
+    }
+
+    const blockTime = response.payload.result;
+    if (blockTime === null) {
+      const retrievedAt = now();
+      if (typeof retrievedAt !== "string" || !Number.isFinite(Date.parse(retrievedAt))) {
+        return unavailable("RPC_BLOCK_TIME_RETRIEVAL_TIME_INVALID");
+      }
+      return {
+        ...base,
+        retrievedAt,
+        rawPayloadSha256: sha256(response.rawText),
+        reasonCodes: ["RPC_BLOCK_TIME_NOT_AVAILABLE"]
+      };
+    }
+    if (!Number.isSafeInteger(blockTime) ||
+        (blockTime as number) < 0 ||
+        (blockTime as number) > 253_402_300_799) {
+      return unavailable("RPC_BLOCK_TIME_VALUE_INVALID");
+    }
+
+    const retrievedAt = now();
+    if (typeof retrievedAt !== "string" || !Number.isFinite(Date.parse(retrievedAt))) {
+      return unavailable("RPC_BLOCK_TIME_RETRIEVAL_TIME_INVALID");
+    }
+
+    let observedAt;
+    try {
+      observedAt = new Date((blockTime as number) * 1_000).toISOString();
+    } catch {
+      return unavailable("RPC_BLOCK_TIME_VALUE_INVALID");
+    }
+
+    return {
+      ...base,
+      state: "AVAILABLE",
+      blockTimeUnixSeconds: blockTime as number,
+      observedAt,
+      timestampKind: "SLOT_BLOCK_TIME_ESTIMATE",
+      retrievedAt,
+      rawPayloadSha256: sha256(response.rawText)
+    };
+  } catch (error) {
+    const code = typeof error?.code === "string" && /^[A-Z0-9_]{1,80}$/.test(error.code)
+      ? "RPC_BLOCK_TIME_" + error.code
+      : "RPC_BLOCK_TIME_REQUEST_FAILED";
+    return unavailable(code);
+  }
+}
+
 export async function discoverRaydiumCpmmCandidates({
   env = process.env,
   fetchImpl = globalThis.fetch,
@@ -626,7 +722,22 @@ export async function discoverRaydiumCpmmCandidates({
     contextSlot: null,
     requestId: null,
     rawPayloadSha256: null,
-    synthetic: fetchImpl !== globalThis.fetch
+    synthetic: fetchImpl !== globalThis.fetch,
+    slotBlockTimeEvidence: {
+      providerId: RPC_PROVIDER_ID,
+      commitment: "finalized",
+      contextSlot: null,
+      slot: null,
+      state: "NOT_REQUESTED",
+      blockTimeUnixSeconds: null,
+      observedAt: null,
+      timestampKind: "MISSING",
+      retrievedAt: null,
+      requestId: null,
+      rawPayloadSha256: null,
+      synthetic: fetchImpl !== globalThis.fetch,
+      reasonCodes: ["FINALIZED_ACCOUNT_CONTEXT_NOT_AVAILABLE"]
+    }
   };
   let classifications = [];
   if (selected.length > 0) {
@@ -663,13 +774,20 @@ export async function discoverRaydiumCpmmCandidates({
       expectedPoolMetadata
     );
     classifications = checked.classified;
+    const slotBlockTimeEvidence = await readSlotBlockTimeEvidence(
+      fetchImpl,
+      checked.contextSlot,
+      rpcRequestId,
+      now
+    );
     rpcEvidence = {
       providerId: RPC_PROVIDER_ID,
       commitment: "finalized",
       contextSlot: checked.contextSlot,
       requestId: rpcRequestId,
       rawPayloadSha256: sha256(rpc.rawText),
-      synthetic: fetchImpl !== globalThis.fetch
+      synthetic: fetchImpl !== globalThis.fetch,
+      slotBlockTimeEvidence
     };
   }
 
