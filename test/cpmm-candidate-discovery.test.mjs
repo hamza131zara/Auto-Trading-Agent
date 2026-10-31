@@ -790,6 +790,18 @@ test("fails closed if the RPC returns a mismatched request id", async () => {
   );
 });
 
+test("rejects invalid provider retrieval timestamps instead of emitting unverifiable provenance", async () => {
+  const { fetchImpl } = mockFetchFactory();
+  await assert.rejects(
+    discoverRaydiumCpmmCandidates({
+      env: approvals,
+      fetchImpl,
+      now: () => "not-a-utc-timestamp"
+    }),
+    { code: "SOURCE_RETRIEVAL_TIMESTAMP_INVALID" }
+  );
+});
+
 test("rejects a threshold that is not a safe non-negative decimal before making any request", async () => {
   let calls = 0;
   await assert.rejects(
