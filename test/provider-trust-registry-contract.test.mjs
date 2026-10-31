@@ -6,7 +6,9 @@ import {
   PROVIDER_TRUST_REGISTRY_SIGNATURE_ALGORITHM,
   PROVIDER_TRUST_REGISTRY_SIGNING_DOMAIN,
   PROVIDER_TRUST_REGISTRY_SNAPSHOT_VERSION,
-  ProviderTrustRegistryError
+  ProviderTrustRegistryError,
+  validateProviderTrustRegistryHighWaterMark,
+  validateProviderTrustRegistrySnapshotEnvelope
 } from "../packages/market-data/dist/provider-trust-registry.js";
 
 const KEY = {
@@ -74,6 +76,19 @@ test("canonical signing payload uses the documented domain and exact fixed prope
   assert.equal(parsed.version, 7);
 });
 
+test("envelope validation requires the exact protocol fields and signature encoding", () => {
+  const envelope = { ...snapshot(), signature: "A".repeat(86) };
+  assert.equal(validateProviderTrustRegistrySnapshotEnvelope(envelope).signature, envelope.signature);
+  assert.throws(
+    () => validateProviderTrustRegistrySnapshotEnvelope({ ...envelope, unexpected: true }),
+    /TRUST_REGISTRY_SNAPSHOT_INVALID/
+  );
+  assert.throws(
+    () => validateProviderTrustRegistrySnapshotEnvelope({ ...snapshot(), signature: "short" }),
+    /TRUST_REGISTRY_SNAPSHOT_INVALID/
+  );
+});
+
 test("canonical payload rejects wrong schema, extra fields and unsafe versions", () => {
   assert.throws(
     () => getProviderTrustRegistrySigningPayload(snapshot({ schemaVersion: "unknown" })),
@@ -99,6 +114,30 @@ test("canonical payload rejects duplicate key IDs and malformed provider scopes"
       keys: [{ ...KEY, allowedProviderIds: ["dex-screener", "dex-screener"] }]
     })),
     /TRUST_REGISTRY_SNAPSHOT_KEY_INVALID/
+  );
+});
+
+test("high-water records require the expected registry, safe version and SHA-256 digest", () => {
+  const record = {
+    registryId: "owner-provider-trust",
+    version: 7,
+    canonicalPayloadSha256: "a".repeat(64)
+  };
+  assert.deepEqual(
+    validateProviderTrustRegistryHighWaterMark(record, "owner-provider-trust"),
+    record
+  );
+  assert.throws(
+    () => validateProviderTrustRegistryHighWaterMark(record, "another-registry"),
+    /TRUST_REGISTRY_HIGH_WATER_MARK_INVALID/
+  );
+  assert.throws(
+    () => validateProviderTrustRegistryHighWaterMark({ ...record, version: 0 }, "owner-provider-trust"),
+    /TRUST_REGISTRY_HIGH_WATER_MARK_INVALID/
+  );
+  assert.throws(
+    () => validateProviderTrustRegistryHighWaterMark({ ...record, canonicalPayloadSha256: "bad" }, "owner-provider-trust"),
+    /TRUST_REGISTRY_HIGH_WATER_MARK_INVALID/
   );
 });
 
