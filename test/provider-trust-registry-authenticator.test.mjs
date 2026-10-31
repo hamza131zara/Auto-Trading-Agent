@@ -270,19 +270,25 @@ test("rejects unknown fields, malformed key records and duplicate signing-key ID
     "TRUST_REGISTRY_SNAPSHOT_INVALID"
   );
 
-  const invalidKey = fixture({
-    keys: [{ ...f.payload.keys[0], allowedProviderIds: ["dex-screener", "dex-screener"] }]
-  });
+  const invalidKey = {
+    ...f.envelope,
+    keys: [{ ...f.envelope.keys[0], allowedProviderIds: ["dex-screener", "dex-screener"] }]
+  };
   await expectCode(
-    authenticator.authenticate(request(invalidKey)),
+    authenticator.authenticate(request(f, {
+      snapshotBytes: Buffer.from(JSON.stringify(invalidKey), "utf8")
+    })),
     "TRUST_REGISTRY_SNAPSHOT_KEY_INVALID"
   );
 
-  const duplicateIds = fixture({
-    keys: [f.payload.keys[0], f.payload.keys[0]]
-  });
+  const duplicateIds = {
+    ...f.envelope,
+    keys: [f.envelope.keys[0], f.envelope.keys[0]]
+  };
   await expectCode(
-    authenticator.authenticate(request(duplicateIds)),
+    authenticator.authenticate(request(f, {
+      snapshotBytes: Buffer.from(JSON.stringify(duplicateIds), "utf8")
+    })),
     "TRUST_REGISTRY_DUPLICATE_KEY_ID"
   );
 });
