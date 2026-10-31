@@ -380,3 +380,18 @@ The evaluator accepts declarations only; it does not choose a driver, access cer
 - [ ] Obtain owner and database-operator approval before any production database deployment.
 
 The evaluator accepts declarations only; it does not create a pool, connect to PostgreSQL, cancel statements or change runtime settings. A technically passing policy remains REVIEW_REQUIRED. Phase 6 remains ACTIVE. See [Phase 6.38](38-postgres-pool-lifecycle-policy-preflight.md).
+
+
+## Phase 6.39 — Test-only node-postgres pool lifecycle experiment
+
+- [x] Reuse the exact pinned test-only `pg@8.23.1` package already exercised against PostgreSQL 18.6.
+- [x] Add required disposable-PostgreSQL tests for saturated-pool acquisition timeout, statement cancellation, lock timeout, idle-in-transaction termination and pool shutdown/drain.
+- [x] Verify the actual package version at test runtime.
+- [x] Demonstrate a bounded adapter-side admission gate and verify that rejected callers do not enter the underlying FIFO queue.
+- [x] Restrict test connections to the disposable local PostgreSQL service; keep the driver out of application dependencies and the committed lockfile.
+- [ ] Owner explicitly selects or rejects `pg@8.23.1` as the production driver.
+- [ ] If selected, implement/review a production adapter with strict TLS, bounded admission, safe transaction/cancellation handling, approved pool limits and shutdown supervision.
+- [ ] Run real TLS trust/hostname/downgrade tests and verify effective production runtime settings.
+- [ ] Obtain separate database deployment, backup/PITR, monitoring, provider and trading approvals.
+
+The experiment proves behavior only for the exact test-only driver version and disposable PostgreSQL CI environment. It does not select a production driver, add production connectivity or authorize deployment, provider activation or trading. Phase 6 remains ACTIVE. See [Phase 6.39](39-node-postgres-pool-lifecycle-experiment.md).
