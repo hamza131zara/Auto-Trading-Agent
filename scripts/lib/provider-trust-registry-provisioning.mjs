@@ -148,15 +148,22 @@ function validateEndpoint(value, errors) {
   const host = url.hostname.startsWith("[")
     ? url.hostname.slice(1, -1)
     : url.hostname;
+  const sensitiveQueryNames = new Set([
+    "access_token", "apikey", "api_key", "auth", "authorization",
+    "key", "password", "secret", "signature", "token"
+  ]);
+  const queryNames = [...url.searchParams.keys()].map((name) => name.toLowerCase());
   if (url.protocol !== "https:" ||
       url.href !== value ||
       url.username !== "" ||
       url.password !== "" ||
       url.hash !== "" ||
-      url.search !== "" ||
       url.hostname.length === 0 ||
       isIP(host) !== 0 ||
-      url.pathname === "/") {
+      url.pathname === "/" ||
+      queryNames.length > 16 ||
+      queryNames.some((name) => sensitiveQueryNames.has(name)) ||
+      url.search.length > 512) {
     add(errors, "REGISTRY_ENDPOINT_NOT_FIXED_CANONICAL_HTTPS");
     return null;
   }
