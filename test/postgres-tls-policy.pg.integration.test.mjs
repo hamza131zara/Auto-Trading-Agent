@@ -165,11 +165,17 @@ test("node-postgres 8.23.1 TLS verification against disposable PostgreSQL 18.6 f
       assert.equal(adapter.getPoolSnapshot().waitingAcquisitions, 1);
       held.release();
       held = undefined;
-      for (let attempt = 0; attempt < 20 && adapter.getPoolSnapshot().waitingAcquisitions !== 0; attempt += 1) {
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const snapshot = adapter.getPoolSnapshot();
+        if (snapshot.waitingAcquisitions === 0 && snapshot.idleConnections === 1) break;
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
-      assert.equal(adapter.getPoolSnapshot().waitingAcquisitions, 0);
-      assert.equal(adapter.getPoolSnapshot().idleConnections, 1);
+      const settledSnapshot = adapter.getPoolSnapshot();
+      assert.equal(settledSnapshot.waitingAcquisitions, 0);
+      assert.equal(settledSnapshot.idleConnections, 1,
+        "the late client must be returned to the idle pool after the timed-out caller is released");
+      const followUp = await adapter.connect();
+      followUp.release();
     } finally {
       held?.release();
       await adapter.close();
