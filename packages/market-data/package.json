@@ -39,6 +39,10 @@
     "./postgres-backup-recovery-policy": {
       "types": "./dist/postgres-backup-recovery-policy.d.ts",
       "import": "./dist/postgres-backup-recovery-policy.js"
+    },
+    "./postgres-client-tls-policy": {
+      "types": "./dist/postgres-client-tls-policy.d.ts",
+      "import": "./dist/postgres-client-tls-policy.js"
     }
   },
   "scripts": {
