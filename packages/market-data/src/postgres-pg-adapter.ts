@@ -118,7 +118,7 @@ function validateConfig(value: unknown): asserts value is PostgresPgAdapterConfi
       !positiveInteger(value.shutdownDrainTimeoutMs) ||
       typeof value.applicationName !== "string" ||
       !/^[a-zA-Z0-9_.:-]{1,63}$/.test(value.applicationName) ||
-      value.connectionTimeoutMs > value.acquisitionTimeoutMs ||
+      value.acquisitionTimeoutMs > value.connectionTimeoutMs ||
       value.lockTimeoutMs >= value.statementTimeoutMs) {
     throw new PostgresPgAdapterError("INVALID_CONFIGURATION");
   }
