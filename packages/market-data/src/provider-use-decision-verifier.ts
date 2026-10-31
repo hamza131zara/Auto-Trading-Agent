@@ -94,6 +94,33 @@ function invalid(reason: string): ProviderUseDecisionVerificationResult {
   return { authorized: false, decision: null, reasonCodes: [reason] };
 }
 
+function decodeBase64UrlSignature(value: string): Uint8Array | null {
+  if (!BASE64URL_SIGNATURE.test(value)) return null;
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  const output = new Uint8Array(64);
+  let accumulator = 0;
+  let bits = 0;
+  let offset = 0;
+
+  for (const character of value) {
+    const digit = alphabet.indexOf(character);
+    if (digit < 0) return null;
+    accumulator = (accumulator << 6) | digit;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      if (offset >= output.length) return null;
+      output[offset] = (accumulator >> bits) & 0xff;
+      offset += 1;
+      accumulator &= (1 << bits) - 1;
+    }
+  }
+
+  // A canonical 64-byte base64url value has four zero padding bits.
+  if (offset !== output.length || bits !== 4 || accumulator !== 0) return null;
+  return output;
+}
+
 /**
  * Returns the exact UTF-8 payload that the owner must sign. Property order is
  * explicitly fixed and the signature field is excluded. Do not replace this
@@ -260,8 +287,8 @@ export function verifySignedProviderUseDecision(input: {
     if (publicKey.asymmetricKeyType !== "ed25519") {
       return invalid("PROVIDER_DECISION_TRUSTED_KEY_ALGORITHM_INVALID");
     }
-    const signature = Buffer.from(envelope.signature, "base64url");
-    if (signature.length !== 64 || signature.toString("base64url") !== envelope.signature) {
+    const signature = decodeBase64UrlSignature(envelope.signature);
+    if (signature === null) {
       return invalid("PROVIDER_USE_DECISION_SIGNATURE_INVALID");
     }
 
@@ -273,7 +300,7 @@ export function verifySignedProviderUseDecision(input: {
     });
     const valid = verifyEd25519Signature(
       null,
-      Buffer.from(payload, "utf8"),
+      new TextEncoder().encode(payload),
       publicKey,
       signature
     );
