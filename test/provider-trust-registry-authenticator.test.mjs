@@ -240,12 +240,15 @@ test("rejects snapshots issued in the future, expired or older than the configur
 
 test("rejects invalid timestamp encodings and excessive freshness windows", async () => {
   const authenticator = createEd25519ProviderTrustSnapshotAuthenticator();
-  const invalidCalendarDate = fixture({
-    issuedAt: "2026-02-30T13:29:00.000Z",
-    expiresAt: "2026-10-31T13:35:00.000Z"
-  });
+  const invalidCalendarDate = fixture();
+  const invalidDateEnvelope = {
+    ...invalidCalendarDate.envelope,
+    issuedAt: "2026-02-30T13:29:00.000Z"
+  };
   await expectCode(
-    authenticator.authenticate(request(invalidCalendarDate)),
+    authenticator.authenticate(request(invalidCalendarDate, {
+      snapshotBytes: Buffer.from(JSON.stringify(invalidDateEnvelope), "utf8")
+    })),
     "TRUST_REGISTRY_SNAPSHOT_INVALID"
   );
   const valid = fixture();
@@ -256,6 +259,22 @@ test("rejects invalid timestamp encodings and excessive freshness windows", asyn
   await expectCode(
     authenticator.authenticate(request(valid, { now: "2026-10-31T13:30:00" })),
     "TRUST_REGISTRY_SNAPSHOT_INVALID"
+  );
+});
+
+test("rejects a non-Ed25519 provider-decision public key inside a signed snapshot", async () => {
+  const base = fixture();
+  const rsa = generateKeyPairSync("rsa", { modulusLength: 2048 });
+  const invalidKeySnapshot = fixture({
+    keys: [{
+      ...base.payload.keys[0],
+      publicKeyPem: rsa.publicKey.export({ type: "spki", format: "pem" }).toString()
+    }]
+  });
+  const authenticator = createEd25519ProviderTrustSnapshotAuthenticator();
+  await expectCode(
+    authenticator.authenticate(request(invalidKeySnapshot)),
+    "TRUST_REGISTRY_SNAPSHOT_KEY_INVALID"
   );
 });
 
